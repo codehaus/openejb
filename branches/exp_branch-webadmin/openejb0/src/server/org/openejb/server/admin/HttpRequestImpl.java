@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -99,6 +99,7 @@ public class HttpRequestImpl implements  HttpRequest {
     /*------------------------------------------------------------*/
     protected void readMessage(InputStream input) throws IOException{
         DataInput in = new DataInputStream(input);
+        
         readRequestLine(in);
         readHeaders(in);
         readBody(in);
@@ -107,7 +108,6 @@ public class HttpRequestImpl implements  HttpRequest {
     private void readRequestLine(DataInput in) throws IOException{
         try{
             line = in.readLine();
-            System.out.println(line);
         } catch (Exception e){
             throw new IOException("Could not read the HTTP Request Line :"+ e.getClass().getName()+" : "+e.getMessage());
         }
@@ -171,7 +171,7 @@ public class HttpRequestImpl implements  HttpRequest {
             String value = param.nextToken();
             if (value == null) continue;
 
-            System.out.println("[] "+name+" = "+value);
+            //System.out.println("[] "+name+" = "+value);
             queryParams.put(name, value);
         }
     }
@@ -184,7 +184,7 @@ public class HttpRequestImpl implements  HttpRequest {
 
             try{
                 hf = in.readLine();
-                System.out.println(hf);
+                //System.out.println(hf);
             } catch (Exception e){
                 throw new IOException("Could not read the HTTP Request Header Field :"+ e.getClass().getName()+" : "+e.getMessage());
             }
@@ -192,24 +192,35 @@ public class HttpRequestImpl implements  HttpRequest {
             if ( hf == null || hf.equals("") ) {
                 break;
             }
-
-            StringTokenizer field = new StringTokenizer(hf,":");
-            /* [1] Parse the Name */
-            String name = field.nextToken();
+            
+            /* [1] parse the name */
+            int colonIndex = hf.indexOf((int)':');
+            String name = hf.substring(0, colonIndex);
             if (name == null) break;
 
             /* [2] Parse the Value */
-            String value = field.nextToken();
+            String value = hf.substring(colonIndex+1, hf.length());
             if (value == null) break;
             value = value.trim();
             headers.put(name, value);
         }
-    }
+        
+        //temp-debug-------------------------------------------
+        java.util.Iterator myKeys = headers.keySet().iterator();
+        String temp = null;
+        //while(myKeys.hasNext()) {
+        //    temp = (String)myKeys.next();
+        //    System.out.println("Test: " + temp + "=" + headers.get(temp));
+        //}
+        //end temp-debug---------------------------------------
+     }
 
     private void readBody(DataInput in) throws IOException{
         readRequestBody(in);
+        //System.out.println("Body Length: " + body.length);
         // Content-type: application/x-www-form-urlencoded
-        String type = getHeader("Content-type");
+        // or multipart/form-data
+        String type = getHeader("Content-Type");
         if (type != null && type.equals("application/x-www-form-urlencoded")) {
             parseFormParams();
         }
@@ -217,7 +228,8 @@ public class HttpRequestImpl implements  HttpRequest {
 
     private void readRequestBody(DataInput in) throws IOException{
         // Content-length: 384
-        String len  = getHeader("Content-length");
+        String len  = getHeader("Content-Length");
+        //System.out.println("readRequestBody Content-Length: " + len);
 
         int length = -1;
         if (len != null) {
@@ -243,19 +255,28 @@ public class HttpRequestImpl implements  HttpRequest {
 
     private void parseFormParams() throws IOException{
         String rawParams = new String( body );
+        //System.out.println("rawParams: " + rawParams);
         StringTokenizer parameters = new StringTokenizer(rawParams, "&");
-
+        String name = null;
+        String value = null;
+        
         while (parameters.hasMoreTokens()) {
             StringTokenizer param = new StringTokenizer(parameters.nextToken(), "=");    
             
             /* [1] Parse the Name */
-            String name = parameters.nextToken();
+            name = param.nextToken();
             if (name == null) break;
 
             /* [2] Parse the Value */
-            String value = parameters.nextToken();
+            try {
+                value = param.nextToken();
+            } catch (java.util.NoSuchElementException nse) {
+                value = ""; //if there is no token set value to null
+            }
+            
             if (value == null) value = "";
             formParams.put(name, value);
+            //System.out.println(name + ": " + value);
         }
     }
 }

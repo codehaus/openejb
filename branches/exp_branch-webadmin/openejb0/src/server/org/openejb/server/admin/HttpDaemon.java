@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -206,7 +206,7 @@ public class HttpDaemon implements Runnable{
 
         HttpRequestImpl req = new HttpRequestImpl();
         HttpResponseImpl res = new HttpResponseImpl();
-        System.out.println("[] reading request");
+        //System.out.println("[] reading request");
 
         try {
             req.readMessage( in );
@@ -221,7 +221,7 @@ public class HttpDaemon implements Runnable{
             return;
         }
 
-        System.out.println("[] read");
+        //System.out.println("[] read");
         URL uri = null;
         String file = null;
 
@@ -233,7 +233,7 @@ public class HttpDaemon implements Runnable{
                 file = file.substring(0, querry);
             }
             
-            System.out.println("[] file="+file);
+            //System.out.println("[] file="+file);
             
         } catch (Throwable t) {
             t.printStackTrace();
@@ -250,11 +250,11 @@ public class HttpDaemon implements Runnable{
 
         try{
             httpObject = getHttpObject(file);
-            System.out.println("[] module="+httpObject);
+            //System.out.println("[] module="+httpObject);
         } catch (Throwable t) {
             t.printStackTrace();
             res = HttpResponseImpl.createError("Could not load the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
-            System.out.println("[] res="+res);
+            //System.out.println("[] res="+res);
             try {
                 res.writeMessage( out );
             } catch (Throwable t2) {
@@ -296,13 +296,20 @@ public class HttpDaemon implements Runnable{
 
     protected HttpObject getHttpObject(String beanName) throws IOException{
         Object obj = null;
-        try{
-            obj = jndiContext.lookup("webadmin/"+beanName);
-        } catch (javax.naming.NameNotFoundException e){
-            try {obj = jndiContext.lookup("webadmin/DefaultBean");} 
+        
+        //check for no name, add something here later
+        if(beanName.equals("/")) {
+            try {obj = jndiContext.lookup("webadmin/Home");} 
             catch(javax.naming.NamingException ne) {throw new IOException(ne.getMessage());}
-        } catch (javax.naming.NamingException e){
-            throw new IOException(e.getMessage());
+        } else {
+            try{
+                obj = jndiContext.lookup("webadmin/"+beanName);
+            } catch (javax.naming.NameNotFoundException e){
+                try {obj = jndiContext.lookup("webadmin/DefaultBean");} 
+                catch(javax.naming.NamingException ne) {throw new IOException(ne.getMessage());}
+            } catch (javax.naming.NamingException e){
+                throw new IOException(e.getMessage());
+            }
         }
 
         HttpHome ejbHome = (HttpHome)obj;

@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -164,9 +164,9 @@ public class HttpResponseImpl implements HttpResponse {
         DataOutput out = new DataOutputStream(output);
         DataOutput log = new DataOutputStream(System.out);
         closeMessage();
-        writeResponseLine(log);
-        writeHeaders(log);
-        writeBody(log);
+        //writeResponseLine(log);
+        //writeHeaders(log);
+        //writeBody(log);
         writeResponseLine(out);
         writeHeaders(out);
         writeBody(out);
@@ -193,7 +193,7 @@ public class HttpResponseImpl implements HttpResponse {
         writer.flush();
         writer.close();
         body = baos.toByteArray();
-        setHeader("Content-length", body.length+"");
+        setHeader("Content-Length", body.length+"");
     }
 
     /**
@@ -311,7 +311,7 @@ public class HttpResponseImpl implements HttpResponse {
         body.println("<br><br>");
         // Add more text here
         // IP not allowed, etc.
-
+        body.println("IP address: " + ip + " is not registered on this server, please contact your system administrator.");
         body.println("</body>");
         body.println("</html>");
 
@@ -331,7 +331,7 @@ public class HttpResponseImpl implements HttpResponse {
         /** Response body */
         writer.flush();
         body = baos.toByteArray();
-        System.out.println("[] body "+body.length );
+        //System.out.println("[] body "+body.length );
         out.writeObject( body );
     }
     
@@ -347,7 +347,7 @@ public class HttpResponseImpl implements HttpResponse {
 
         /** Response body */
         body = (byte[]) in.readObject();
-        System.out.println("[] body "+body.length );
+        //System.out.println("[] body "+body.length );
         baos = new ByteArrayOutputStream();
         baos.write( body );
         writer = new PrintWriter( baos );

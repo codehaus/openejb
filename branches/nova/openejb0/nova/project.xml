@@ -77,6 +77,15 @@
 
         <dependency>
             <groupId>geronimo</groupId>
+            <artifactId>geronimo-connector</artifactId>
+            <version>DEV</version>
+            <properties>
+                <module>true</module>
+            </properties>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo</groupId>
             <artifactId>geronimo-kernel</artifactId>
             <version>DEV</version>
             <properties>

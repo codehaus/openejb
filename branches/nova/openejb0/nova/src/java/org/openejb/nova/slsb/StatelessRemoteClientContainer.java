@@ -60,6 +60,7 @@ import javax.ejb.RemoveException;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.security.ContextManager;
+
 import net.sf.cglib.proxy.Callbacks;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.Factory;
@@ -67,10 +68,9 @@ import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 import net.sf.cglib.proxy.SimpleCallbacks;
 import net.sf.cglib.reflect.FastClass;
-
+import org.openejb.nova.EJBInvocationImplRemote;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBRemoteClientContainer;
-import org.openejb.nova.EJBInvocationImplRemote;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.method.EJBCallbackFilter;

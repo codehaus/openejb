@@ -47,18 +47,18 @@
  */
 package org.openejb.nova.security;
 
-import javax.ejb.AccessLocalException;
-import javax.security.auth.Subject;
-import javax.security.jacc.PolicyContext;
 import java.rmi.AccessException;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.Permission;
+import javax.ejb.AccessLocalException;
+import javax.security.auth.Subject;
+import javax.security.jacc.PolicyContext;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.core.service.InvocationResult;
-import org.apache.geronimo.security.util.ContextManager;
+import org.apache.geronimo.security.ContextManager;
 
 import org.openejb.nova.EJBInvocation;
 

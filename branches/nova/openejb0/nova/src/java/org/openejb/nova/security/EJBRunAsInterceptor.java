@@ -58,7 +58,7 @@ package org.openejb.nova.security;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.core.service.Invocation;
-import org.apache.geronimo.security.util.ContextManager;
+import org.apache.geronimo.security.ContextManager;
 
 import javax.security.auth.Subject;
 

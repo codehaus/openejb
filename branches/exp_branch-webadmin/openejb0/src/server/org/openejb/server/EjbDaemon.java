@@ -951,7 +951,7 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
         try{
             securityIdentity = call.getEJBRequest().getClientIdentity();
         } catch (Exception e){
-            e.printStackTrace();
+            //e.printStackTrace();  not needed
         }
         ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),

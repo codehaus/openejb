@@ -51,6 +51,8 @@ import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.security.ContextManager;
+import org.apache.geronimo.security.SubjectId;
+
 import org.openejb.nova.EJBInvocationImplRemote;
 
 
@@ -67,7 +69,7 @@ public class SubjectIdExtractInterceptor implements Interceptor {
 
     public InvocationResult invoke(Invocation invocation) throws Throwable {
         EJBInvocationImplRemote remoteInvocation = (EJBInvocationImplRemote) invocation;
-        ContextManager.setNextCaller(ContextManager.getRegisteredSubject((Long) remoteInvocation.getSubjectId()));
+        ContextManager.setNextCaller(ContextManager.getRegisteredSubject((SubjectId)remoteInvocation.getSubjectId()));
         return next.invoke(invocation);
     }
 }

@@ -56,6 +56,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.core.service.SimpleInvocationResult;
+import org.apache.geronimo.transaction.TransactionContext;
+import org.apache.geronimo.transaction.UnspecifiedTransactionContext;
+import org.apache.geronimo.transaction.InheritableTransactionContext;
+import org.apache.geronimo.transaction.ContainerTransactionContext;
 
 import org.openejb.nova.EJBInvocation;
 

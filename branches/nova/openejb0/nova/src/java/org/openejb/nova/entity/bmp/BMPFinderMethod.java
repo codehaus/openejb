@@ -92,7 +92,7 @@ public class BMPFinderMethod implements VirtualOperation {
         }
 
         boolean local = invocation.getType().isLocal();
-        EJBContainer container = ctx.getContainer();
+        EJBContainer container = (EJBContainer)ctx.getContainer();
 
         if (finderResult instanceof Enumeration) {
             Enumeration e = (Enumeration) finderResult;

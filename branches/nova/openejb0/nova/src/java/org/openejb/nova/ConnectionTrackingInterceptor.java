@@ -54,8 +54,8 @@ import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
-import org.apache.geronimo.connector.outbound.ConnectorComponentContext;
-import org.apache.geronimo.connector.outbound.ConnectorTransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
+import org.apache.geronimo.transaction.InstanceContext;
 
 /**
  *
@@ -79,16 +79,16 @@ public class ConnectionTrackingInterceptor implements Interceptor {
 
     public InvocationResult invoke(Invocation invocation) throws Throwable {
         EJBInvocation ejbInvocation = (EJBInvocation)invocation;
-        ConnectorComponentContext enteringConnectorComponentContext = ejbInvocation.getEJBInstanceContext();
-        ConnectorTransactionContext enteringConnectorTransactionContext = ejbInvocation.getTransactionContext();
+        InstanceContext enteringInstanceContext = ejbInvocation.getEJBInstanceContext();
+        TransactionContext enteringTransactionContext = ejbInvocation.getTransactionContext();
         Set oldUnshareableResources = trackedConnectionAssociator.setUnshareableResources(unshareableResources);
-        ConnectorComponentContext leavingConnectorComponentContext = trackedConnectionAssociator.enter(enteringConnectorComponentContext);
-        ConnectorTransactionContext leavingConnectorTransactionContext = trackedConnectionAssociator.setConnectorTransactionContext(enteringConnectorTransactionContext);
+        InstanceContext leavingInstanceContext = trackedConnectionAssociator.enter(enteringInstanceContext);
+        TransactionContext leavingTransactionContext = trackedConnectionAssociator.setTransactionContext(enteringTransactionContext);
         try {
             return next.invoke(invocation);
         } finally {
-            trackedConnectionAssociator.exit(leavingConnectorComponentContext, unshareableResources);
-            trackedConnectionAssociator.resetConnectorTransactionContext(leavingConnectorTransactionContext);
+            trackedConnectionAssociator.exit(leavingInstanceContext, unshareableResources);
+            trackedConnectionAssociator.resetTransactionContext(leavingTransactionContext);
             trackedConnectionAssociator.setUnshareableResources(oldUnshareableResources);
         }
     }

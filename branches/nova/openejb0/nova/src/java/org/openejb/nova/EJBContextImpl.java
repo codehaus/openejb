@@ -50,6 +50,7 @@ package org.openejb.nova;
 import java.security.Identity;
 import java.security.Principal;
 import java.util.Properties;
+
 import javax.ejb.EJBException;
 import javax.ejb.EJBHome;
 import javax.ejb.EJBLocalHome;
@@ -61,9 +62,8 @@ import javax.transaction.UserTransaction;
 
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.security.ContextManager;
-
-import org.openejb.nova.transaction.ContainerTransactionContext;
-import org.openejb.nova.transaction.TransactionContext;
+import org.apache.geronimo.transaction.ContainerTransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
 
 /**
  * Implementation of EJBContext that uses the State pattern to determine
@@ -133,7 +133,7 @@ public abstract class EJBContextImpl {
 
     public abstract static class EJBContextState {
         public EJBHome getEJBHome(EJBInstanceContext context) {
-            EJBHome home = context.getContainer().getEJBHome();
+            EJBHome home = ((EJBContainer)context.getContainer()).getEJBHome();
             if (home == null) {
                 throw new IllegalStateException("getEJBHome is not allowed if no home interface is defined");
             }
@@ -141,7 +141,7 @@ public abstract class EJBContextImpl {
         }
 
         public EJBLocalHome getEJBLocalHome(EJBInstanceContext context) {
-            EJBLocalHome localHome = context.getContainer().getEJBLocalHome();
+            EJBLocalHome localHome = ((EJBContainer)context.getContainer()).getEJBLocalHome();
             if (localHome == null) {
                 throw new IllegalStateException("getEJBLocalHome is not allowed if no local localHome interface is defined");
             }
@@ -149,7 +149,7 @@ public abstract class EJBContextImpl {
         }
 
         public EJBObject getEJBObject(EJBInstanceContext context) {
-            EJBObject remote = context.getContainer().getEJBObject(context.getId());
+            EJBObject remote = ((EJBContainer)context.getContainer()).getEJBObject(context.getId());
             if (remote == null) {
                 throw new IllegalStateException("getEJBObject is not allowed if no remote interface is defined");
             }
@@ -157,7 +157,7 @@ public abstract class EJBContextImpl {
         }
 
         public EJBLocalObject getEJBLocalObject(EJBInstanceContext context) {
-            EJBLocalObject local = context.getContainer().getEJBLocalObject(context.getId());
+            EJBLocalObject local = ((EJBContainer)context.getContainer()).getEJBLocalObject(context.getId());
             if (local == null) {
                 throw new IllegalStateException("getEJBLocalObject is not allowed if no local interface is defined");
             }
@@ -169,11 +169,11 @@ public abstract class EJBContextImpl {
         }
 
         public boolean isCallerInRole(String s, EJBInstanceContext context) {
-            return ContextManager.isCallerInRole(context.getContainer().getEJBName(), s);
+            return ContextManager.isCallerInRole(((EJBContainer)context.getContainer()).getEJBName(), s);
         }
 
         public UserTransaction getUserTransaction(EJBInstanceContext context) {
-            EJBContainer container = context.getContainer();
+            EJBContainer container = (EJBContainer)context.getContainer();
             TransactionDemarcation demarcation = container.getDemarcation();
             if (demarcation.isContainer()) {
                 throw new IllegalStateException("getUserTransaction is not allowed when using Container Managed Transactions");
@@ -182,7 +182,7 @@ public abstract class EJBContextImpl {
         }
 
         public void setRollbackOnly(EJBInstanceContext context) {
-            TransactionDemarcation demarcation = context.getContainer().getDemarcation();
+            TransactionDemarcation demarcation = ((EJBContainer)context.getContainer()).getDemarcation();
             if (demarcation.isContainer()) {
                 TransactionContext ctx = TransactionContext.getContext();
                 if (ctx instanceof ContainerTransactionContext) {
@@ -195,14 +195,14 @@ public abstract class EJBContextImpl {
                 } else {
                     throw new IllegalStateException("There is no transaction in progess.");
                 }
-               
+
             } else {
                 throw new IllegalStateException("Calls to setRollbackOnly are not allowed for SessionBeans with bean-managed transaction demarcation");
             }
         }
 
         public boolean getRollbackOnly(EJBInstanceContext context) {
-            TransactionDemarcation demarcation = context.getContainer().getDemarcation();
+            TransactionDemarcation demarcation = ((EJBContainer)context.getContainer()).getDemarcation();
             if (demarcation.isContainer()) {
                 TransactionContext ctx = TransactionContext.getContext();
                 if (ctx instanceof ContainerTransactionContext) {
@@ -215,7 +215,7 @@ public abstract class EJBContextImpl {
                 } else {
                     throw new IllegalStateException("There is no transaction in progess.");
                 }
-               
+
             } else {
                 throw new IllegalStateException("Calls to getRollbackOnly are not allowed for SessionBeans with bean-managed transaction demarcation");
             }

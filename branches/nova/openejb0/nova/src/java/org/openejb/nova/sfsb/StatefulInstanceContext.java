@@ -75,7 +75,7 @@ public class StatefulInstanceContext extends DefaultComponentContext implements 
         statefulContext = new StatefulSessionContext(this);
     }
 
-    public EJBContainer getContainer() {
+    public Object getContainer() {
         return container;
     }
 

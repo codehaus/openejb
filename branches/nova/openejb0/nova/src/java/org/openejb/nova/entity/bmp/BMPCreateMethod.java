@@ -118,7 +118,7 @@ public class BMPCreateMethod implements VirtualOperation {
         }
 
         EJBInvocationType type = invocation.getType();
-        EJBContainer container = ctx.getContainer();
+        EJBContainer container = (EJBContainer)ctx.getContainer();
         return new SimpleInvocationResult(true, getReference(type.isLocal(), container, id));
     }
 

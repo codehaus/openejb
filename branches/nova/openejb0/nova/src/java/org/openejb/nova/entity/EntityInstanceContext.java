@@ -71,7 +71,7 @@ public abstract class EntityInstanceContext extends DefaultComponentContext impl
         entityContext = new EntityContextImpl(this);
     }
 
-    public final EJBContainer getContainer() {
+    public final Object getContainer() {
         return container;
     }
 

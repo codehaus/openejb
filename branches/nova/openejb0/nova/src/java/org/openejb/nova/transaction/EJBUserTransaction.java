@@ -57,6 +57,9 @@ import javax.transaction.UserTransaction;
 import javax.resource.ResourceException;
 
 import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
+import org.apache.geronimo.transaction.TransactionContext;
+import org.apache.geronimo.transaction.UnspecifiedTransactionContext;
+import org.apache.geronimo.transaction.BeanTransactionContext;
 
 /**
  * Implementation of UserTransaction for use in an EJB.
@@ -155,7 +158,7 @@ public class EJBUserTransaction implements UserTransaction {
             }
             TransactionContext.setContext(newContext);
             try {
-                trackedConnectionAssociator.setConnectorTransactionContext(newContext);
+                trackedConnectionAssociator.setTransactionContext(newContext);
             } catch (ResourceException e) {
                 throw (SystemException)new SystemException("could not enroll existing connections in transaction").initCause(e);
             }
@@ -172,7 +175,7 @@ public class EJBUserTransaction implements UserTransaction {
             } finally {
                 UnspecifiedTransactionContext oldContext = beanContext.getOldContext();
                 TransactionContext.setContext(oldContext);
-                trackedConnectionAssociator.resetConnectorTransactionContext(oldContext);
+                trackedConnectionAssociator.resetTransactionContext(oldContext);
                 oldContext.resume();
             }
         }

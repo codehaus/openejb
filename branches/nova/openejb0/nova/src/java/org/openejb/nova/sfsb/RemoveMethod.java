@@ -53,7 +53,7 @@ import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 
 import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBOperation;
-import org.openejb.nova.transaction.TransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
 
 /**
  * Virtual operation handling removal of an instance.

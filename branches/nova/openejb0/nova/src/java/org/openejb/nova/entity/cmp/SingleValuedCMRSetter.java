@@ -58,7 +58,7 @@ package org.openejb.nova.entity.cmp;
 import java.util.List;
 import javax.ejb.EJBLocalObject;
 
-import org.openejb.nova.transaction.TransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
 import org.openejb.nova.EJBContainer;
 import org.openejb.nova.persistence.QueryCommand;
 import org.openejb.nova.persistence.UpdateCommand;

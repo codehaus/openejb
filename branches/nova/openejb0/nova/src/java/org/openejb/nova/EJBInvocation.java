@@ -49,7 +49,7 @@ package org.openejb.nova;
 
 import org.apache.geronimo.core.service.Invocation;
 
-import org.openejb.nova.transaction.TransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
 
 /**
  * Specialization of Invocation to define attributes specific to the

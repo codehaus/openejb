@@ -49,7 +49,7 @@ package org.openejb.nova;
 
 import javax.ejb.EnterpriseBean;
 
-import org.apache.geronimo.connector.outbound.ConnectorComponentContext;
+import org.apache.geronimo.transaction.InstanceContext;
 
 /**
  *
@@ -57,22 +57,10 @@ import org.apache.geronimo.connector.outbound.ConnectorComponentContext;
  *
  * @version $Revision$ $Date$
  */
-public interface EJBInstanceContext extends ConnectorComponentContext{
-    Object getId();
-
-    void setId(Object id);
-
-    EJBContainer getContainer();
+public interface EJBInstanceContext extends InstanceContext {
 
     EnterpriseBean getInstance();
 
     void setOperation(EJBOperation operation);
 
-    void associate() throws Exception;
-
-    void flush() throws Exception;
-
-    void beforeCommit() throws Exception;
-
-    void afterCommit(boolean status) throws Exception;
 }

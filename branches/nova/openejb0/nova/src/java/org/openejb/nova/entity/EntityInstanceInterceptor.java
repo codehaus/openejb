@@ -53,11 +53,10 @@ import org.apache.geronimo.cache.InstancePool;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.core.service.InvocationResult;
-
-import org.openejb.nova.EJBInstanceContext;
+import org.apache.geronimo.transaction.InstanceContext;
+import org.apache.geronimo.transaction.TransactionContext;
 import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBOperation;
-import org.openejb.nova.transaction.TransactionContext;
 
 /**
  * Simple Instance Interceptor that does not cache instances in the ready state
@@ -99,7 +98,7 @@ public final class EntityInstanceInterceptor implements Interceptor {
         }
 
         ejbInvocation.setEJBInstanceContext(context);
-        EJBInstanceContext oldContext = transactionContext.beginInvocation(context);
+        InstanceContext oldContext = transactionContext.beginInvocation(context);
         try {
             InvocationResult result = next.invoke(invocation);
             if (context.getId() == null) {

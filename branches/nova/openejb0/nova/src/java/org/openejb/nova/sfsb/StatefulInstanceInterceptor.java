@@ -57,7 +57,7 @@ import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.core.service.InvocationResult;
 
 import org.openejb.nova.EJBInvocation;
-import org.openejb.nova.transaction.TransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
 
 /**
  * Interceptor for Stateful Session EJBs that acquires an instance for execution.

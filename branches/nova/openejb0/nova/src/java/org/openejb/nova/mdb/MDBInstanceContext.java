@@ -75,7 +75,7 @@ public final class MDBInstanceContext extends DefaultComponentContext implements
         return instance;
     }
 
-    public EJBContainer getContainer() {
+    public Object getContainer() {
         return container;
     }
 

@@ -59,7 +59,7 @@ import org.openejb.nova.EJBContainer;
 import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBOperation;
-import org.openejb.nova.transaction.TransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
 import org.openejb.nova.dispatch.VirtualOperation;
 
 /**

@@ -53,7 +53,7 @@ import java.io.ObjectOutput;
 
 import org.apache.geronimo.core.service.SimpleInvocation;
 
-import org.openejb.nova.transaction.TransactionContext;
+import org.apache.geronimo.transaction.TransactionContext;
 
 /**
  *

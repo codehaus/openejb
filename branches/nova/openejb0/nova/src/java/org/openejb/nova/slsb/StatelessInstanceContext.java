@@ -75,7 +75,7 @@ public final class StatelessInstanceContext extends DefaultComponentContext impl
         return instance;
     }
 
-    public EJBContainer getContainer() {
+    public Object getContainer() {
         return container;
     }
 

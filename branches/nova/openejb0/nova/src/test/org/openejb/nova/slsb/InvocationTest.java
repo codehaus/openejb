@@ -76,7 +76,7 @@ public class InvocationTest extends TestCase {
             instance.intMethod(1);
         }
         long end = System.currentTimeMillis();
-        System.out.println("Method: " + (end - start) / 1000);
+        System.out.println("Method: "  + ((end - start) * 1000000.0 / 1000000000) + "ns");
     }
 
     public void testReflectionInvoke() throws Exception {
@@ -89,7 +89,7 @@ public class InvocationTest extends TestCase {
             m.invoke(instance, args);
         }
         long end = System.currentTimeMillis();
-        System.out.println("Reflection: " + (end - start));
+        System.out.println("Reflection: " + ((end - start) * 1000000.0 / 1000000) + "ns");
     }
 
     public void testDirectInvoke() throws Exception {
@@ -101,7 +101,7 @@ public class InvocationTest extends TestCase {
             fastClass.invoke(index, instance, args);
         }
         long end = System.currentTimeMillis();
-        System.out.println("FastClass: " + (end - start));
+        System.out.println("FastClass: " + ((end - start) * 1000000.0 / 1000000) + "ns");
     }
 
     public void testDirectInvokeWithResult() throws Exception {
@@ -113,7 +113,7 @@ public class InvocationTest extends TestCase {
             new SimpleInvocationResult(true, fastClass.invoke(index, instance, args));
         }
         long end = System.currentTimeMillis();
-        System.out.println("FastClass with result: " + (end - start));
+        System.out.println("FastClass with result: " + ((end - start) * 1000000.0 / 1000000) + "ns");
     }
 
     public void testBizMethodInvoke() throws Throwable {
@@ -128,7 +128,7 @@ public class InvocationTest extends TestCase {
             bizMethod.execute(invocation);
         }
         long end = System.currentTimeMillis();
-        System.out.println("BizMethod: " + (end - start));
+        System.out.println("BizMethod: " + ((end - start) * 1000000.0 / 1000000) + "ns");
     }
 
     protected void setUp() throws Exception {

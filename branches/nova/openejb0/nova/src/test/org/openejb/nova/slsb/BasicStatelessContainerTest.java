@@ -94,29 +94,32 @@ public class BasicStatelessContainerTest extends TestCase {
         MockRemote remote = home.create();
         remote.intMethod(1);
         StopWatch stopWatch = new StopWatch();
+        int COUNT = 10000;
         stopWatch.start();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
             remote.intMethod(1);
         }
         stopWatch.stop();
-        System.out.println("Remote: " + stopWatch.getTime());
+        System.out.println("Per remote call w/out security: " + (stopWatch.getTime() * 1000000.0 / COUNT) + "ns");
     }
 
-    public void XtestLocalSpeed() throws Throwable {
+    public void testLocalSpeed() throws Throwable {
         MockLocalHome home = (MockLocalHome) container.getEJBLocalHome();
-        MockLocal remote = home.create();
+        MockLocal local = home.create();
         Integer integer = new Integer(1);
-        remote.integerMethod(integer);
-        for (int i = 0; i < 10000000; i++) {
-            remote.integerMethod(integer);
+        local.integerMethod(integer);
+        int COUNT = 10000;
+        for (int i = 0; i < COUNT; i++) {
+            local.integerMethod(integer);
         }
 
+        COUNT = 100000;
         long start = System.currentTimeMillis();
-        for (int i = 0; i < 10000000; i++) {
-            remote.integerMethod(integer);
+        for (int i = 0; i < COUNT; i++) {
+            local.integerMethod(integer);
         }
         long end = System.currentTimeMillis();
-        System.out.println("Local: " + (end - start) / 10);
+        System.out.println("Per local call w/out security: " + ((end - start) * 1000000.0 / COUNT) + "ns");
     }
 
 /*

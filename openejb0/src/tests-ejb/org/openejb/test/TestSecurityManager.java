@@ -44,7 +44,7 @@
  */
 package org.openejb.test;
 
-import java.security.Permission;
+import java.security.*;
 
 /**
  * This class is temporary

@@ -44,6 +44,7 @@
  */
 package org.openejb.util.proxy;
 
+import junit.framework.Test;
 import junit.framework.TestSuite;
 
 /**

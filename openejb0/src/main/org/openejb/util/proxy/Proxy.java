@@ -47,7 +47,9 @@
 package org.openejb.util.proxy;
 
 
-import java.lang.reflect.Method;
+import java.io.*;
+import java.lang.reflect.*;
+import java.util.*;
 
 
 /**

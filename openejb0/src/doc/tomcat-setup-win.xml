@@ -46,7 +46,7 @@ Java HotSpot(TM) Client VM (build 1.4.1-rc-b19, mixed mode)
 <section title="Install Tomcat" ref-id="download.tomcat">
 <p>
 If you don't already have Tomcat on your machine, download the 
-Tomcat version of your choice from Apache. 
+Tomcat version of your choice from Apache.
 </p>
 <p>
 <a href="http://jakarta.apache.org/builds/jakarta-tomcat-4.0/release/" target="_blank">

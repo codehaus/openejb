@@ -44,9 +44,8 @@
  */
 package org.openejb.test.beans;
 
-import java.rmi.RemoteException;
-
-import javax.ejb.EJBHome;
+import javax.ejb.*;
+import java.rmi.*;
 
 public interface ShoppingCartHome extends EJBHome {
     

@@ -44,6 +44,11 @@
  */
 package org.openejb.test.stateless;
 
+import junit.framework.*;
+import javax.ejb.*;
+import java.util.Properties;
+import javax.naming.InitialContext;
+import org.openejb.test.ApplicationException;
 
 /**
  * [5] Should be run as the fifth test suite of the BasicStatelessTestClients

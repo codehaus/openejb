@@ -44,11 +44,12 @@
  */
 package org.openejb.util;
 
-import java.io.File;
+import java.net.*;
 import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.File;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.net.URLClassLoader;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -60,7 +61,7 @@ public class ClasspathUtils{
     private static Loader ctxLoader = new ClasspathUtils().new ContextLoader();
     
     public static void addJarToPath(String jar) throws Exception {
-        addJarToPath( FileUtils.getFile(jar) );
+        addJarToPath( FileUtils.getHome().getFile(jar) );
     }       
 
     public static void addJarToPath(final File jar) throws Exception {
@@ -72,7 +73,7 @@ public class ClasspathUtils{
     }       
     
     public static void addJarToPath(String jar, String loaderName) throws Exception {
-        addJarToPath( FileUtils.getFile(jar), loaderName );
+        addJarToPath( FileUtils.getHome().getFile(jar), loaderName );
     }       
 
     public static void addJarToPath(final File jar, String loaderName) throws Exception {
@@ -84,7 +85,7 @@ public class ClasspathUtils{
     }       
     
     public static void addJarsToPath(String dir) throws Exception {
-        addJarsToPath( FileUtils.getDirectory(dir) );
+        addJarsToPath( FileUtils.getHome().getDirectory(dir) );
     }       
 
     public static void addJarsToPath(final File dir) throws Exception {
@@ -92,7 +93,7 @@ public class ClasspathUtils{
     }       
     
     public static void addJarsToPath(String dir, String loaderName) throws Exception {
-        addJarsToPath( FileUtils.getDirectory(dir), loaderName );
+        addJarsToPath( FileUtils.getHome().getDirectory(dir), loaderName );
     }       
 
     public static void addJarsToPath(final File dir, String loaderName) throws Exception {
@@ -106,7 +107,7 @@ public class ClasspathUtils{
      * @param url the URL to be added to the search path of URLs
      */
     public static void addJarToSystemPath(String jar) throws Exception {
-        addJarToSystemPath( FileUtils.getFile(jar) );
+        addJarToSystemPath( FileUtils.getHome().getFile(jar) );
     }       
 
     /**

@@ -1,7 +1,7 @@
-<project name="Example" default="jar" basedir="./">
+<project name="OpenEJB" default="jar" basedir="./">
   <!-- 
         Contributions by:
-            Daniel S. Haischt <sirabyss@gmx.net>
+            Alan D. Cabrera <adc@toolazydogs.com>
     -->
 
   <!-- Give user a chance to override without editing this file
@@ -15,14 +15,18 @@
 
   <property name="build.src" value="${build.dir}/src"/>
   <property name="build.dest" value="${build.dir}/classes"/>
+  <property name="src.java.dir" value="${src.dir}"/>
+  
+  <property name="build.examples.src" value="${build.src}/examples"/>
+  <property name="build.examples.dest" value="${build.dest}/examples"/>
+  <property name="src.examples.dir" value="${src.dir}/examples"/>
   
   <!-- Build classpath -->
   <path id="project.classpath">
     <pathelement location="${ejb11.jar}"/>
     <pathelement location="${jndi.jar}"/>
-    <pathelement location="${tomcat.dir}/server/lib/catalina.jar"/>
   </path>
-    
+  
   <!-- ================================================================== -->
   <!-- Prints useful build environment values                             -->
   <!-- ================================================================== -->
@@ -36,12 +40,14 @@
 
     <echo message="java.home              = ${java.home}"/>
     <echo message="user.home              = ${user.home}"/>   
-    <echo message="openejb.dir            = ${openejb.dir}"/>   
-    <echo message="tomcat.dir             = ${tomcat.dir}"/>   
+
+    <echo message="build.dir              = ${build.dir}"/>
+    <echo message="build.src              = ${build.src}"/>
+    <echo message="build.dest             = ${build.dest}"/>
 
     <echo message="ejb11.jar              = ${ejb11.jar}"/>
     <echo message="jndi.jar               = ${jndi.jar}"/>
-    
+  
   </target>
 
   <!-- ================================================================== -->
@@ -86,12 +92,6 @@
       classpathref="project.classpath"
     />
     
-    <available 
-      file="${tomcat.dir}/server/lib/catalina.jar"
-      property="tomcat.present"
-      classpathref="project.classpath"
-    />
-    
   </target>  
     
   <target name="check.ejb11" unless="ejb11.present">
@@ -107,14 +107,7 @@
       <param name="value" value="${jndi.jar}"/>
     </antcall>
   </target>
-
-  <target name="check.tomcat" unless="tomcat.present">
-    <antcall target="property-warning">
-      <param name="name" value="tomcat.dir"/>
-      <param name="value" value="${tomcat.dir}"/>
-    </antcall>
-  </target>
-                                            
+    
   <!-- ================================================================== -->
   <!-- Print a requirement waring if a requirement check fails            -->
   <!-- ================================================================== -->
@@ -139,24 +132,55 @@
   
   <!-- ================================================================== -->
   <!-- Prepares the build directory                                       -->
-  <!--                                                                    -->
-  <!-- You have to include the dependency 'check.jrefactory' if you       -->
-  <!-- wanna use the pretty printer.                                      -->
   <!-- ================================================================== -->
   
   <target name="prepare"
           depends="env,
                    check.ejb11,
-                   check.jndi,
-                   check.tomcat"
+                   check.jndi"
           description="--> prepares the build environment">
           
-    <mkdir dir="${build.src}"/>
-    <mkdir dir="${build.dest}"/>
- 
-    <antcall target="delegate">
-        <param name="target.name" value="prepare"/>
-    </antcall>    
+    <mkdir dir="${build.examples.src}"/>
+    <mkdir dir="${build.examples.dest}"/>
+    <mkdir dir="${build.examples.dest}/META-INF"/>
+    
+    <copy todir="${build.examples.src}">
+    
+      <fileset dir="${src.examples.dir}/src" >
+        <exclude name="**/CVS/**"/>
+        <exclude name="**/javax/**"/>
+        <exclude name="**/*.class"/>
+      </fileset>
+    
+    </copy>
+        
+  </target>
+  
+  <target name="copy.manifest">
+  
+    <copy todir="${build.examples.dest}">
+    
+      <fileset dir="${src.java.dir}/etc" >
+        <include name="**/LICENSE"/>
+        <include name="**/README"/>
+      </fileset>
+
+    </copy>
+
+    <copy todir="${build.examples.dest}/META-INF">
+    
+      <fileset dir="${src.examples.dir}/src/META-INF" >
+        <include name="ejb-jar.xml"/>
+        <include name="openejb-jar.xml"/>
+      </fileset>
+      
+      <fileset dir="${src.java.dir}/etc" >
+        <include name="**/MANIFEST.MF"/>
+      </fileset>
+
+    </copy>
+    
+    <replace file="${build.examples.dest}/META-INF/MANIFEST.MF" token="$$VERSION$$" value="${version}"/>
           
   </target>
   
@@ -168,10 +192,17 @@
           depends="prepare"
           description="--> compiles the java source files">
                     
-    <antcall target="delegate">
-        <param name="target.name" value="compile"/>
-    </antcall>    
-          
+    <javac srcdir="${build.examples.src}"
+           destdir="${build.examples.dest}"
+           debug="${debug}"
+           deprecation="${deprecation}">
+           
+      <classpath>
+        <path refid="project.classpath"/>
+        <pathelement location="${build.dest}/openejb"/>
+      </classpath>
+           
+    </javac>
           
   </target>
   
@@ -180,27 +211,23 @@
   <!-- ================================================================== -->
   
   <target name="jar"
-          depends="compile"
+          depends="compile, copy.manifest"
           description="--> generates all java archives (default)">
-          
-    <antcall target="delegate">
-        <param name="target.name" value="jar"/>
-    </antcall>    
-          
-          
+    
+    <jar jarfile="${base.path}/beans/${project}_beans-${version}.jar"
+         basedir="${build.examples.dest}"
+         includes="**/*.class,META-INF/*.xml"
+         excludes="**/clients/**"
+         manifest="${build.examples.dest}/META-INF/MANIFEST.MF"/>
+
+    <jar jarfile="${base.path}/dist/${project}_clients-${version}.jar"
+         basedir="${build.examples.dest}"
+         includes="**/*.class"
+         excludes="**/*Bean*"
+         manifest="${build.examples.dest}/META-INF/MANIFEST.MF"/>
+
   </target>
-      
-  <!-- ================================================================== -->
-  <!-- Installs onto Tomcat                                               -->
-  <!-- ================================================================== -->
   
-  <target name="install"
-          description="--> installs onto Tomcat">
-    <antcall target="delegate">
-        <param name="target.name" value="install"/>
-    </antcall>    
-  </target>
-      
   <!-- ================================================================== -->
   <!-- Cleans up the build directory                                      -->
   <!-- ================================================================== -->
@@ -208,43 +235,6 @@
   <target name="clean"
           description="--> cleans up the build directory">
     <delete dir="${build.dir}"/>
-
-    <antcall target="delegate">
-        <param name="target.name" value="clean"/>
-    </antcall>    
   </target>
-          
-  <target name="delegate">
-  
-    <antcall target="pre-delegate">
-        <param name="module" value="ejb"/>
-    </antcall>    
-    
-    <antcall target="pre-delegate">
-        <param name="module" value="web"/>
-    </antcall>    
-
-
-  </target>
-  
-  <target name="pre-delegate">
-    <available
-      property="build-${module}.present"
-      file="build-${module}.xml"
-    />
-    
-    <antcall target="post-delegate" />
-  </target>
-
-  <target name="post-delegate" if="build-${module}.present">
-    <echo message="${target.name}   ${module}"/>
-    
-    <ant antfile="build-${module}.xml" target="${target.name}">
-      <property file="build.properties"/>
-      
-      <property name="build.src" value="${build.src}"/>
-      <property name="build.dest" value="${build.dest}"/>
-    </ant>
-  </target>
-  
+        
 </project>

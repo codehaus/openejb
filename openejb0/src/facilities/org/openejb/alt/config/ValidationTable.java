@@ -44,18 +44,32 @@
  */
 package org.openejb.alt.config;
 
-import java.io.File;
-import java.net.URL;
+import java.io.*;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Vector;
+import org.openejb.OpenEJB;
+import org.openejb.OpenEJBException;
+import org.openejb.alt.assembler.classic.*;
+import org.openejb.alt.config.ejb11.*;
+import org.openejb.alt.config.ejb11.Query;
+import org.openejb.alt.config.sys.*;
+import org.openejb.util.JarUtils;
+import org.openejb.util.FileUtils;
+import org.openejb.util.Messages;
 import java.sql.Connection;
+import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Properties;
-
-import org.openejb.util.FileUtils;
-import org.openejb.util.JarUtils;
+import java.net.URL;
+import java.net.MalformedURLException;
 
 /**
  * Beans should be validated, but only when:
@@ -148,7 +162,7 @@ public class ValidationTable {
 
     public boolean isValidated(String jarFile){
         try{
-            File jar = FileUtils.getFile(jarFile);
+            File jar = FileUtils.getBase().getFile(jarFile);
             long lastModified = jar.lastModified();
             long lastValidated = getLastValidated(jar);
             //System.out.println("  -- modified  "+lastModified);
@@ -226,7 +240,7 @@ public class ValidationTable {
     public void setLastValidated(String jarFile, long timeValidated){
         try{
             conn = getConnection();
-            File jar = FileUtils.getFile(jarFile);
+            File jar = FileUtils.getBase().getFile(jarFile);
             String jarFileURL = jar.toURL().toExternalForm();
             //System.out.println("[] setLastValidated "+jarFileURL );
             //System.out.println("        -- time "+timeValidated );

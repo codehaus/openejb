@@ -44,21 +44,32 @@
  */
 package org.openejb.core.ivm;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.MarshalledObject;
 import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
+import java.security.Principal;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Hashtable;
 import java.util.Iterator;
 
+import org.openejb.InvalidateReferenceException;
 import org.openejb.OpenEJB;
+import org.openejb.OpenEJBException;
 import org.openejb.RpcContainer;
 import org.openejb.core.DeploymentInfo;
 import org.openejb.core.ThreadContext;
+import org.openejb.util.FastThreadLocal;
+import org.openejb.util.proxy.InvalidatedReferenceHandler;
 import org.openejb.util.proxy.InvocationHandler;
 import org.openejb.util.proxy.ProxyManager;
 
@@ -274,6 +285,14 @@ public abstract class BaseEjbProxyHandler implements InvocationHandler, Serializ
 	     cntextValid = true;
         }
 
+        //*********HACK**********//
+        //String userDir = System.getProperty("user.dir");
+        String jndiEnc = System.getProperty(javax.naming.Context.URL_PKG_PREFIXES);
+
+        //System.setProperty("user.dir",System.getProperty("openejb.home"));
+        System.setProperty(javax.naming.Context.URL_PKG_PREFIXES,"org.openejb.core.ivm.naming");
+        //*********HACK**********//
+        
         // the four operations on IntraVmCopyMonitor are quite expensive, because
         // all of them require a Thread.currentThread() operation, which is native code
         try{
@@ -308,6 +327,9 @@ public abstract class BaseEjbProxyHandler implements InvocationHandler, Serializ
                 return _invoke(proxy,method,args);
             }
         } finally {
+            //System.setProperty("user.dir",userDir);
+            System.setProperty(javax.naming.Context.URL_PKG_PREFIXES, jndiEnc);
+            
             // restore the context
             if(cntextValid){
                 cntext.set(depInfo, prmryKey, scrtyIdentity);

@@ -45,10 +45,9 @@
 package org.openejb.util;
 
 
+import java.util.ArrayList;
 import java.util.EmptyStackException;
-
 import junit.framework.Assert;
-
 import org.openejb.test.NamedTestCase;
 
 /**

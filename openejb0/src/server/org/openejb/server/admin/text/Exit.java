@@ -44,9 +44,11 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import org.openejb.util.Logger;
+import org.openejb.server.EjbDaemon;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -57,7 +59,7 @@ public class Exit extends Command {
         Command.register("exit", Exit.class);
     }
 
-    public void exec(Arguments args, DataInputStream in, PrintStream out) throws IOException{
+    public void exec(String[] args, DataInputStream in, PrintStream out) throws IOException{
         throw new UnsupportedOperationException();
     }
 

@@ -76,54 +76,77 @@ In your favorite editor, create the file below.
 <file name="C:\my\app\org\acme\employee\EmployeeBean.java">
 package org.acme.employee;
 
-import javax.ejb.CreateException;
-import javax.ejb.EJBException;
-import javax.ejb.EntityBean;
-import javax.ejb.EntityContext;
-import javax.ejb.RemoveException;
+import javax.ejb.*;
+import java.rmi.RemoteException;
 
-public class EmployeeBean implements EntityBean {
-	public int id;
-	public String firstname;
-	public String lastname;
-	public String email;
-	public EntityContext context;
+public class EmployeeBean implements EntityBean
+{
+  public int id;
+  public String firstname;
+  public String lastname;
+  public String email;
+  public EntityContext context;
 
-	public EmployeeBean() {}
+  public EmployeeBean()
+  {
+  }
 
-	public Integer ejbCreate(String firstname, String lastname, String email)
-		throws CreateException {
-		this.firstname = firstname;
-		this.lastname = lastname;
-		this.email = email;
-		return null;
-	}
+  public Integer ejbCreate( String firstname, String lastname, String email )
+    throws CreateException
+  {
+    this.firstname = firstname;
+    this.lastname = lastname;
+    this.email = email;
+    return null;
+  }
 
-	public void ejbPostCreate(String firstname, String lastname, String email)
-		throws CreateException {}
+  public void ejbPostCreate( String firstname, String lastname, String email )
+    throws CreateException
+  {
+  }
 
-	public void says(String message) {
-		System.out.println(
-			"[" + firstname + " " + lastname + "(" + id + ") " + 
-			email + "] " + message);
-	}
+  public void says( String message )
+  {
+    System.out.println( "[" + firstname + " " + lastname + 
+          "(" + id + ") " + email + "] " + message );
+  }
 
-	public void setEntityContext(EntityContext context) {
-		this.context = context;
-	}
+  public void setEntityContext( EntityContext context )
+    throws EJBException, RemoteException
+  {
+    this.context = context;
+  }
 
-	public void unsetEntityContext() {}
+  public void unsetEntityContext()
+    throws EJBException, RemoteException
+  {
+  }
 
-	public void ejbActivate() {}
+  public void ejbActivate()
+    throws EJBException, RemoteException
+  {
+  }
 
-	public void ejbLoad() {}
+  public void ejbLoad()
+    throws EJBException, RemoteException
+  {
+  }
 
-	public void ejbPassivate() {}
+  public void ejbPassivate()
+    throws EJBException, RemoteException
+  {
+  }
 
-	public void ejbRemove() throws RemoveException {}
+  public void ejbRemove()
+    throws RemoveException, EJBException, RemoteException
+  {
+  }
 
-	public void ejbStore() {}
-}                                                                                  
+  public void ejbStore()
+    throws EJBException, RemoteException
+  {
+  }
+}                                                                                   
 </file>
 </p>
 </section>
@@ -137,19 +160,19 @@ In your favorite editor, create the file below.
 <file name="C:\my\app\org\acme\employee\EmployeeHome.java">
 package org.acme.employee;
 
-import java.rmi.RemoteException;
-
 import javax.ejb.CreateException;
 import javax.ejb.EJBHome;
 import javax.ejb.FinderException;
+import java.rmi.RemoteException;
 
-public interface EmployeeHome extends EJBHome {
-    public EmployeeObject create(String firstName, String lastName, String email)
-        throws RemoteException, CreateException;
+public interface EmployeeHome extends EJBHome
+{
+  public Employee create( String firstname, String lastname, String email )
+    throws RemoteException, CreateException;
 
-    public EmployeeObject findByPrimaryKey(Integer id) 
-        throws RemoteException, FinderException;
-}                                                                                  
+  public Employee findByPrimaryKey( Integer id )
+    throws RemoteException, FinderException;
+}                                                                                   
 </file>
 </p>
 </section>
@@ -160,16 +183,17 @@ In your favorite editor, create the file below.
 </p>
 
 <p>
-<file name="C:\my\app\org\acme\employee\EmployeeObject.java">
+<file name="C:\my\app\org\acme\employee\Employee.java">
 package org.acme.employee;
 
+import javax.ejb.EJBObject;
 import java.rmi.RemoteException;
 
-import javax.ejb.EJBObject;
-
-public interface EmployeeObject extends EJBObject {
-    public void says(String message) throws RemoteException;
-}                                                                                  
+public interface Employee extends EJBObject
+{
+  public void says( String message )
+    throws RemoteException;
+}                                                                                   
 </file>
 </p>
 </section>
@@ -194,7 +218,7 @@ In your favorite editor, create the file below.
     <entity>
       <ejb-name>EmployeeBean</ejb-name>
       <home>org.acme.employee.EmployeeHome</home>
-      <remote>org.acme.employee.EmployeeObject</remote>
+      <remote>org.acme.employee.Employee</remote>
       <ejb-class>org.acme.employee.EmployeeBean</ejb-class>
       <persistence-type>Container</persistence-type>
       <prim-key-class>java.lang.Integer</prim-key-class>
@@ -229,7 +253,9 @@ In your favorite editor, create the file below.
     </container-transaction>
   </assembly-descriptor>
 </ejb-jar>
-]]></file>
+]]>
+                                                                                    
+</file>
 </p>
 </section>
         
@@ -241,7 +267,7 @@ In your favorite editor, create the file below.
         
 <section title="Package the EJB" ref-id="jar">
 <p>
-<command>C:\my\app> jar -cvf employee.jar org/acme/employee/*.class META-INF</command>
+<command>C:\my\app> jar -cvMf employee.jar org/acme/employee/*.class META-INF</command>
 </p>
 </section>
 
@@ -333,7 +359,7 @@ In your favorite editor, create the file below.
   <SecurityService id="Default Security Service"/>
   <TransactionService id="Default Transaction Manager"/>
 </openejb>
-]]></file>
+]]>                                                                                    </file>
 
 <p>
 Before we go on a few words about the structure of the file.
@@ -385,12 +411,22 @@ Before we go on a few words about the structure of the file.
         connect to the database, i.e. PostgreSQL. 
         <br/>
         <p>
-        The <b>id</b> attribute should be "Default JDBC Database" unless you 
+        The <b>id</b> attribute must be "Default JDBC Database" unless you 
         know what changes are required upon changing the value. 
         </p>
         <br/>
     </li>
+    <li><b>SecurityService</b> and <b>TransactionService</b> - these 
+        elements are included in the file because they are required and without 
+        them OpenEJB refuses to run. Nothing to configure so we skip them 
+        silently.  
+ </li> 
 </ul>
+<note>
+In future versions of OpenEJB, you won't be required to include 
+the SecurityService or TransactionService lines in your config 
+files unless there is some part of them that you wish to configure.
+</note>
 </p>
             
 <p>
@@ -405,7 +441,7 @@ editor.
   <jndi name="java:comp/env/jdbc/postgresql" />
   <mapping href="c:/my/app//conf/postgresql.cmp_or_mapping.xml" />
 </database>
-]]></file>
+]]>                                                                                    </file>
 
 <br/>
 <file name="C:\my\app\conf\postgresql.cmp_or_mapping.xml"><![CDATA[
@@ -508,53 +544,43 @@ Create the file in your favorite editor.
 <file name="C:\my\app\org\acme\employee\EmployeeClient.java">
 package org.acme.employee;
 
-import java.rmi.RemoteException;
-import java.util.Properties;
-
-import javax.ejb.CreateException;
-import javax.ejb.FinderException;
-import javax.ejb.RemoveException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.rmi.PortableRemoteObject;
+import java.util.Properties;
 
-public class EmployeeClient {
+public class EmployeeClient
+{
+   public static void main( String[] args )
+           throws Exception
+   {
+      Properties env = new Properties();
+      <comment>//The JNDI properties you set depend</comment>
+      <comment>//on which server you are using.</comment>
+      String jndiProvider = "org.openejb.client.RemoteInitialContextFactory";
+      env.put( "java.naming.factory.initial", jndiProvider );
+      env.put( "java.naming.provider.url", "localhost:4201" );
+      env.put( "java.naming.security.principal", "fakeuser" );
+      env.put( "java.naming.security.credentials", "fakepass" );
+      Context ctx = new InitialContext( env );
 
-	public static void main(String[] args)
-		throws NamingException, CreateException, FinderException, 
-		RemoteException, RemoveException {
-		
-		Properties env = new Properties();
-		<comment>//The JNDI properties you set depend</comment>
-		<comment>//on which server you are using.</comment>
-		String jndiProvider = "org.openejb.client.RemoteInitialContextFactory";
-		env.put("java.naming.factory.initial", jndiProvider);
-		env.put("java.naming.provider.url", "localhost:4201");
-		env.put("java.naming.security.principal", "fakeuser");
-		env.put("java.naming.security.credentials", "fakepass");
+      Object obj = ctx.lookup( "EmployeeBean" );
+      obj = PortableRemoteObject.narrow( obj, EmployeeHome.class );
+      EmployeeHome home = ( EmployeeHome ) obj;
 
-		Context ctx = new InitialContext(env);
-
-		Object obj = ctx.lookup("EmployeeBean");
-		EmployeeHome home = (EmployeeHome) 
-			PortableRemoteObject.narrow(obj, EmployeeHome.class);
-
-		EmployeeObject empl_create =
-			home.create("Jacek", "Laskowski", "OpenEJB-" + 
-			System.currentTimeMillis() + "@SF.net");
-
-		Integer primaryKey = (Integer) empl_create.getPrimaryKey();
-		EmployeeObject empl_find = home.findByPrimaryKey(primaryKey);
-
-		System.out.println(
-			"Are the \"create\" and \"find\" users identical ? "
-				+ empl_create.isIdentical(empl_find));
-
-		empl_find.says("Hello OpenEJB World!");
-		empl_find.remove();
-	}
-}                                                    
+      Employee empl_create = home.create( "Jacek", "Laskowski", 
+            "OpenEJB-" + System.currentTimeMillis() + "@SF.net" );
+      
+      Integer primaryKey = ( Integer ) empl_create.getPrimaryKey();
+      Employee empl_find = home.findByPrimaryKey( primaryKey );
+      
+      System.out.println( "Are the \"create\" and \"find\" users identical ? "+ 
+            empl_create.isIdentical( empl_find ) );
+      
+      empl_find.says( "Hello OpenEJB World!" );
+      empl_find.remove();
+   }
+}                                                                                   
 </file>
 </p>
 </section>
@@ -569,19 +595,24 @@ public class EmployeeClient {
 <p>
 Create the file in your favorite editor.
 </p>
-<file name="C:\my\app\runit.bat">
+<file name="C:\my\app\RunIt.bat">
 @echo off
 
 set OPENEJB_HOME=C:\openejb
 set PATH=%PATH%;%OPENEJB_HOME%\bin
 
+set OLD_CLASSPATH=%CLASSPATH%
+
 set CP=
-for %%i in (%OPENEJB_HOME%\dist\openejb*.jar) do call cp.bat %%i
-set CP=%OPENEJB_HOME%\lib\ejb-1.0.jar;%CP%
+for %%i in (%OPENEJB_HOME%\lib\*.jar) do call cp.bat %%i 
+for %%i in (%OPENEJB_HOME%\dist\*.jar) do call cp.bat %%i 
 set CP=c:\my\app\employee.jar;%CP%
 
-%JAVA_HOME%\bin\java -cp %CP% -Dopenejb.home=%OPENEJB_HOME% org.acme.employee.EmployeeClient
-</file>
+set CLASSPATH=%JAVA_HOME%\lib\tools.jar;%CP%
+
+%JAVA_HOME%\bin\java -Dopenejb.home=%OPENEJB_HOME% org.acme.employee.EmployeeClient
+
+set CLASSPATH=%OLD_CLASSPATH%</file>
 
 <p>
 Open the command line window and start up OpenEJB with the following 
@@ -609,7 +640,7 @@ You will see the following sample output on the out-of-process client's console:
 </p>
 
 <code>
-C:\my\app>runit
+C:\my\app>RunIt
 Are the "create" and "find" users identical ? true</code>
 
 <p>
@@ -631,7 +662,7 @@ To log into the admin console, telnet to:
  telnet 127.0.0.1 4200
 ---------------------------------------
 Ready!
-[Jacek Laskowski(1) OpenEJB-1029465232802@SF.net] Hello OpenEJB World !</code>
+[FirstName LastName(1) OpenEJB-1029465232802@SF.net] Hello OpenEJB World !</code>
 </section>
         
 <section title="What if it didn't work" ref-id="problems">
@@ -675,4 +706,3 @@ you are using the basic CMP entity bean example.
 </section>
 </body>
 </document>
-

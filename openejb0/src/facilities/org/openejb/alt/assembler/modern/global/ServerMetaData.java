@@ -44,9 +44,8 @@
  */
 package org.openejb.alt.assembler.modern.global;
 
-import java.util.HashMap;
 import java.util.Map;
-
+import java.util.HashMap;
 import org.openejb.alt.assembler.modern.MetaData;
 
 /**

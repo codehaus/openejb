@@ -44,12 +44,13 @@
  */
 package org.openejb.util.proxy;
 
-import java.lang.reflect.Method;
-
-import junit.framework.Protectable;
 import junit.framework.Test;
-
+import junit.framework.Protectable;
+import junit.framework.TestSuite;
+import org.openejb.OpenEJBException;
 import org.openejb.test.NamedTestCase;
+import org.openejb.util.proxy.jdk13.Jdk13ProxyFactory;
+import java.lang.reflect.Method;
 
 /**
  * 

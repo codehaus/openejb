@@ -44,17 +44,26 @@
  */
 package org.openejb.test.entity.cmp;
 
-import java.rmi.RemoteException;
+import javax.ejb.*;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.StringTokenizer;
-
-import javax.ejb.EJBException;
-import javax.ejb.EntityContext;
-import javax.ejb.RemoveException;
-
-import org.openejb.test.ApplicationException;
+import java.rmi.RemoteException;
+import javax.sql.*;
+import java.sql.*;
 import org.openejb.test.object.OperationsPolicy;
+import javax.naming.InitialContext;
+import org.openejb.test.TestFailureException;
+import junit.framework.AssertionFailedError;
+import junit.framework.Assert;
+import org.openejb.test.entity.cmp.BasicCmpHome;
+import org.openejb.test.entity.cmp.BasicCmpObject;
+import org.openejb.test.object.OperationsPolicy;
+import org.openejb.test.stateful.BasicStatefulHome;
+import org.openejb.test.stateful.BasicStatefulObject;
+import org.openejb.test.stateless.BasicStatelessHome;
+import org.openejb.test.stateless.BasicStatelessObject;
+import org.openejb.test.ApplicationException;
 
 /**
  * 
@@ -139,7 +148,7 @@ public class BasicCmpBean implements javax.ejb.EntityBean{
      * 
      */
     public void throwApplicationException() throws ApplicationException{
-        throw new ApplicationException("Don't Panic");
+        throw new ApplicationException("Testing ability to throw Application Exceptions");
     }
     
     /**
@@ -150,7 +159,7 @@ public class BasicCmpBean implements javax.ejb.EntityBean{
      * 
      */
     public void throwSystemException_NullPointer() {
-        throw new NullPointerException("Panic");
+        throw new NullPointerException("Testing ability to throw System Exceptions");
     }
     
     

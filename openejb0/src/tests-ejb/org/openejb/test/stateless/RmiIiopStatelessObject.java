@@ -45,12 +45,7 @@
 package org.openejb.test.stateless;
 
 import java.rmi.RemoteException;
-
-import javax.ejb.EJBHome;
-import javax.ejb.EJBMetaData;
-import javax.ejb.EJBObject;
-import javax.ejb.Handle;
-
+import javax.ejb.*;
 import org.openejb.test.object.ObjectGraph;
 
 /**

@@ -44,23 +44,26 @@
  */
 package org.openejb.test.entity.bmp;
 
-import java.rmi.RemoteException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import javax.ejb.*;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.StringTokenizer;
-
-import javax.ejb.EJBException;
-import javax.ejb.EntityContext;
-import javax.ejb.FinderException;
-import javax.ejb.RemoveException;
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-
-import org.openejb.test.ApplicationException;
+import java.rmi.RemoteException;
+import javax.sql.*;
+import java.sql.*;
 import org.openejb.test.object.OperationsPolicy;
+import javax.naming.InitialContext;
+import org.openejb.test.TestFailureException;
+import junit.framework.AssertionFailedError;
+import junit.framework.Assert;
+import org.openejb.test.entity.bmp.BasicBmpHome;
+import org.openejb.test.entity.bmp.BasicBmpObject;
+import org.openejb.test.object.OperationsPolicy;
+import org.openejb.test.stateful.BasicStatefulHome;
+import org.openejb.test.stateful.BasicStatefulObject;
+import org.openejb.test.stateless.BasicStatelessHome;
+import org.openejb.test.stateless.BasicStatelessObject;
+import org.openejb.test.ApplicationException;
 
 /**
  * 
@@ -211,7 +214,7 @@ public class BasicBmpBean implements javax.ejb.EntityBean {
 
         } catch ( Exception e ) {
             e.printStackTrace();
-            throw new javax.ejb.CreateException("can't create");
+            throw new javax.ejb.CreateException("can't create: "+e.getClass().getName()+" "+e.getMessage());
         }
     }
 
@@ -246,7 +249,7 @@ public class BasicBmpBean implements javax.ejb.EntityBean {
      * 
      */
     public void throwApplicationException() throws ApplicationException{
-        throw new ApplicationException("Don't Panic");
+        throw new ApplicationException("Testing ability to throw Application Exceptions");
     }
     
     /**
@@ -257,7 +260,7 @@ public class BasicBmpBean implements javax.ejb.EntityBean {
      * 
      */
     public void throwSystemException_NullPointer() {
-        throw new NullPointerException("Panic");
+        throw new NullPointerException("Testing ability to throw System Exceptions");
     }
     
 

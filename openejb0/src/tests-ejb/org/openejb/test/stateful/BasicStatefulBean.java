@@ -44,16 +44,24 @@
  */
 package org.openejb.test.stateful;
 
-import java.rmi.RemoteException;
+import javax.ejb.*;
 import java.util.Hashtable;
 import java.util.Properties;
-
-import javax.ejb.EJBException;
-import javax.ejb.SessionContext;
-import javax.ejb.SessionSynchronization;
-
-import org.openejb.test.ApplicationException;
+import java.util.StringTokenizer;
+import java.rmi.RemoteException;
+import javax.sql.*;
+import java.sql.*;
 import org.openejb.test.object.OperationsPolicy;
+import javax.naming.InitialContext;
+import junit.framework.Assert;
+import org.openejb.test.TestFailureException;
+import org.openejb.test.ApplicationException;
+import junit.framework.AssertionFailedError;
+import org.openejb.test.object.OperationsPolicy;
+import org.openejb.test.stateful.BasicStatefulHome;
+import org.openejb.test.stateful.BasicStatefulObject;
+import org.openejb.test.stateless.BasicStatelessHome;
+import org.openejb.test.stateless.BasicStatelessObject;
 
 /**
  * 
@@ -109,7 +117,7 @@ public class BasicStatefulBean implements javax.ejb.SessionBean, SessionSynchron
      * 
      */
     public void throwApplicationException() throws ApplicationException{
-        throw new ApplicationException("Don't Panic");
+        throw new ApplicationException("Testing ability to throw Application Exceptions");
     }
     
     /**
@@ -120,7 +128,7 @@ public class BasicStatefulBean implements javax.ejb.SessionBean, SessionSynchron
      * 
      */
     public void throwSystemException_NullPointer() {
-        throw new NullPointerException("Panic");
+        throw new NullPointerException("Testing ability to throw System Exceptions");
     }
     
     /**

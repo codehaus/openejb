@@ -45,6 +45,9 @@
 
 package org.openejb.alt.assembler.classic;
 
+import java.util.Properties;
+import org.openejb.OpenEJBException;
+import org.w3c.dom.Node;
 
 /**
  * EjbReferenceLocation is part of the OpenEjbConfiguration object structure that provides

@@ -46,6 +46,8 @@
 package org.openejb.alt.assembler.classic;
 
 import java.util.Properties;
+import org.w3c.dom.Node;
+import org.openejb.OpenEJBException;
 
 /**
  * IntraVmServerInfo is part of the OpenEjbConfiguration object structure that provides

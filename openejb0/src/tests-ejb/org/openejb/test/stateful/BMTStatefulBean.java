@@ -44,15 +44,17 @@
  */
 package org.openejb.test.stateful;
 
-import java.rmi.RemoteException;
+import javax.ejb.*;
 import java.util.Hashtable;
 import java.util.Properties;
-
-import javax.ejb.EJBException;
-import javax.ejb.SessionContext;
-
-import org.openejb.test.ApplicationException;
+import java.util.StringTokenizer;
+import java.rmi.RemoteException;
+import javax.sql.*;
+import java.sql.*;
 import org.openejb.test.object.OperationsPolicy;
+import org.openejb.test.TestFailureException;
+import org.openejb.test.ApplicationException;
+import javax.naming.InitialContext;
 
 /**
  * A Stateful SessionBean with bean-managed transaction demarcation
@@ -164,6 +166,7 @@ public class BMTStatefulBean implements javax.ejb.SessionBean {
      * after the instance creation.
      */
     public void setSessionContext(SessionContext ctx) throws EJBException,RemoteException {
+        ejbContext = ctx;
         testAllowedOperations("setSessionContext");
     }
     /**

@@ -44,10 +44,11 @@
  */
 package org.openejb.test;
 
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.Properties;
+import javax.naming.Context;
+import java.io.OutputStream;
+import java.io.FileOutputStream;
+import java.net.Socket;
 
 /**
  * 

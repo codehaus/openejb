@@ -44,12 +44,9 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -60,7 +57,7 @@ public class Help extends Command {
         Command.register("help", Help.class);
     }
 
-    public void exec(Arguments args, DataInputStream in, PrintStream out) throws IOException{
+    public void exec(String[] args, DataInputStream in, PrintStream out) throws IOException{
         HashMap hash = Command.commands;
         Set set = hash.keySet();
         Iterator cmds = set.iterator();

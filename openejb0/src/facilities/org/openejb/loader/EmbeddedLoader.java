@@ -46,7 +46,6 @@ package org.openejb.loader;
 
 import java.util.Hashtable;
 import java.util.Properties;
-
 import org.openejb.EnvProps;
 
 /**

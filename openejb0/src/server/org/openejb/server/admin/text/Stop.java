@@ -44,11 +44,10 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.InetAddress;
-
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import org.openejb.util.Logger;
 import org.openejb.server.EjbDaemon;
 
 /**
@@ -60,7 +59,7 @@ public class Stop extends Command {
         Command.register("stop", Stop.class);
     }
 
-    public void exec(Arguments args, DataInputStream in, PrintStream out) throws IOException{
+    public void exec(String[] args, DataInputStream in, PrintStream out) throws IOException{
         try{
             String addr = Thread.currentThread().getName();
             InetAddress client = InetAddress.getByName(addr);

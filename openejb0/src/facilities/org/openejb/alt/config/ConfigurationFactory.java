@@ -44,7 +44,7 @@
  */
 package org.openejb.alt.config;
 
-import java.io.File;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -52,68 +52,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-
+import org.openejb.OpenEJB;
 import org.openejb.OpenEJBException;
-import org.openejb.alt.assembler.classic.ConnectionManagerInfo;
-import org.openejb.alt.assembler.classic.ConnectorInfo;
-import org.openejb.alt.assembler.classic.ContainerInfo;
-import org.openejb.alt.assembler.classic.ContainerSystemInfo;
-import org.openejb.alt.assembler.classic.EjbReferenceInfo;
-import org.openejb.alt.assembler.classic.EjbReferenceLocationInfo;
-import org.openejb.alt.assembler.classic.EnterpriseBeanInfo;
-import org.openejb.alt.assembler.classic.EntityBeanInfo;
-import org.openejb.alt.assembler.classic.EntityContainerInfo;
-import org.openejb.alt.assembler.classic.EnvEntryInfo;
-import org.openejb.alt.assembler.classic.FacilitiesInfo;
-import org.openejb.alt.assembler.classic.IntraVmServerInfo;
-import org.openejb.alt.assembler.classic.JndiContextInfo;
-import org.openejb.alt.assembler.classic.JndiEncInfo;
-import org.openejb.alt.assembler.classic.ManagedConnectionFactoryInfo;
-import org.openejb.alt.assembler.classic.MethodInfo;
-import org.openejb.alt.assembler.classic.MethodPermissionInfo;
-import org.openejb.alt.assembler.classic.MethodTransactionInfo;
-import org.openejb.alt.assembler.classic.OpenEjbConfiguration;
-import org.openejb.alt.assembler.classic.OpenEjbConfigurationFactory;
-import org.openejb.alt.assembler.classic.QueryInfo;
-import org.openejb.alt.assembler.classic.ResourceReferenceInfo;
-import org.openejb.alt.assembler.classic.RoleMappingInfo;
-import org.openejb.alt.assembler.classic.SecurityRoleInfo;
-import org.openejb.alt.assembler.classic.SecurityRoleReferenceInfo;
-import org.openejb.alt.assembler.classic.SecurityServiceInfo;
-import org.openejb.alt.assembler.classic.StatefulBeanInfo;
-import org.openejb.alt.assembler.classic.StatefulSessionContainerInfo;
-import org.openejb.alt.assembler.classic.StatelessBeanInfo;
-import org.openejb.alt.assembler.classic.StatelessSessionContainerInfo;
-import org.openejb.alt.assembler.classic.TransactionServiceInfo;
-import org.openejb.alt.config.ejb11.ContainerTransaction;
-import org.openejb.alt.config.ejb11.EjbDeployment;
-import org.openejb.alt.config.ejb11.EjbJar;
-import org.openejb.alt.config.ejb11.EjbRef;
-import org.openejb.alt.config.ejb11.EnterpriseBeansItem;
-import org.openejb.alt.config.ejb11.Entity;
-import org.openejb.alt.config.ejb11.EnvEntry;
-import org.openejb.alt.config.ejb11.Method;
-import org.openejb.alt.config.ejb11.MethodParams;
-import org.openejb.alt.config.ejb11.MethodPermission;
-import org.openejb.alt.config.ejb11.OpenejbJar;
+import org.openejb.alt.assembler.classic.*;
+import org.openejb.alt.config.ejb11.*;
 import org.openejb.alt.config.ejb11.Query;
-import org.openejb.alt.config.ejb11.QueryMethod;
-import org.openejb.alt.config.ejb11.ResourceLink;
-import org.openejb.alt.config.ejb11.ResourceRef;
-import org.openejb.alt.config.ejb11.SecurityRole;
-import org.openejb.alt.config.ejb11.SecurityRoleRef;
-import org.openejb.alt.config.ejb11.Session;
-import org.openejb.alt.config.sys.ConnectionManager;
-import org.openejb.alt.config.sys.Connector;
-import org.openejb.alt.config.sys.Container;
-import org.openejb.alt.config.sys.Deployments;
-import org.openejb.alt.config.sys.JndiProvider;
-import org.openejb.alt.config.sys.Openejb;
-import org.openejb.alt.config.sys.ProxyFactory;
-import org.openejb.alt.config.sys.SecurityService;
-import org.openejb.alt.config.sys.ServiceProvider;
-import org.openejb.alt.config.sys.ServicesJar;
-import org.openejb.alt.config.sys.TransactionService;
+import org.openejb.alt.config.sys.*;
 import org.openejb.util.FileUtils;
 import org.openejb.util.Logger;
 import org.openejb.util.Messages;
@@ -155,7 +99,7 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
     //   I n f o   O b j e c t s
     //
     //------------------------------------------------//
-    public static OpenEjbConfiguration sys;
+    OpenEjbConfiguration sys;
 
     ContainerInfo[] cntrs;
     EntityContainerInfo[] entyCntrs;
@@ -175,7 +119,6 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
         }
 
         configLocation = ConfigUtils.searchForConfiguration(configLocation);
-        System.setProperty("openejb.configuration", configLocation);
 
     }
 
@@ -706,7 +649,6 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
                 info.referenceName = ejb.getEjbRefName();
                 info.location = new EjbReferenceLocationInfo();
 
-    
                 EnterpriseBeanInfo otherBean  = (EnterpriseBeanInfo)infos.get(ejb.getEjbLink());
 		if ( otherBean == null ) {
 		    String msg = messages.format( "config.noBeanFound", ejb.getEjbRefName(), bean.ejbName );
@@ -1038,7 +980,7 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
                 if ( d.getDir() == null && d.getJar() != null ) {
                     File jar = null;
                     try {
-                        jar = FileUtils.getFile(d.getJar(), false);
+                        jar = FileUtils.getBase().getFile(d.getJar(), false);
                     } catch ( Exception e ) {
                     }
                     if ( !jarList.contains( jar.getAbsolutePath() ) ) {
@@ -1052,7 +994,7 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
 
                 File dir = null;
                 try {
-                    dir = FileUtils.getFile(d.getDir(), false);
+                    dir = FileUtils.getBase().getFile(d.getDir(), false);
                 } catch ( Exception e ) {
                 }
 
@@ -1108,7 +1050,7 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
             String jarLocation = jarsToLoad[i];
             try {
                 // Try to resolve path relative to openejb.home
-                jarLocation = FileUtils.getFile(jarLocation,false).getAbsolutePath();
+                jarLocation = FileUtils.getBase().getFile(jarLocation,false).getAbsolutePath();
             } catch ( java.io.IOException e ) {
                 // The methods below have more specific exception 
                 // handling for this

@@ -1,10 +1,10 @@
 package org.openejb.core.ivm.naming;
 
-import java.util.Hashtable;
-
+import org.openejb.core.ivm.naming.Reference;
+import javax.naming.NamingException;
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import javax.naming.NamingException;
+import java.util.Hashtable;
 
 /**
  * This class is used when the object to be referenced is accessible through

@@ -46,12 +46,23 @@
 
 package org.openejb.core.stateless;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.RemoteException;
-
+import java.security.Principal;
+import java.util.Hashtable;
+import javax.ejb.EJBHome;
 import org.openejb.Container;
+import org.openejb.DeploymentInfo;
+import org.openejb.InvalidateReferenceException;
+import org.openejb.OpenEJB;
+import org.openejb.OpenEJBException;
+import org.openejb.ProxyInfo;
 import org.openejb.RpcContainer;
+import org.openejb.core.ThreadContext;
 import org.openejb.core.ivm.EjbObjectProxyHandler;
+import org.openejb.util.proxy.InvalidatedReferenceHandler;
+import org.openejb.util.proxy.InvocationHandler;
 import org.openejb.util.proxy.ProxyManager;
 
 /**
@@ -135,8 +146,15 @@ public class StatelessEjbObjectHandler extends EjbObjectProxyHandler {
      */
     protected Object isIdentical(Method method, Object[] args, Object proxy) throws Throwable{
         checkAuthorization(method);
-        EjbObjectProxyHandler handler = (EjbObjectProxyHandler)ProxyManager.getInvocationHandler(proxy);
-        return new Boolean( deploymentID.equals(handler.deploymentID) );
+        
+        try {
+            EjbObjectProxyHandler handler = 
+                (EjbObjectProxyHandler) ProxyManager.getInvocationHandler(args[0]);
+            return new Boolean( deploymentID.equals(handler.deploymentID) );
+        } catch (Throwable t){
+            return Boolean.FALSE;
+            ///System.out.println("\n\n\n[] isIdentical "+identical+"\n this\t"+deploymentID+"\n that\t"+handler.deploymentID +"\n\n");
+        }
     }
 
     protected Object remove(Method method, Object[] args, Object proxy) throws Throwable{

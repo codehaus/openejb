@@ -44,31 +44,23 @@
  */
 package org.openejb.alt.config;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.io.*;
+import java.net.*;
 import java.util.Enumeration;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-
+import java.util.*;
+import java.util.Properties;
+import java.util.Vector;
+import java.util.jar.*;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
+import org.exolab.castor.xml.Unmarshaller;
 import org.openejb.OpenEJBException;
-import org.openejb.alt.config.ejb11.OpenejbJar;
-import org.openejb.alt.config.sys.Deployments;
-import org.openejb.alt.config.sys.Openejb;
+import org.openejb.alt.assembler.classic.*;
+import org.openejb.alt.config.ejb11.*;
+import org.openejb.alt.config.sys.*;
+import org.openejb.util.Logger;
 import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
-import org.openejb.util.Logger;
 import org.openejb.util.Messages;
 
 /**
@@ -297,7 +289,7 @@ public class ConfigUtils  {
              *     openejb.home directory
              */
             try{
-                file = FileUtils.getFile(path);
+                file = FileUtils.getBase().getFile(path);
                 if (file != null && file.exists() && file.isFile()) {
                     return file.getAbsolutePath();
                 }
@@ -310,7 +302,7 @@ public class ConfigUtils  {
              *     relative to the openejb.home directory
              */
             try{
-                file = FileUtils.getFile("conf/openejb.conf");
+                file = FileUtils.getBase().getFile("conf/openejb.conf");
                 if (file != null && file.exists() && file.isFile()) {
                     return file.getAbsolutePath();
                 }
@@ -322,7 +314,7 @@ public class ConfigUtils  {
              *     the openejb-x.x.x.jar
              */
             //Gets the conf directory, creating it if needed.
-            File confDir = FileUtils.getDirectory("conf");
+            File confDir = FileUtils.getBase().getDirectory("conf");
             
             //TODO:1: We cannot find the user's conf file and
             // are taking the liberty of creating one for them.
@@ -374,7 +366,7 @@ public class ConfigUtils  {
             
             if ( d.getJar() != null ) {
                 try {
-                    File target = FileUtils.getFile(d.getJar(), false);
+                    File target = FileUtils.getBase().getFile(d.getJar(), false);
                     
                     /* 
                      * If the jar entry is already there, no need 
@@ -389,7 +381,7 @@ public class ConfigUtils  {
                 }
             } else if ( d.getDir() != null ) {
                 try {
-                    File target = FileUtils.getFile(d.getDir(), false);
+                    File target = FileUtils.getBase().getFile(d.getDir(), false);
                     File jarDir = jar.getAbsoluteFile().getParentFile();
 
                     /* 

@@ -1,5 +1,6 @@
 package org.openejb.core.ivm.naming;
 
+import org.openejb.core.ivm.naming.Reference;
 import javax.naming.NamingException;
 
 /**

@@ -44,6 +44,7 @@
  */
 
 package org.openejb.tyrex;
+import org.openejb.core.ivm.naming.IvmContext;
 
 public class TyrexDeploymentInfo extends org.openejb.core.DeploymentInfo {
     

@@ -1,9 +1,8 @@
 package org.openejb;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-
+import java.io.*;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import org.openejb.test.NamedTestCase;
 
 /**

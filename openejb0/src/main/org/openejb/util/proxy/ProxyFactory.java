@@ -105,7 +105,6 @@ package org.openejb.util.proxy;
  */
 
 import java.util.Properties;
-
 import org.openejb.OpenEJBException;
 
 public interface ProxyFactory {

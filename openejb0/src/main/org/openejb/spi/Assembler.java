@@ -45,10 +45,10 @@
 package org.openejb.spi;
 
 import java.util.Properties;
-
-import javax.transaction.TransactionManager;
-
+import org.openejb.spi.ContainerSystem;
 import org.openejb.OpenEJBException;
+import javax.transaction.TransactionManager;
+import org.openejb.spi.SecurityService;
 
 public interface Assembler {
 

@@ -45,6 +45,7 @@
 package org.openejb.ui.jedi.openejb11.jca;
 
 import org.opentools.deployer.plugins.Category;
+import org.opentools.deployer.plugins.MetaData;
 import org.opentools.deployer.plugins.Plugin;
 
 /**

@@ -45,7 +45,6 @@
 package org.openejb.util;
 
 import java.util.Properties;
-
 import org.openejb.OpenEJBException;
 
 public class SafeProperties{

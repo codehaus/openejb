@@ -44,23 +44,14 @@
  */
 package org.openejb.alt.assembler.modern.rar.jca10;
 
-import java.io.BufferedReader;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
+import java.io.*;
+import java.util.*;
+import javax.xml.parsers.*;
+import org.w3c.dom.*;
+import org.xml.sax.*;
 import org.openejb.alt.assembler.modern.LoadException;
-import org.openejb.alt.assembler.modern.MetaData;
 import org.openejb.alt.assembler.modern.xml.DTDResolver;
-import org.w3c.dom.Document;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
+import org.openejb.alt.assembler.modern.MetaData;
 
 /**
  * Metadata for a resource adapter.

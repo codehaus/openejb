@@ -44,9 +44,9 @@
  */
 package org.openejb.ui.jedi.openejb11.ejb.gui;
 
-import java.awt.GridBagLayout;
-
-import javax.swing.JComponent;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
 
 /**
  * GUI for editing top-level OpenEJB JAR properties.

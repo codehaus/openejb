@@ -45,8 +45,7 @@
 package org.openejb.alt.config;
 
 import java.util.Vector;
-
-import org.openejb.alt.config.ejb11.EjbJar;
+import org.openejb.alt.config.ejb11.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>

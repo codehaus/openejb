@@ -46,9 +46,7 @@ package org.openejb.spi;
 
 import java.io.PrintWriter;
 import java.util.Properties;
-
 import javax.resource.spi.ManagedConnectionFactory;
-
 import org.openejb.OpenEJBException;
 
 /**

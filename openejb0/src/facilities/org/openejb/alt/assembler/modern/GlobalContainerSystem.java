@@ -44,12 +44,7 @@
  */
 package org.openejb.alt.assembler.modern;
 
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
+import java.util.*;
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NamingException;
@@ -58,15 +53,17 @@ import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 import javax.naming.spi.ObjectFactory;
 import javax.resource.spi.ManagedConnectionFactory;
-
 import org.openejb.OpenEJBException;
-import org.openejb.alt.assembler.modern.jar.JarDeployer;
-import org.openejb.alt.assembler.modern.rar.RarDeployer;
-import org.openejb.core.ConnectorReference;
 import org.openejb.core.ContainerSystem;
+import org.openejb.core.ConnectorReference;
+import org.openejb.core.ivm.naming.IvmContext;
+import org.openejb.core.ivm.naming.NameNode;
+import org.openejb.core.ivm.naming.ParsedName;
 import org.openejb.spi.ConnectionManagerConfig;
 import org.openejb.spi.ConnectionManagerFactory;
 import org.openejb.spi.OpenEJBConnectionManager;
+import org.openejb.alt.assembler.modern.jar.JarDeployer;
+import org.openejb.alt.assembler.modern.rar.RarDeployer;
 
 /**
  * Holds some extra properties over the standard ContainerSystem.  This includes

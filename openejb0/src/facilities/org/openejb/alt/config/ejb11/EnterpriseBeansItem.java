@@ -11,6 +11,8 @@ package org.openejb.alt.config.ejb11;
  //- Imported classes and packages -/
 //---------------------------------/
 
+import java.io.Serializable;
+import org.exolab.castor.xml.*;
 
 /**
  * 

@@ -45,6 +45,7 @@
 package org.openejb.ri.server;
 
 import java.net.InetAddress;
+import org.openejb.util.proxy.InvocationHandler;
 
 /**
 * The unique identity of the client application that invoked the method.

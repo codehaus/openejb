@@ -46,12 +46,13 @@
 package org.openejb.core;
 
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
+import javax.transaction.TransactionManager;
+import javax.transaction.UserTransaction;
+import javax.transaction.SystemException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
 
 
 /**

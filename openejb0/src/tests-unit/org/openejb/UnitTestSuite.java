@@ -44,6 +44,7 @@
  */
 package org.openejb;
 
+import junit.framework.Test;
 import junit.framework.TestSuite;
 
 /**

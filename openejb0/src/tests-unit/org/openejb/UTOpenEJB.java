@@ -1,14 +1,16 @@
 package org.openejb;
 
-import java.util.Properties;
-
-import javax.ejb.EJBHome;
-import javax.ejb.EJBMetaData;
-import javax.ejb.EJBObject;
-import javax.ejb.Handle;
-
-import org.openejb.spi.ApplicationServer;
+import junit.framework.Test;
+import junit.framework.TestSuite;
 import org.openejb.test.NamedTestCase;
+import org.openejb.spi.ApplicationServer;
+import org.openejb.ProxyInfo;
+import javax.ejb.EJBMetaData;
+import javax.ejb.Handle;
+//import javax.ejb.HomeHandle;
+import javax.ejb.EJBObject;
+import javax.ejb.EJBHome;
+import java.util.Properties;
 
 /**
  * 

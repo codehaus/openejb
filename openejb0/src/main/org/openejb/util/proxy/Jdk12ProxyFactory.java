@@ -3,9 +3,10 @@ package org.openejb.util.proxy;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
-
-import org.openejb.OpenEJBException;
 import org.opentools.proxies.Proxy;
+import org.openejb.OpenEJBException;
+import org.openejb.util.proxy.ProxyFactory;
+import org.openejb.util.proxy.InvocationHandler;
 
 /**
  * @author Aaron Mulder (ammulder@alumni.princeton.edu)

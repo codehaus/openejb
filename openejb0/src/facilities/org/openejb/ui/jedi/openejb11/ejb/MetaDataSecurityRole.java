@@ -44,8 +44,7 @@
  */
 package org.openejb.ui.jedi.openejb11.ejb;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The metadata for a Security Role.  Metadata is loaded by the XMLReader,

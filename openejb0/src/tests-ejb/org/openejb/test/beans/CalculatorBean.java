@@ -44,13 +44,10 @@
  */
 package org.openejb.test.beans;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
 import javax.ejb.SessionContext;
-import javax.naming.InitialContext;
+import javax.ejb.*;
+import javax.naming.*;
+import java.sql.*;
 public class CalculatorBean implements javax.ejb.SessionBean {
     
     public SessionContext context;

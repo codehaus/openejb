@@ -45,16 +45,23 @@
 package org.openejb.test.stateless;
 
 import java.rmi.RemoteException;
+import java.sql.*;
 import java.util.Hashtable;
 import java.util.Properties;
-
-import javax.ejb.EJBException;
-import javax.ejb.SessionContext;
+import java.util.StringTokenizer;
+import javax.ejb.*;
 import javax.naming.InitialContext;
-import javax.sql.DataSource;
-
-import org.openejb.test.ApplicationException;
+import javax.naming.NamingException;
+import javax.sql.*;
+import junit.framework.Assert;
+import junit.framework.AssertionFailedError;
+import org.openejb.test.TestFailureException;
 import org.openejb.test.object.OperationsPolicy;
+import org.openejb.test.stateful.BasicStatefulHome;
+import org.openejb.test.stateful.BasicStatefulObject;
+import org.openejb.test.stateless.BasicStatelessHome;
+import org.openejb.test.stateless.BasicStatelessObject;
+import org.openejb.test.ApplicationException;
 
 /**
  * 
@@ -97,7 +104,7 @@ public class BasicStatelessBean implements javax.ejb.SessionBean{
      * 
      */
     public void throwApplicationException() throws ApplicationException{
-        throw new ApplicationException("Don't Panic");
+        throw new ApplicationException("Testing ability to throw Application Exceptions");
     }
     
     /**
@@ -108,7 +115,7 @@ public class BasicStatelessBean implements javax.ejb.SessionBean{
      * 
      */
     public void throwSystemException_NullPointer() {
-        throw new NullPointerException("Panic");
+        throw new NullPointerException("Testing ability to throw System Exceptions");
     }
     
     /**

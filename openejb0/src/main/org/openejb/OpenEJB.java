@@ -46,20 +46,21 @@
 
 package org.openejb;
 
-import java.net.URL;
 import java.security.Permission;
+import java.net.URL;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Properties;
-
+import java.util.Vector;
 import javax.transaction.TransactionManager;
-
 import org.openejb.spi.ApplicationServer;
 import org.openejb.spi.Assembler;
+import org.openejb.spi.AssemblerFactory;
 import org.openejb.spi.ContainerSystem;
 import org.openejb.spi.SecurityService;
-import org.openejb.util.JarUtils;
 import org.openejb.util.Logger;
 import org.openejb.util.Messages;
+import org.openejb.util.JarUtils;
 import org.openejb.util.SafeToolkit;
 
 
@@ -167,7 +168,10 @@ public final class OpenEJB {
 
 	logger.i18n.info( "startup.banner", versionInfo.get( "url" ), new Date(), versionInfo.get( "copyright" ),
 		     versionInfo.get( "version" ), versionInfo.get( "date" ), versionInfo.get( "time" ) );
-
+        
+        /* DMB: This is causing bug 725781.
+         * I can't even remember why we decided to add a default security manager.
+         * the testsuite runs fine without it, so out it goes for now.
         SecurityManager sm = System.getSecurityManager();
         if (sm == null) {
             try{
@@ -175,12 +179,13 @@ public final class OpenEJB {
                 System.setSecurityManager(new SecurityManager(){
                     public void checkPermission(Permission perm) {}
                     public void checkPermission(Permission perm, Object context) {}
-
+                
                 });
             } catch (Exception e){
                 logger.i18n.warning( "startup.couldNotInstalllDefaultSecurityManager", e.getClass().getName(), e.getMessage() );
             }
         }
+        */
 
         props = new Properties(System.getProperties());
 

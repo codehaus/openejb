@@ -25,11 +25,11 @@
     <pathelement location="${tyrex.home}/dist/${tyrex.jar}"/>
     <pathelement location="${jaxp.home}/jaxp.jar"/>
     <pathelement location="${jaxp.home}/${jaxp.parser.jar}"/>
-    <pathelement location="${jaxp.home}/${jaxp.parserapi.jar}"/>
     <pathelement location="${jaxp.home}/${jaxp.xsltprocessor.jar}"/>
     <pathelement location="${jaxp.home}/${jaxp.xalan1compat.jar}"/>
     <pathelement location="${junit.jar}"/>
     <pathelement location="${jakarta.regexp.jar}"/>
+    <pathelement location="${xslp.jar}"/>
   </path>
   
   <!-- ================================================================== -->
@@ -50,14 +50,6 @@
         <include name="**/**"/>
         <exclude name="**/CVS/**"/>
         <exclude name="**/*.class"/>
-      </fileset>
-    
-    </copy>
-    
-    <copy todir="${build.openejb.server.dest}/openejb">
-    
-      <fileset dir="${build.openejb.server.src}" >
-        <include name="webadmin/**"/>
       </fileset>
     
     </copy>
@@ -124,7 +116,6 @@
 			<path refid="project.classpath"/>
 			<pathelement location="${build.dest}/openejb"/>
 			<pathelement location="${build.dest}/loader"/>
-			<pathelement location="${build.dest}/webadmin"/>
 		  </classpath>
 
 		</javac>
@@ -142,7 +133,6 @@
 			<path refid="project.classpath"/>
 			<pathelement location="${build.dest}/openejb"/>
 			<pathelement location="${build.dest}/loader"/>
-			<pathelement location="${build.dest}/webadmin"/>
 		  </classpath>
 
 		</javac>

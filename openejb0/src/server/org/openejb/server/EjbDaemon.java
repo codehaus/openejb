@@ -44,53 +44,50 @@
  */
 package org.openejb.server;
 
+import java.util.Collection;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
+import java.io.NotSerializableException;
+import java.io.WriteAbortedException;
+import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.rmi.RemoteException;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.Properties;
 import java.util.Vector;
-
 import javax.ejb.EJBHome;
 import javax.ejb.EJBObject;
-import javax.naming.Context;
-import javax.naming.NameNotFoundException;
-import javax.naming.NamingException;
-
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import javax.naming.*;
+import org.openejb.client.*;
+import org.openejb.client.proxy.*;
+import org.openejb.Container;
 import org.openejb.DeploymentInfo;
+import org.openejb.EnvProps;
+import org.openejb.spi.SecurityService;
+import org.openejb.InvalidateReferenceException;
 import org.openejb.OpenEJB;
+import org.openejb.OpenEJBException;
 import org.openejb.ProxyInfo;
 import org.openejb.RpcContainer;
-import org.openejb.client.AuthenticationRequest;
-import org.openejb.client.AuthenticationResponse;
-import org.openejb.client.ClientMetaData;
-import org.openejb.client.EJBHomeHandle;
-import org.openejb.client.EJBHomeHandler;
-import org.openejb.client.EJBMetaDataImpl;
-import org.openejb.client.EJBObjectHandle;
-import org.openejb.client.EJBObjectHandler;
-import org.openejb.client.EJBRequest;
-import org.openejb.client.EJBResponse;
-import org.openejb.client.JNDIRequest;
-import org.openejb.client.JNDIResponse;
-import org.openejb.client.RequestMethods;
-import org.openejb.client.ResponseCodes;
-import org.openejb.client.ServerMetaData;
-import org.openejb.server.admin.text.TextConsole;
-import org.openejb.server.admin.HttpDaemon;
-import org.openejb.spi.SecurityService;
+import org.openejb.util.SafeProperties;
+import org.openejb.util.SafeToolkit;
+import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
 import org.openejb.util.Logger;
 import org.openejb.util.Messages;
-import org.openejb.util.SafeProperties;
-import org.openejb.util.SafeToolkit;
+import org.openejb.server.admin.text.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -164,19 +161,13 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
     public synchronized void start(){
         try{
-            System.out.println("  ** Starting Services **");
-            System.out.println("  NAME             IP              PORT");
-
             SafeProperties safeProps = toolkit.getSafeProperties(props);
 
-            /* Start the EJB Server threads *************/
-            /*   ejb server       127.0.0.1       4201  */
             port = safeProps.getPropertyAsInt("openejb.server.port");
             ip   = safeProps.getProperty("openejb.server.ip");
 
             sMetaData = new ServerMetaData(ip, port);
 
-            System.out.print("  ejb server       ");
             try{
                 serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
             } catch (Exception e){
@@ -212,48 +203,31 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
                 d.start();
             }
 
+            TextConsole textConsole = new TextConsole(this);
+            textConsole.init(props);
+            textConsole.start();
+
+
+            System.out.println("  ** Starting Services **");
+            System.out.println("  NAME             IP              PORT");
+            System.out.print("  ejb server       ");
+
             String serverIP = serverSocket.getInetAddress().getHostAddress();
             serverIP += "         ";
             serverIP = serverIP.substring(0,15);
 
             System.out.println(serverIP +" "+port);
 
-            /* Start the Text Admin Console *************/
-            /*   admin console    127.0.0.1       4202  */
-            System.out.print("  telnet console   ");
+            System.out.print("  admin console    ");
 
-            TextConsole textConsole = new TextConsole(this);
-            textConsole.init(props);
-            textConsole.start();
-
-            System.out.println(serverIP +" "+(port+1));
-            
-            /* Start the Text Admin Console *************/
-            /*   admin console    127.0.0.1       4202  */
-            System.out.print("  web console      ");
-            
-            // Start the WebAdmin thread
-            // TODO:1: Make this configurable
-            // using vm properties
-            HttpDaemon httpd = new HttpDaemon(this);
-            httpd.init(props);
-            Thread admin = new Thread(httpd);
-            admin.start();
-
-            System.out.println(serverIP +" "+(port+2));
+	    System.out.println(serverIP +" "+(port-1));
 
             serverIP = serverIP.trim();
 
             System.out.println("-----------------INFO------------------");
-            System.out.println("To administer the server via telnet,   ");
-            System.out.println("start a telnet client and telnet to:"); 
+            System.out.println("To log into the admin console, telnet to:");
             System.out.print(" telnet ");
-            System.out.println(serverIP+" "+(port+1));
-            System.out.println("");
-            System.out.println("To administer the server via http, open");
-            System.out.println("a web browser to the following URL: "); 
-            System.out.print(" http://");
-            System.out.println(serverIP+":"+(port+2));
+            System.out.println(serverIP+" "+(port-1));
             System.out.println("---------------------------------------");
             System.out.println("Ready!");
             /*
@@ -994,13 +968,7 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        Object securityIdentity = null;
-        try{
-            securityIdentity = call.getEJBRequest().getClientIdentity();
-        } catch (Exception e){
-            //e.printStackTrace();  not needed
-        }
-        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
+        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),
@@ -1019,13 +987,7 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        Object securityIdentity = null;
-        try{
-            securityIdentity = call.getEJBRequest().getClientIdentity();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
+        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),
@@ -1043,13 +1005,7 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        Object securityIdentity = null;
-        try{
-            securityIdentity = call.getEJBRequest().getClientIdentity();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
+        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),
@@ -1068,13 +1024,7 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        Object securityIdentity = null;
-        try{
-            securityIdentity = call.getEJBRequest().getClientIdentity();
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
+        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),

@@ -45,11 +45,9 @@
 package org.openejb.core.ivm;
 
 import java.io.ObjectStreamException;
-
 import javax.ejb.EJBHome;
-
-import org.openejb.DeploymentInfo;
 import org.openejb.util.proxy.ProxyManager;
+import org.openejb.DeploymentInfo;
 
 /**
  * IntraVM server implementation of the javax.ejb.EJBMetaData interface.

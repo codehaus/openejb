@@ -45,17 +45,13 @@
 package org.openejb.ui.jedi.openejb11.jca;
 
 import java.awt.Component;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.openejb.ui.jedi.openejb11.jca.gui.DeploymentEditor;
+import java.util.*;
 import org.opentools.deployer.plugins.EditAction;
 import org.opentools.deployer.plugins.Editor;
 import org.opentools.deployer.plugins.Entry;
 import org.opentools.deployer.plugins.Plugin;
-import org.opentools.deployer.plugins.j2ee13.jca10.ConfigPropertyMetaData;
-import org.opentools.deployer.plugins.j2ee13.jca10.ConnectorMetaData;
-import org.opentools.deployer.plugins.j2ee13.jca10.ConnectorPlugin;
+import org.openejb.ui.jedi.openejb11.jca.gui.DeploymentEditor;
+import org.opentools.deployer.plugins.j2ee13.jca10.*;
 
 /**
  * Handles transferring data from metadata to GUI and back again for editing

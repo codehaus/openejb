@@ -44,11 +44,12 @@
  */
 package org.openejb.ri.server;
 
-import java.io.IOException;
+import javax.ejb.EJBHome;
+import java.rmi.Remote;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-
-import javax.ejb.EJBHome;
+import java.io.Externalizable;
+import java.io.IOException;
 
 public class RiMetaData implements javax.ejb.EJBMetaData, java.io.Externalizable {
     

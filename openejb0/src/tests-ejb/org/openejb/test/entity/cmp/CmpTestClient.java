@@ -45,14 +45,14 @@
 package org.openejb.test.entity.cmp;
 
 import java.util.Properties;
-
-import javax.ejb.EJBMetaData;
-import javax.ejb.Handle;
-import javax.ejb.HomeHandle;
-import javax.naming.Context;
+import javax.ejb.*;
 import javax.naming.InitialContext;
-
+import javax.naming.Context;
+import junit.framework.*;
+import java.net.URL;
 import org.openejb.test.TestManager;
+import java.sql.*;
+import javax.sql.*;
 
 /**
  * 

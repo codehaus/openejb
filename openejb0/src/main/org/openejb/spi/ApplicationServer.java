@@ -1,12 +1,11 @@
 package org.openejb.spi;
 
-import javax.ejb.EJBHome;
+import org.openejb.ProxyInfo;
 import javax.ejb.EJBMetaData;
-import javax.ejb.EJBObject;
 import javax.ejb.Handle;
 import javax.ejb.HomeHandle;
-
-import org.openejb.ProxyInfo;
+import javax.ejb.EJBObject;
+import javax.ejb.EJBHome;
 
 /**
  * <h2><b>LOCAL to REMOTE SERIALIZATION</b></h2> <p>

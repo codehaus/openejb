@@ -44,6 +44,8 @@
  */
 package org.openejb.test.entity.cmp;
 
+import javax.ejb.*;
+import java.rmi.RemoteException;
 /**
  * 
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>

@@ -44,15 +44,10 @@
  */
 package org.openejb.ui.jedi.openejb11.server;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-
-import org.openejb.ui.jedi.openejb11.ejb.MetaDataContainer;
+import java.util.*;
+import org.w3c.dom.*;
 import org.opentools.deployer.plugins.XMLUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.openejb.ui.jedi.openejb11.ejb.MetaDataContainer;
 
 /**
  * Saves data to an XML file using DOM.  The actual mechanism used to save

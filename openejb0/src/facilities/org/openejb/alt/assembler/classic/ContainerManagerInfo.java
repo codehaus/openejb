@@ -45,6 +45,8 @@
 
 package org.openejb.alt.assembler.classic;
 
+import org.openejb.OpenEJBException;
+import org.w3c.dom.Node;
 
 /**
  * ContainerManagerInfo is part of the OpenEjbConfiguration object structure that provides

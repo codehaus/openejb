@@ -43,11 +43,8 @@
  */
 package org.openejb.test.stateful;
 
-import javax.ejb.EJBHome;
-import javax.ejb.EJBMetaData;
-import javax.ejb.EJBObject;
-import javax.ejb.Handle;
-
+import javax.ejb.*;
+import javax.naming.InitialContext;
 import org.openejb.test.object.ObjectGraph;
 
 /**

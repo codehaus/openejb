@@ -44,13 +44,11 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-
-import org.openejb.Container;
-import org.openejb.DeploymentInfo;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 import org.openejb.OpenEJB;
+import org.openejb.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -63,7 +61,7 @@ public class Ls extends Command {
         //Command.register("list", cmd);
     }
 
-    public void exec(Arguments args, DataInputStream in, PrintStream out) throws IOException{
+    public void exec(String[] args, DataInputStream in, PrintStream out) throws IOException{
         //list containers
         Container[] c = OpenEJB.containers();
         out.println("Containers:");

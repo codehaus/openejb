@@ -6,7 +6,6 @@
   <body>
   <sideimg src="images/diagram-tomcat-adapter.gif" width="240" height="500"/>
 
-
 <section title="Notes" ref-id="intro">
 <p>
 These are my notes from writing the Tomcat/OpenEJB integration.  These are 
@@ -22,7 +21,6 @@ that, there isn't a whole lot of information on what is going on behind
 the sences.  So, I encourage *anyone* to feel completely welcome (perhaps 
 obligated) to rewrite this document.  
 </p>
-
 
 <p>
 <i>Anyone...anyone...Bueller...Bueller....</i>
@@ -219,48 +217,43 @@ public class HelloOpenEJB extends HttpServlet {
     public void doGet(HttpServletRequest request, HttpServletResponse response) 
         throws IOException, ServletException 
     { 
-        PrintWriter out = response.getWriter();
-        
-        try { 
+    PrintWriter out = response.getWriter();
 
-            Properties p = new Properties(); 
+    try{
+        Properties p = new Properties();
+        p.put(Context.INITIAL_CONTEXT_FACTORY, factory );
+        InitialContext ctx = new InitialContext( p );
 
-            p.put(Context.INITIAL_CONTEXT_FACTORY, factory); 
+        //Lookup the bean using it's deployment id
+        Object obj = ctx.lookup("/Hello");
 
-            InitialContext ctx = new InitialContext( p ); 
+        HelloHome ejbHome = (HelloHome) 
+           PortableRemoteObject.narrow(obj, HelloHome.class); 
 
-            //Lookup the bean using it's deployment id 
-            Object obj = ctx.lookup("/Hello"); 
+        //Use the HelloHome to create a HelloObject 
+        HelloObject ejbObject = ejbHome.create(); 
 
-            HelloHome ejbHome = (HelloHome) 
-                PortableRemoteObject.narrow(obj, HelloHome.class); 
+        // Set content type.  If not done, only IE will be able 
+        // to interpret that it's HTML.  Otherwise, you'll 
+        // get nothing but tags and content, not HTML.
+        response.setContentType("text/html");
 
-            //Use the HelloHome to create a HelloObject 
-            HelloObject ejbObject = ejbHome.create(); 
-
-            // Set content type.  If not done, only IE will be able 
-            // to interpret that it's HTML.  Otherwise, you'll 
-            // get nothing but tags and content, not HTML.
-            response.setContentType("text/html");
-
-            //The part we've all been wainting for... 
-            out.println("<html>"); 
-            out.println("<body>"); 
-            out.println("<head>"); 
-            out.println("<title>Hello World!</title>"); 
-            out.println("</head>"); 
-            out.println("<body>"); 
-            out.println("<h1>"+ ejbObject.sayHello() +"</h1>"); 
-            out.println("</body>"); 
-            out.println("</html>");
-            
-        } catch (Exception e) { 
-            response.setContentType("text/plain"); 
-            e.printStackTrace(out); 
-        } 
-
-    } 
-} ]]>
+        //The part we've all been wainting for...
+        out.println("<html>");
+        out.println("<body>");
+        out.println("<head>");
+        out.println("<title>Hello World!</title>");
+        out.println("</head>");
+        out.println("<body>");
+        out.println("<h1>"+ ejbObject.sayHello() +"</h1>");
+        out.println("</body>");
+        out.println("</html>");
+        } catch (Exception e){
+            response.setContentType("text/plain");
+            e.printStackTrace(out);
+        }
+    }
+}]]>
 </file>
 </p>
 <p>

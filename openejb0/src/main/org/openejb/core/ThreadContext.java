@@ -47,6 +47,7 @@
 package org.openejb.core;
 
 
+import java.security.Principal;
 import org.openejb.util.FastThreadLocal;
 
 /**

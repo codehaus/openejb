@@ -1,8 +1,10 @@
 package org.openejb.alt.containers.castor_cmp11;
 
+import org.openejb.core.DeploymentInfo;
+import org.exolab.castor.persist.spi.Complex;
+import java.util.Properties;
 import java.util.HashMap;
 
-import org.openejb.core.DeploymentInfo;
 import org.openejb.util.Logger;
 
 public abstract class KeyGeneratorFactory {

@@ -46,6 +46,7 @@
  */
 
 package org.openejb.corba;
+import org.omg.PortableServer.*;
 import org.apache.log4j.Category;
 
 /**

@@ -115,6 +115,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
     DeploymentIndex deploymentIndex;
     EjbRequestHandler ejbHandler;
     JndiRequestHandler jndiHandler;
+    AuthRequestHandler authHandler;
 
     boolean stop = false;
     static EjbDaemon thiss;
@@ -149,6 +150,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         clientObjectFactory = new ClientObjectFactory();
         ejbHandler  = new EjbRequestHandler();
         jndiHandler = new JndiRequestHandler();
+        authHandler = new AuthRequestHandler();
     }
 
     public void service(Socket socket) throws IOException{
@@ -233,28 +235,8 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         jndiHandler.processRequest(in,out);
     }
 
-    public void processAuthRequest(ObjectInputStream in, ObjectOutputStream out) throws Exception{
-        AuthenticationRequest req = new AuthenticationRequest();
-        AuthenticationResponse res = new AuthenticationResponse();
-
-        try {
-            req.readExternal( in );
-
-            // TODO: perform some real authentication here
-
-            ClientMetaData client = new ClientMetaData();
-
-            client.setClientIdentity( new String( (String)req.getPrinciple() ) );
-
-            res.setIdentity( client );
-            res.setResponseCode( AUTH_GRANTED );
-
-            res.writeExternal( out );
-        } catch (Throwable t) {
-            //replyWithFatalError
-            //(out, t, "Error caught during request processing");
-            return;
-        }
+    public void processAuthRequest(ObjectInputStream in, ObjectOutputStream out){
+        authHandler.processRequest(in,out);
     }
 
 
@@ -952,6 +934,33 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
             }
 
             res.writeExternal( out );
+        }
+    }
+
+    class AuthRequestHandler {
+    
+        public void processRequest(ObjectInputStream in, ObjectOutputStream out){
+            AuthenticationRequest req = new AuthenticationRequest();
+            AuthenticationResponse res = new AuthenticationResponse();
+
+            try {
+                req.readExternal( in );
+
+                // TODO: perform some real authentication here
+
+                ClientMetaData client = new ClientMetaData();
+
+                client.setClientIdentity( new String( (String)req.getPrinciple() ) );
+
+                res.setIdentity( client );
+                res.setResponseCode( AUTH_GRANTED );
+
+                res.writeExternal( out );
+            } catch (Throwable t) {
+                //replyWithFatalError
+                //(out, t, "Error caught during request processing");
+                return;
+            }
         }
     }
 }

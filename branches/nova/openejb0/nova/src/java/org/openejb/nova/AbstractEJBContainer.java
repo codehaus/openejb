@@ -122,6 +122,8 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
     public AbstractEJBContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
         this.transactionManager = transactionManager;
         this.trackedConnectionAssociator = trackedConnectionAssociator;
+
+        // copy over all the config stuff
         uri = config.uri;
         ejbName = config.ejbName;
         txnDemarcation = config.txnDemarcation;
@@ -135,12 +137,9 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
         setPolicyContextHandlerDataEJB = config.setPolicyContextHandlerDataEJB;
         setIdentity = config.setIdentity;
 
+        // load all the classes
         classLoader = Thread.currentThread().getContextClassLoader();
-        if (userTransaction != null) {
-            userTransaction.setUp(this.transactionManager, trackedConnectionAssociator);
-        }
         beanClass = classLoader.loadClass(config.beanClassName);
-
         if (config.homeInterfaceName != null) {
             homeInterface = classLoader.loadClass(config.homeInterfaceName);
             remoteInterface = classLoader.loadClass(config.remoteInterfaceName);
@@ -155,6 +154,11 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
             localHomeInterface = null;
             localInterface = null;
         }
+
+        // initialize the user transaction
+        if (userTransaction != null) {
+            userTransaction.setUp(transactionManager, trackedConnectionAssociator);
+        }
     }
 
     public void setGBeanContext(GBeanContext context) {
@@ -162,17 +166,20 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     public void doStart() throws WaitingException, Exception {
         if (userTransaction != null) {
-            userTransaction.setUp(transactionManager, trackedConnectionAssociator);
+            userTransaction.setOnline(true);
         }
     }
 
     public void doStop() throws WaitingException, Exception {
         if (userTransaction != null) {
-            userTransaction.setUp(null, trackedConnectionAssociator);
+            userTransaction.setOnline(false);
         }
     }
 
     public void doFail() {
+        if (userTransaction != null) {
+            userTransaction.setOnline(false);
+        }
     }
 
     public String getEJBName() {
@@ -310,8 +317,6 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
     public static GBeanInfo getGBeanInfo() {
         return GBEAN_INFO;
     }
-
-
 }
 
 

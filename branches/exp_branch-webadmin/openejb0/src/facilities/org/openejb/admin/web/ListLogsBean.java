@@ -131,7 +131,18 @@ public class ListLogsBean extends WebAdminBean {
      */
     private void printLogFile(PrintWriter body, File logFile) throws IOException {
         BufferedReader fileReader = new BufferedReader(new FileReader(logFile));
-        //create a regular expression to figure out what kind of message we have
+        StringBuffer lineOfText = null;
+        
+        //create a list of special characters
+        String[][] specialChars = new String[3][2];
+        specialChars[0][0] = "<";
+        specialChars[0][1] = "&lt;";
+        specialChars[1][0] = ">";
+        specialChars[1][1] = "&lt;";
+        specialChars[2][0] = "&";
+        specialChars[2][1] = "&amp;";
+        int specialCharIndex = 0;
+        
         try {
             //create an array of regular expressions
             RE[] expArray = new RE[5];
@@ -150,24 +161,32 @@ public class ListLogsBean extends WebAdminBean {
             colorArray[4] = "<span class=\"log4j-fatal\">";
 
             //read the file line by line
-            String lineOfText = null;
             String expMatch = colorArray[0];
             while(true) {
-                lineOfText = fileReader.readLine();
-                //check for null
-                if(lineOfText == null) {
-                    break;
+                try {
+                    lineOfText = new StringBuffer(fileReader.readLine());
+                } catch (NullPointerException ne) {
+                    break; //if null then break
                 }
-
+                
+                //check for and replace special characters
+                for(int i=0; i<specialChars.length; i++) {
+                    specialCharIndex = lineOfText.indexOf(specialChars[i][0]);
+                    if(specialCharIndex != -1) {
+                        lineOfText.replace(specialCharIndex, specialCharIndex+1, specialChars[i][1]);
+                    }
+                }
+                
                 //loop through the array of expressions to find a match
                 for(int i=0; i<expArray.length; i++) {
-                    if(expArray[i].match(lineOfText)) {
+                    if(expArray[i].match(lineOfText.toString())) {
                         expMatch = colorArray[i];
                     }
                 }
 
                 //print line of text to the page
-                body.println(expMatch + lineOfText + "</span><br>");
+                body.println(expMatch + lineOfText.toString() + "</span><br>");
+                lineOfText = null;
             }
         } catch (RESyntaxException se) {
             throw new IOException(se.getMessage());

@@ -49,24 +49,15 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.rmi.RemoteException;
 import java.util.Properties;
-import java.util.Vector;
 
 import org.openejb.DeploymentInfo;
 import org.openejb.ProxyInfo;
-import org.openejb.client.ClientMetaData;
-import org.openejb.client.EJBHomeHandle;
-import org.openejb.client.EJBHomeHandler;
-import org.openejb.client.EJBMetaDataImpl;
-import org.openejb.client.EJBObjectHandle;
-import org.openejb.client.EJBObjectHandler;
 import org.openejb.client.EJBRequest;
 import org.openejb.client.RequestMethods;
 import org.openejb.client.ResponseCodes;
-import org.openejb.client.ServerMetaData;
 import org.openejb.util.Logger;
 import org.openejb.util.Messages;
 import org.openejb.util.SafeToolkit;
@@ -82,21 +73,16 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
     Messages _messages = new Messages( "org.openejb.server.util.resources" );
     Logger logger = Logger.getInstance( "OpenEJB.server.remote", "org.openejb.server.util.resources" );
 
-    Vector           clientSockets  = new Vector();
-    ServerSocket     serverSocket   = null;
-    ServerMetaData   sMetaData      = null;
-
-    // The EJB Server Port
-    int    port = 4201;
-    String ip   = "127.0.0.1";
     Properties props;
-    ClientObjectFactory clientObjectFactory;
+    
+	ClientObjectFactory clientObjectFactory;
     DeploymentIndex deploymentIndex;
     EjbRequestHandler ejbHandler;
     JndiRequestHandler jndiHandler;
     AuthRequestHandler authHandler;
 
     boolean stop = false;
+    
     static EjbDaemon thiss;
 
     private EjbDaemon() {}
@@ -125,8 +111,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
 
         deploymentIndex = new DeploymentIndex();
 
-        sMetaData = new ServerMetaData("127.0.0.1", 4201);
-        clientObjectFactory = new ClientObjectFactory();
+        clientObjectFactory = new ClientObjectFactory(this);
         ejbHandler  = new EjbRequestHandler(this);
         jndiHandler = new JndiRequestHandler(this);
         authHandler = new AuthRequestHandler(this);
@@ -242,246 +227,6 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
     public javax.ejb.EJBHome getEJBHome(ProxyInfo info) {
         return clientObjectFactory.getEJBHome(info);
     }
-
-    /**
-     * The implementation of ApplicationServer used to create all client-side
-     * implementations of the javax.ejb.* interaces as
-     * 
-     * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
-     */
-    class ClientObjectFactory implements org.openejb.spi.ApplicationServer {
-
-        /*
-        protected ServerMetaData sMetaData;
-        protected HashMap deploymentsMap;
-    
-        public ClientObjectFactory(ServerMetaData sMetaData, HashMap deploymentsMap){
-            this.sMetaData = sMetaData;
-        }
-        */
-
-        public javax.ejb.EJBMetaData getEJBMetaData(ProxyInfo info) {
-            CallContext call = CallContext.getCallContext();
-            return _getEJBMetaData(call, info);
-        }
-
-        /**
-         * Creates a Handle object that can be serialized and 
-         * sent to the client.
-         * 
-         * @param info
-         * 
-         * @return 
-         */
-        public javax.ejb.Handle getHandle(ProxyInfo info) {
-            CallContext call = CallContext.getCallContext();
-            return _getHandle(call, info);
-        }
-
-        /**
-         * Creates a HomeHandle object that can be serialized and 
-         * sent to the client.
-         * 
-         * @param info
-         * 
-         * @return 
-         */
-        public javax.ejb.HomeHandle getHomeHandle(ProxyInfo info) {
-            CallContext call = CallContext.getCallContext();
-            return _getHomeHandle(call, info);
-        }
-
-        /**
-         * Creates an EJBObject object that can be serialized and 
-         * sent to the client.
-         * 
-         * @param info
-         * 
-         * @return 
-         */
-        public javax.ejb.EJBObject getEJBObject(ProxyInfo info) {
-            CallContext call = CallContext.getCallContext();
-            return _getEJBObject(call, info);
-        }
-
-        /**
-         * Creates an EJBHome object that can be serialized and 
-         * sent to the client.
-         * 
-         * @param info
-         * 
-         * @return 
-         */
-        public javax.ejb.EJBHome getEJBHome(ProxyInfo info) {
-            CallContext call = CallContext.getCallContext();
-            return _getEJBHome(call, info);
-        }
-
-        /**
-         * Creates an EJBMetaDataImpl object that can be serialized and
-         * sent to the client.
-         * 
-         * @param call
-         * @param info
-         * 
-         * @return 
-         * @see org.openejb.client.EJBMetaDataImpl
-         */
-        protected javax.ejb.EJBMetaData _getEJBMetaData(CallContext call, ProxyInfo info) {
-
-            DeploymentInfo deployment = info.getDeploymentInfo();
-            int idCode = deploymentIndex.getDeploymentIndex(deployment);
-
-            EJBMetaDataImpl metaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
-                                                           deployment.getRemoteInterface(),
-                                                           deployment.getPrimaryKeyClass(),
-                                                           deployment.getComponentType(),
-                                                           deployment.getDeploymentID().toString(),
-                                                           idCode);
-            return metaData;
-        }
-
-        /**
-         * Creates an EJBMetaDataImpl object that can be serialized and
-         * sent to the client.
-         * 
-         * @param call
-         * @param info
-         * 
-         * @return 
-         * @see org.openejb.client.EJBObjectHandle
-         */
-        protected javax.ejb.Handle _getHandle(CallContext call, ProxyInfo info) {
-            DeploymentInfo deployment = info.getDeploymentInfo();
-
-            int idCode = deploymentIndex.getDeploymentIndex(deployment);
-
-            Object securityIdentity = null;
-            try {
-                securityIdentity = call.getEJBRequest().getClientIdentity();
-            } catch (Exception e) {
-                //e.printStackTrace();  not needed
-            }
-            ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
-            EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
-                                                            deployment.getRemoteInterface(),
-                                                            deployment.getPrimaryKeyClass(),
-                                                            deployment.getComponentType(),
-                                                            deployment.getDeploymentID().toString(),
-                                                            idCode);
-            Object primKey = info.getPrimaryKey();
-
-            EJBObjectHandler hanlder = EJBObjectHandler.createEJBObjectHandler(eMetaData,sMetaData,cMetaData,primKey);
-
-            return new EJBObjectHandle( hanlder.createEJBObjectProxy() );
-        }
-
-        /**
-         * Creates an EJBHomeHandle object that can be serialized and
-         * sent to the client.
-         * 
-         * @param call
-         * @param info
-         * 
-         * @return 
-         * @see org.openejb.client.EJBHomeHandle
-         */
-        protected javax.ejb.HomeHandle _getHomeHandle(CallContext call, ProxyInfo info) {
-            DeploymentInfo deployment = info.getDeploymentInfo();
-
-            int idCode = deploymentIndex.getDeploymentIndex(deployment);
-
-            Object securityIdentity = null;
-            try {
-                securityIdentity = call.getEJBRequest().getClientIdentity();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
-            EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
-                                                            deployment.getRemoteInterface(),
-                                                            deployment.getPrimaryKeyClass(),
-                                                            deployment.getComponentType(),
-                                                            deployment.getDeploymentID().toString(),
-                                                            idCode);
-
-            EJBHomeHandler hanlder = EJBHomeHandler.createEJBHomeHandler(eMetaData,sMetaData,cMetaData);
-
-            return new EJBHomeHandle( hanlder.createEJBHomeProxy() );
-        }
-
-        /**
-         * Creates an EJBObjectHandler and EJBObject proxy object that can
-         * be serialized and sent to the client.
-         * 
-         * @param call
-         * @param info
-         * 
-         * @return 
-         * @see org.openejb.client.EJBObjectHandler
-         */
-        protected javax.ejb.EJBObject _getEJBObject(CallContext call, ProxyInfo info) {
-            DeploymentInfo deployment = info.getDeploymentInfo();
-
-            int idCode = deploymentIndex.getDeploymentIndex(deployment);
-
-            Object securityIdentity = null;
-            try {
-                securityIdentity = call.getEJBRequest().getClientIdentity();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
-            EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
-                                                            deployment.getRemoteInterface(),
-                                                            deployment.getPrimaryKeyClass(),
-                                                            deployment.getComponentType(),
-                                                            deployment.getDeploymentID().toString(),
-                                                            idCode);
-            Object primKey = info.getPrimaryKey();
-
-            EJBObjectHandler hanlder = EJBObjectHandler.createEJBObjectHandler(eMetaData,sMetaData,cMetaData,primKey);
-
-            return hanlder.createEJBObjectProxy();
-        }
-
-        /**
-         * Creates an EJBHomeHandler and EJBHome proxy object that can
-         * be serialized and sent to the client.
-         * 
-         * @param call
-         * @param info
-         * 
-         * @return 
-         * @see org.openejb.client.EJBHomeHandler
-         */
-        protected javax.ejb.EJBHome _getEJBHome(CallContext call, ProxyInfo info) {
-            DeploymentInfo deployment = info.getDeploymentInfo();
-
-            int idCode = deploymentIndex.getDeploymentIndex(deployment);
-
-            Object securityIdentity = null;
-            try {
-                securityIdentity = call.getEJBRequest().getClientIdentity();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
-            EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
-                                                            deployment.getRemoteInterface(),
-                                                            deployment.getPrimaryKeyClass(),
-                                                            deployment.getComponentType(),
-                                                            deployment.getDeploymentID().toString(),
-                                                            idCode);
-
-            EJBHomeHandler hanlder = EJBHomeHandler.createEJBHomeHandler(eMetaData,sMetaData,cMetaData);
-
-            //EJBHomeProxyHandle handle = new EJBHomeProxyHandle( hanlder );
-
-            return hanlder.createEJBHomeProxy();
-        }
-    }
-
 
 }
 

@@ -52,11 +52,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.cglib.core.Signature;
-import net.sf.cglib.proxy.MethodProxy;
 import net.sf.cglib.reflect.FastClass;
-import org.objectweb.asm.Type;
 import org.openejb.nova.EJBInvocationType;
+import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 
 /**
@@ -65,7 +63,14 @@ import org.openejb.nova.dispatch.MethodSignature;
 public class EJBProxyHelper {
     public static int[] getOperationMap(EJBInvocationType ejbInvocationType, Class proxyType, MethodSignature[] signatures) {
         // translate the method names
-        MethodSignature[] translated = translate(ejbInvocationType, signatures);
+        MethodSignature[] translated;
+        if (ejbInvocationType == EJBInvocationType.HOME || ejbInvocationType == EJBInvocationType.LOCALHOME) {
+            translated = MethodHelper.translateToHome(signatures);
+        } else if (ejbInvocationType == EJBInvocationType.REMOTE || ejbInvocationType == EJBInvocationType.LOCAL) {
+            translated = MethodHelper.translateToObject(signatures);
+        } else {
+            throw new AssertionError("Unsupported invocation type " +  ejbInvocationType);
+        }
 
         // get the map from method keys to the intercepted shadow index
         Map proxyToShadowIndex = buildProxyToShadowIndex(proxyType);
@@ -88,42 +93,6 @@ public class EJBProxyHelper {
     }
 
     /**
-     * Translates the implementation method signatures to interface method signatures.
-     * @param signatures the implementation method signatures
-     * @return the matching interface method signatures
-     */
-    private static MethodSignature[] translate(EJBInvocationType ejbInvocationType, MethodSignature[] signatures) {
-        MethodSignature[] translated = new MethodSignature[signatures.length];
-        if (ejbInvocationType == EJBInvocationType.HOME || ejbInvocationType == EJBInvocationType.LOCALHOME) {
-            for (int i = 0; i < signatures.length; i++) {
-                MethodSignature signature = signatures[i];
-                String name = signature.getMethodName();
-                if (name.startsWith("ejbCreate")) {
-                    translated[i] = new MethodSignature("c" + name.substring(4), signature.getParameterTypes());
-                } else if (name.startsWith("ejbFind")) {
-                    translated[i] = new MethodSignature("f" + name.substring(4), signature.getParameterTypes());
-                } else if (name.startsWith("ejbHome")) {
-                    String translatedName = Character.toLowerCase(name.charAt(7)) + name.substring(8);
-                    translated[i] = new MethodSignature(translatedName, signature.getParameterTypes());
-                } else if (name.startsWith("ejbRemove")) {
-                    translated[i] = new MethodSignature("remove", signature.getParameterTypes());
-                }
-            }
-        } else if (ejbInvocationType == EJBInvocationType.REMOTE || ejbInvocationType == EJBInvocationType.LOCAL) {
-            for (int i = 0; i < signatures.length; i++) {
-                MethodSignature signature = signatures[i];
-                String name = signature.getMethodName();
-                if (name.startsWith("ejbRemove")) {
-                    translated[i] = new MethodSignature("remove", signature.getParameterTypes());
-                } else {
-                    translated[i] = new MethodSignature(signature.getMethodName(), signature.getParameterTypes());
-                }
-            }
-        }
-        return translated;
-    }
-
-    /**
      * Builds a map from the MethodKeys for the real method to the index of
      * the shadow method, which is the same number returned from MethodProxy.getSuperIndex().
      * The map contains only the MethodKeys of methods that have shadow methods (i.e., only
@@ -135,7 +104,7 @@ public class EJBProxyHelper {
         Map shadowMap = new HashMap();
         Method[] methods = proxyType.getDeclaredMethods();
         for (int i = 0; i < methods.length; i++) {
-            int shadowIndex = getSuperIndex(proxyType, methods[i]);
+            int shadowIndex = MethodHelper.getSuperIndex(proxyType, methods[i]);
             if (shadowIndex >= 0) {
                 if (methods[i].getName().equals("remove")) {
                     shadowMap.put(new MethodSignature("remove"), new Integer(shadowIndex));
@@ -145,14 +114,5 @@ public class EJBProxyHelper {
             }
         }
         return shadowMap;
-    }
-
-    public static int getSuperIndex(Class proxyType, Method method) {
-        Signature signature = new Signature(method.getName(), Type.getReturnType(method), Type.getArgumentTypes(method));
-        MethodProxy methodProxy = MethodProxy.find(proxyType, signature);
-        if (methodProxy != null) {
-            return methodProxy.getSuperIndex();
-        }
-        return -1;
     }
 }

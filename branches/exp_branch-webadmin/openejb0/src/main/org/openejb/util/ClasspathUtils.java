@@ -44,9 +44,9 @@
  */
 package org.openejb.util;
 
-import java.net.*;
-import java.net.URL;
 import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 

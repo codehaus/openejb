@@ -49,26 +49,26 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.SecurityException;
 import java.net.URL;
 import java.util.jar.JarFile;
+
 import org.openejb.OpenEJBException;
 
 /**
  * @author <a href="mailto:adc@toolazydogs.com">Alan Cabrera</a>
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
-public class JarUtils{
-    
-    private static Messages messages = new Messages( "org.openejb.util.resources" );
-    
+public class JarUtils {
+
+    private static Messages messages = new Messages("org.openejb.util.resources");
+
     static {
         setHandlerSystemProperty();
     }
-    
+
     private static boolean alreadySet = false;
 
-    public static void setHandlerSystemProperty(){
+    public static void setHandlerSystemProperty() {
         if (!alreadySet) {
             /*
              * Setup the java protocol handler path to include org.openejb.util.urlhandler
@@ -76,55 +76,57 @@ public class JarUtils{
              * of the form "resource:/path".
              */
             try {
-                String oldPkgs = System.getProperty( "java.protocol.handler.pkgs" );
+                String oldPkgs = System.getProperty("java.protocol.handler.pkgs");
 
-                if ( oldPkgs == null )
-                    System.setProperty( "java.protocol.handler.pkgs", "org.openejb.util.urlhandler" );
-                else if ( oldPkgs.indexOf( "org.openejb.util.urlhandler" ) < 0 )
-                    System.setProperty( "java.protocol.handler.pkgs", oldPkgs + "|" + "org.openejb.util.urlhandler" );
+                if (oldPkgs == null)
+                    System.setProperty("java.protocol.handler.pkgs", "org.openejb.util.urlhandler");
+                else if (oldPkgs.indexOf("org.openejb.util.urlhandler") < 0)
+                    System.setProperty(
+                        "java.protocol.handler.pkgs",
+                        oldPkgs + "|" + "org.openejb.util.urlhandler");
 
-            } catch ( SecurityException ex ) {
-            }
+            } catch (SecurityException ex) {}
             alreadySet = true;
         }
     }
 
-    public static File getJarContaining(String path) throws OpenEJBException{
-        File jarFile = null;        
+    public static File getJarContaining(String path) throws OpenEJBException {
+        File jarFile = null;
         try {
-            URL url = new URL("resource:/"+path);
-        
+            URL url = new URL("resource:/" + path);
+
             /*
              * If we loaded the configuration from a jar, either from a jar:
              * URL or a resource: URL, we must strip off the config file location
              * from the URL.
              */
             String jarPath = null;
-            if ( url.getProtocol().compareTo("resource") == 0 ) {
-                String resource = url.getFile().substring( 1 );
-                url = ClassLoader.getSystemResource( resource );
+            if (url.getProtocol().compareTo("resource") == 0) {
+                String resource = url.getFile().substring(1);
+                url = ClassLoader.getSystemResource(resource);
                 if (url == null) {
-                    throw new OpenEJBException("Could not locate a jar containing the path "+path);
+                    throw new OpenEJBException(
+                        "Could not locate a jar containing the path " + path);
                 }
             }
-            
-            if ( url != null  ) {
+
+            if (url != null) {
                 jarPath = url.getFile();
-                jarPath = jarPath.substring( 0, jarPath.indexOf('!') );
-                jarPath = jarPath.substring( "file:".length() );
+                jarPath = jarPath.substring(0, jarPath.indexOf('!'));
+                jarPath = jarPath.substring("file:".length());
             }
 
             jarFile = new File(jarPath);
             jarFile = jarFile.getAbsoluteFile();
-        } catch (Exception e){
-            throw new OpenEJBException("Could not locate a jar containing the path "+path, e);
+        } catch (Exception e) {
+            throw new OpenEJBException("Could not locate a jar containing the path " + path, e);
         }
         return jarFile;
-    }	
+    }
 
-    public static void addFileToJar(String jarFile, String file ) throws OpenEJBException{
+    public static void addFileToJar(String jarFile, String file) throws OpenEJBException {
         ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
-    
+
         /* NOTE: Sadly, we have to play this little game 
          * with temporarily switching the standard error
          * stream to capture the errors.
@@ -135,43 +137,47 @@ public class JarUtils{
         PrintStream newErr = new PrintStream(errorBytes);
         PrintStream oldErr = System.err;
         System.setErr(newErr);
-    
+
         sun.tools.jar.Main jarTool = new sun.tools.jar.Main(newErr, newErr, "config_utils");
-    
-        String[] args = new String[]{"uf",jarFile,file};
+
+        String[] args = new String[] { "uf", jarFile, file };
         jarTool.run(args);
-    
+
         System.setErr(oldErr);
-    
-        try{
-        errorBytes.close();
-        newErr.close();
-        } catch (Exception e){
-            throw new OpenEJBException( messages.format("file.0020",jarFile, e.getLocalizedMessage()));
+
+        try {
+            errorBytes.close();
+            newErr.close();
+        } catch (Exception e) {
+            throw new OpenEJBException(
+                messages.format("file.0020", jarFile, e.getLocalizedMessage()));
         }
-    
+
         String error = new String(errorBytes.toByteArray());
+        System.out.println(error); //timu - temp remove later
         if (error.indexOf("java.io.IOException") != -1) {
             // an IOException was thrown!
             // clean the error message
-            int begin = error.indexOf(':')+1;
+            int begin = error.indexOf(':') + 1;
             int end = error.indexOf('\n');
             String message = error.substring(begin, end);
-            throw new OpenEJBException( messages.format("file.0003", file, jarFile, message) );
+            throw new OpenEJBException(messages.format("file.0003", file, jarFile, message));
         }
-    
+
     }
 
-    public static JarFile getJarFile(String jarFile) throws OpenEJBException{
+    public static JarFile getJarFile(String jarFile) throws OpenEJBException {
         /*[1.1]  Get the jar ***************/
         JarFile jar = null;
         try {
             File file = new File(jarFile);
             jar = new JarFile(file);
-        } catch ( FileNotFoundException e ) {
-            throw new OpenEJBException( messages.format("file.0001", jarFile, e.getLocalizedMessage()));
-        } catch ( IOException e ) {
-            throw new OpenEJBException( messages.format("file.0002", jarFile, e.getLocalizedMessage()));
+        } catch (FileNotFoundException e) {
+            throw new OpenEJBException(
+                messages.format("file.0001", jarFile, e.getLocalizedMessage()));
+        } catch (IOException e) {
+            throw new OpenEJBException(
+                messages.format("file.0002", jarFile, e.getLocalizedMessage()));
         }
         return jar;
     }

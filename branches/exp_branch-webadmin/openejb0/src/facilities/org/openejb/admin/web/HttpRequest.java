@@ -44,7 +44,6 @@
  */
 package org.openejb.admin.web;
 
-import java.util.HashMap;
 
 /** An interface to take care of HTTP Requests.  It parses headers, content, form and url
  *  parameters.

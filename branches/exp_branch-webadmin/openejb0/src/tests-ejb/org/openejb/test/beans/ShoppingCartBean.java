@@ -44,9 +44,15 @@
  */
 package org.openejb.test.beans;
 
-import javax.ejb.*;
-import javax.naming.*;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import javax.ejb.SessionBean;
+import javax.ejb.SessionContext;
+import javax.naming.Context;
+import javax.naming.InitialContext;
 
 public class ShoppingCartBean  implements SessionBean, javax.ejb.SessionSynchronization{
     

@@ -44,18 +44,21 @@
  */
 package org.openejb.server.admin;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.StringTokenizer;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Iterator;
-import org.openejb.util.JarUtils;
-import javax.naming.*;
+import java.util.Map;
+import java.util.Properties;
+import java.util.StringTokenizer;
+
 import org.openejb.admin.web.HttpResponse;
+import org.openejb.util.JarUtils;
 
 /** This class takes care of HTTP Responses.  It sends data back to the browser.
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>

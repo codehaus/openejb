@@ -49,10 +49,10 @@
 
 package org.openejb.util.urlhandler.resource;
 
-import org.openejb.util.Logger;
-
 import java.net.URL;
 import java.net.URLConnection;
+
+import org.openejb.util.Logger;
 
 /**
  *

@@ -44,8 +44,10 @@
  */
 package org.openejb.test.entity.bmp;
 
-import javax.ejb.*;
-import javax.naming.InitialContext;
+import javax.ejb.EJBMetaData;
+import javax.ejb.EJBObject;
+import javax.ejb.Handle;
+
 import org.openejb.test.object.ObjectGraph;
 
 /**

@@ -50,10 +50,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
-import java.util.StringTokenizer;
 
 import javax.ejb.Handle;
 import javax.naming.Context;
@@ -73,6 +73,7 @@ import org.openejb.util.FileUtils;
  * 2. Finish implementing the writeForm function 
  * 3. Add documentation
  * 4. Fix ejb-link error on startup
+ * 5. Fix force overwrite error
  *
  * @author  <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
@@ -115,7 +116,6 @@ public class DeployBean extends WebAdminBean {
 
     /** writes the main body content to the broswer.  This content is inside a <code>&lt;p&gt;</code> block
      *
-     *
      * @param body the output to write to
      * @exception IOException if an exception is thrown
      *
@@ -148,7 +148,26 @@ public class DeployBean extends WebAdminBean {
             }
         } catch (Exception e) {
             //timu - Create a generic error screen
-            body.println(e.getMessage());
+            handleException(e, body);
+            e.printStackTrace();
+        }
+    }
+
+    private void handleException(Exception e, PrintWriter body) {
+        if(e instanceof UndeclaredThrowableException) {
+            UndeclaredThrowableException ue = (UndeclaredThrowableException) e;
+            Throwable t = ue.getUndeclaredThrowable();
+            if(t != null) {
+                body.println(t.getMessage());
+            } else {
+                body.println("An unknown system error occured.");
+            }
+        } else {
+            if(e != null) {
+                body.println(e.getMessage());
+            } else {
+                body.println("An unknown system error occured.");
+            }
         }
     }
 
@@ -161,8 +180,6 @@ public class DeployBean extends WebAdminBean {
         String[][] tempEjbName;
         String[][] tempResourceRef;
         String[][] tempResourceName;
-        StringTokenizer ejbRefToken;
-        StringTokenizer resourceRefToken;
 
         String deployerHandleString = request.getFormParameter("deployerHandle");
         getDeployerHandle(deployerHandleString); //gets the deployment handle
@@ -203,12 +220,15 @@ public class DeployBean extends WebAdminBean {
         }
 
         //print out a message to the user to let them know thier bean was deployed
-        body.println("You jar is now deployed.  If you chose to move or copy your jar" +
-            "from it's original location, you will now find it in: " + System.getProperty("openejb.home") + 
-            System.getProperty("file.separator") + "beans. You will need to restart OpenEJB for this " +
-                "deployment to take affect.  Once you restart, you should see your bean(s) in the " +
-                "<a href=\"DeploymentList\">list of beans</a> on this console.  Below is a table of " +
-                "the bean(s) you deployed.<br>");
+        body.println(
+            "You jar is now deployed.  If you chose to move or copy your jar"
+                + "from it's original location, you will now find it in: "
+                + System.getProperty("openejb.home")
+                + System.getProperty("file.separator")
+                + "beans. You will need to restart OpenEJB for this "
+                + "deployment to take affect.  Once you restart, you should see your bean(s) in the "
+                + "<a href=\"DeploymentList\">list of beans</a> on this console.  Below is a table of "
+                + "the bean(s) you deployed.<br><br>");
 
         printDeploymentHtml(body);
         deployer.remove();
@@ -252,7 +272,7 @@ public class DeployBean extends WebAdminBean {
         String[][] returnValue = new String[referenceId.length][2];
 
         if (referenceId.length != referenceName.length) {
-            throw new OpenEJBException("referenceId is not the same size as referenceName");
+            throw new OpenEJBException("referenceId length is not the same size as referenceName length ");
         }
 
         for (int i = 0; i < referenceId.length; i++) {

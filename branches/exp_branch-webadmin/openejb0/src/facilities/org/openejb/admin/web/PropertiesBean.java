@@ -44,8 +44,13 @@
  */
 package org.openejb.admin.web;
 
-import java.util.*;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.StringTokenizer;
 
 /** Prints out a list of system properties for the server.
  * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>

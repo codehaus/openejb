@@ -43,6 +43,7 @@
  */
 package org.openejb.admin.web;
 
+import java.io.File;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Vector;
@@ -158,6 +159,29 @@ public class DeployerBean implements javax.ejb.SessionBean {
             jar = EjbJarUtils.readEjbJar(this.jarFile);
         } catch (OpenEJBException oe) {
             throw new RemoteException(this.jarFile + " is not a valid jar file. ");
+        }
+
+        //we don't want to perform this check if we're forcing overwrite
+        if (!this.options[2]) {
+            File tempJarFile = new File(this.jarFile);
+            //check for existing jar
+            File beansDir =
+                new File(
+                    System.getProperty("openejb.home")
+                        + System.getProperty("file.separator")
+                        + "beans");
+
+            File[] beans = beansDir.listFiles();
+            for (int i = 0; i < beans.length; i++) {
+                if (tempJarFile.getName().equalsIgnoreCase(beans[i].getName())) {
+                    throw new RemoteException(
+                        tempJarFile.getName()
+                            + " already exists in "
+                            + System.getProperty("openejb.home")
+                            + System.getProperty("file.separator")
+                            + "beans");
+                }
+            }
         }
 
         openejbJar = new OpenejbJar();

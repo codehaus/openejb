@@ -44,18 +44,11 @@
  */
 package org.openejb.alt.config;
 
-import org.openejb.alt.config.sys.*;
-import org.openejb.alt.config.rules.*;
-import org.openejb.alt.config.ejb11.*;
 import org.openejb.OpenEJBException;
+import org.openejb.alt.config.ejb11.EjbJar;
+import org.openejb.alt.config.rules.CheckClasses;
+import org.openejb.alt.config.rules.CheckMethods;
 import org.openejb.util.Messages;
-import org.openejb.util.FileUtils;
-import org.openejb.util.SafeToolkit;
-import java.util.Enumeration;
-import java.util.Vector;
-import java.io.PrintStream;
-import java.io.DataInputStream;
-import java.io.File;
 
 
 /**

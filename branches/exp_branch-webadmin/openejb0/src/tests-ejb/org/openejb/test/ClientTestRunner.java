@@ -44,12 +44,8 @@
  */
 package org.openejb.test;
 
-import junit.framework.TestFailure;
-import junit.framework.TestResult;
 import junit.framework.Test;
-//import junit.util.StringUtil;
-import java.io.PrintStream;
-import java.util.Enumeration;
+import junit.framework.TestResult;
 
 /**
  * 

@@ -45,7 +45,6 @@
 package org.openejb.resource.jdbc;
 
 import javax.resource.spi.LocalTransaction;
-import java.sql.Connection;
 
 public class JdbcLocalTransaction 
 implements LocalTransaction {

@@ -44,25 +44,16 @@
  */
 package org.openejb.test.entity.cmp;
 
-import javax.ejb.*;
+import java.rmi.RemoteException;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.StringTokenizer;
-import java.rmi.RemoteException;
-import javax.sql.*;
-import java.sql.*;
+
+import javax.ejb.EJBException;
+import javax.ejb.EntityContext;
+import javax.ejb.RemoveException;
+
 import org.openejb.test.object.OperationsPolicy;
-import javax.naming.InitialContext;
-import org.openejb.test.TestFailureException;
-import junit.framework.AssertionFailedError;
-import junit.framework.Assert;
-import org.openejb.test.entity.cmp.BasicCmpHome;
-import org.openejb.test.entity.cmp.BasicCmpObject;
-import org.openejb.test.object.OperationsPolicy;
-import org.openejb.test.stateful.BasicStatefulHome;
-import org.openejb.test.stateful.BasicStatefulObject;
-import org.openejb.test.stateless.BasicStatelessHome;
-import org.openejb.test.stateless.BasicStatelessObject;
 
 /**
  * 

@@ -121,11 +121,12 @@ public class ListLogsBean extends WebAdminBean {
         }
         body.println("<br><br>");
 
+        //calculate the size of the file in kb or bytes
         String fileLength = "0 bytes";
         long longFileLength = 0;
         if(openejbLogs[printIndex].length() > 0) {
-            longFileLength = openejbLogs[printIndex].length() / 1000;
-            if(longFileLength > 0) {
+            if(openejbLogs[printIndex].length() > 1000) {
+                longFileLength = openejbLogs[printIndex].length() / 1000;
                 fileLength = String.valueOf(longFileLength) + " kb";
             } else {
                 fileLength = String.valueOf(openejbLogs[printIndex].length()) + " bytes";

@@ -50,7 +50,10 @@ import java.net.*;
 import java.util.*;
 import org.openejb.client.*;
 import org.openejb.util.Messages;
+import org.openejb.util.Logger;
 
+import org.openejb.OpenEJB;
+import org.openejb.spi.SecurityService;
 import org.openejb.DeploymentInfo;
 import org.openejb.RpcContainer;
 import java.rmi.RemoteException;
@@ -62,6 +65,8 @@ import java.rmi.RemoteException;
 public abstract class EjbMethod implements ResponseCodes, RequestMethods {
 
     static Messages messages = new Messages( "org.openejb.server.ejbd" );
+    // TODO: Get the logger from the ServerManager/ or context
+    Logger logger = Logger.getInstance( "OpenEJB.server.remote", "org.openejb.server.ejbd" );
 
     public void process(EJBRequest req, EJBResponse res){
         CallContext  call = null;
@@ -71,18 +76,14 @@ public abstract class EjbMethod implements ResponseCodes, RequestMethods {
         try {
             di = getDeployment(req);
         } catch (RemoteException e) {
-            replyWithFatalError
-            (out, e, "No such deployment");
+            String msg = messages.format("unkown.deployment");
+            RemoteException re = new RemoteException(msg, e);
+            res.setResponse(EJB_ERROR, re);
             return;
-            /*
-            logger.warn( req + "No such deployment: "+e.getMessage());
-            res.setResponse( EJB_SYS_EXCEPTION, e);
-            res.writeExternal( out );
-            return;
-            */
         } catch ( Throwable t ) {
-            replyWithFatalError
-            (out, t, "Unkown error occured while retrieving deployment");
+            String msg = messages.format("get.deployment.error");
+            RemoteException re = new RemoteException(msg, t);
+            res.setResponse(EJB_ERROR, re);
             return;
         }
 
@@ -91,8 +92,9 @@ public abstract class EjbMethod implements ResponseCodes, RequestMethods {
             call.setEJBRequest( req );
             call.setDeploymentInfo( di );
         } catch ( Throwable t ) {
-            replyWithFatalError
-            (out, t, "Unable to set the thread context for this request");
+            String msg = messages.format("set.context.error");
+            RemoteException re = new RemoteException(msg, t);
+            res.setResponse(EJB_ERROR, re);
             return;
         }
 
@@ -110,13 +112,31 @@ public abstract class EjbMethod implements ResponseCodes, RequestMethods {
             // we should restart the container system or take other
             // aggressive actions to attempt recovery.
             String msg = messages.format("container.error", e,req.toString());
-            //logger.fatal(msg,e);
+            logger.fatal(msg,e);
         } finally {
             call.reset();
         }
     }
 
     public abstract void invoke(EJBRequest req, EJBResponse res) throws Exception;
+
+    protected void checkMethodAuthorization( EJBRequest req, EJBResponse res ) throws Exception {
+        // Nothing to do here other than check to see if the client
+        // is authorized to call this method
+        // TODO:3: Keep a cache in the client-side handler of methods it can't access
+
+        SecurityService sec = OpenEJB.getSecurityService();
+        CallContext caller  = CallContext.getCallContext();
+        DeploymentInfo di   = caller.getDeploymentInfo();
+        String[] authRoles  = di.getAuthorizedRoles( req.getMethodInstance() );
+
+        if (sec.isCallerAuthorized( req.getClientIdentity(), authRoles )) {
+            res.setResponse( EJB_OK, null );
+        } else {
+            logger.info(req + "Unauthorized Access by Principal Denied");
+            res.setResponse( EJB_APP_EXCEPTION , new RemoteException("Unauthorized Access by Principal Denied") );
+        }
+    }
 
 
 }

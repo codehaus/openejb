@@ -25,6 +25,10 @@
         deployment-id="webadmin/Deployment"
         container-id="Default Stateless Container"/>
     <ejb-deployment 
+        ejb-name="webadmin/DeploymentList" 
+        deployment-id="webadmin/DeploymentList"
+        container-id="Default Stateless Container"/>
+    <ejb-deployment 
         ejb-name="deploy/webadmin/Deployer" 
         deployment-id="deploy/webadmin/Deployer"
         container-id="Default Stateful Container"/>

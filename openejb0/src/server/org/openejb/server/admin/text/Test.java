@@ -44,11 +44,9 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -59,7 +57,7 @@ public class Test extends Command {
         Command.register("test", Test.class);
     }
 
-    public void exec(Arguments args, DataInputStream in, PrintStream out) throws IOException{
+    public void exec(String[] args, DataInputStream in, PrintStream out) throws IOException{
         try{
 
             InputStream file = new FileInputStream("print.txt");

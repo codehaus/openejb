@@ -44,12 +44,12 @@
  */
 package org.openejb.test;
 
-import java.io.DataInputStream;
+import junit.framework.*;
 import java.io.File;
-import java.net.URL;
-import java.util.Properties;
-
+import java.io.*;
+import java.util.*;
 import javax.naming.Context;
+import java.net.URL;
 
 /**
  * The Client test suite needs the following environment variables

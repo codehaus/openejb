@@ -43,10 +43,10 @@
  * $Id$
  */package org.openejb.resource.jdbc;
 
-import java.sql.SQLException;
-
-import javax.resource.ResourceException;
+import javax.resource.spi.ManagedConnectionFactory;
 import javax.resource.spi.ConnectionManager;
+import javax.resource.ResourceException;
+import java.sql.SQLException;
 
 /*
 * As a connection factory the JdbcConnecitonFactory must implement the Serializable and 

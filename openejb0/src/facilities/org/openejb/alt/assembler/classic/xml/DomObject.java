@@ -45,7 +45,8 @@
 
 package org.openejb.alt.assembler.classic.xml;
 
-import org.openejb.OpenEJBException;
+import org.openejb.OpenEJBException;    
+import org.w3c.dom.Node;
 
 public interface DomObject {
 

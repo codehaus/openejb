@@ -44,16 +44,11 @@
  */
 package org.openejb.ri.server;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
-import java.net.URL;
+import java.net.*;
+import java.io.*;
 import java.util.Hashtable;
-
 import javax.naming.Context;
 import javax.naming.NamingException;
-
 import org.openejb.util.Messages;
 
 /**

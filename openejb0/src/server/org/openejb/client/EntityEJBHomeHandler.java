@@ -44,11 +44,17 @@
  */
 package org.openejb.client;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.rmi.RemoteException;
-
+import java.security.Principal;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Vector;
+import javax.ejb.EJBHome;
 import javax.ejb.EJBObject;
 import javax.ejb.Handle;
+import org.openejb.client.proxy.*;
 
 /**
  * 

@@ -44,8 +44,9 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 public class TelnetPrintStream extends PrintStream {
     

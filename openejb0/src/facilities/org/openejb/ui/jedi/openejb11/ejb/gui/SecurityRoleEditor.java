@@ -44,16 +44,12 @@
  */
 package org.openejb.ui.jedi.openejb11.ejb.gui;
 
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.Set;
-
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JTextField;
+import javax.swing.event.*;
+import javax.swing.*;
+import javax.swing.text.JTextComponent;
 
 /**
  * GUI for editing Security Role properties.

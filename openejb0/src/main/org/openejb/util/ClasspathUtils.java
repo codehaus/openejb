@@ -44,11 +44,12 @@
  */
 package org.openejb.util;
 
-import java.io.File;
+import java.net.*;
 import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.File;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.net.URLClassLoader;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>

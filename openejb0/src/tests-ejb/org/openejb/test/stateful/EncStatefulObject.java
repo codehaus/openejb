@@ -44,8 +44,10 @@
  */
 package org.openejb.test.stateful;
 
+import javax.ejb.*;
+import java.util.Properties;
+import org.openejb.test.object.OperationsPolicy;
 import java.rmi.RemoteException;
-
 import org.openejb.test.TestFailureException;
 
 /**

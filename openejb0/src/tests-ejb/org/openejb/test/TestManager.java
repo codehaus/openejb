@@ -1,8 +1,9 @@
 package org.openejb.test;
 
+import junit.framework.*;
 import java.io.File;
-import java.io.FileInputStream;
-import java.util.Properties;
+import java.io.*;
+import java.util.*;
 
 /**
  * 

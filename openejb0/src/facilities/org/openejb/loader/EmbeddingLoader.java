@@ -44,10 +44,11 @@
  */
 package org.openejb.loader;
 
-import java.io.File;
 import java.util.Hashtable;
-
+import java.util.Properties;
+import org.openejb.EnvProps;
 import org.openejb.util.ClasspathUtils;
+import java.io.File;
 
 /**
  * 

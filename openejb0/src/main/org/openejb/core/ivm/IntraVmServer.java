@@ -1,16 +1,18 @@
 package org.openejb.core.ivm;
 
-import javax.ejb.EJBHome;
+import org.openejb.ProxyInfo;
 import javax.ejb.EJBMetaData;
-import javax.ejb.EJBObject;
 import javax.ejb.Handle;
 import javax.ejb.HomeHandle;
-
-import org.openejb.ProxyInfo;
-import org.openejb.core.entity.EntityEjbHomeHandler;
-import org.openejb.core.stateful.StatefulEjbHomeHandler;
-import org.openejb.core.stateless.StatelessEjbHomeHandler;
+import javax.ejb.EJBObject;
+import javax.ejb.EJBHome;
 import org.openejb.util.proxy.ProxyManager;
+import org.openejb.core.entity.EntityEjbHomeHandler;
+import org.openejb.core.entity.EntityEjbObjectHandler;
+import org.openejb.core.stateful.StatefulEjbHomeHandler;
+import org.openejb.core.stateful.StatefulEjbObjectHandler;
+import org.openejb.core.stateless.StatelessEjbHomeHandler;
+import org.openejb.core.stateless.StatelessEjbObjectHandler;
 
 /**
  * <h2><b>REMOTE to LOCAL SERIALIZATION</b></h2> <p>

@@ -44,6 +44,13 @@
  */
 package org.openejb.test.stateless;
 
+import junit.framework.*;
+import javax.ejb.*;
+import java.util.Properties;
+import javax.naming.InitialContext;
+import javax.naming.Context;
+import javax.naming.NameClassPair;
+import javax.naming.NamingEnumeration;
 import org.openejb.test.object.OperationsPolicy;
 
 /**

@@ -44,16 +44,16 @@
  */
 package org.openejb.test.entity.cmp;
 
-import java.rmi.RemoteException;
+import javax.ejb.*;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.StringTokenizer;
-
-import javax.ejb.EJBException;
-import javax.ejb.EntityContext;
-import javax.ejb.RemoveException;
-
+import java.rmi.RemoteException;
+import javax.sql.*;
+import java.sql.*;
 import org.openejb.test.object.OperationsPolicy;
+import org.openejb.test.TestFailureException;
+import javax.naming.InitialContext;
 
 /**
  * 

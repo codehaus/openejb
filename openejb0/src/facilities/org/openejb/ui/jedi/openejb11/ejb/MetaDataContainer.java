@@ -44,8 +44,8 @@
  */
 package org.openejb.ui.jedi.openejb11.ejb;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  * The metadata for an OpenEJB Container.  Metadata is loaded by the XMLReader,

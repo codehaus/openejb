@@ -44,15 +44,9 @@
  */
 package org.openejb.test.beans;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
-import javax.ejb.SessionBean;
-import javax.ejb.SessionContext;
-import javax.naming.Context;
-import javax.naming.InitialContext;
+import javax.ejb.*;
+import javax.naming.*;
+import java.sql.*;
 
 public class ShoppingCartBean  implements SessionBean, javax.ejb.SessionSynchronization{
     
@@ -118,6 +112,7 @@ public class ShoppingCartBean  implements SessionBean, javax.ejb.SessionSynchron
         calc.sub(1,2);
         
         int i =  1;
+        i = i;
         
         }catch(java.rmi.RemoteException re){
             throw new RuntimeException("Accessing Calculator bean failed");

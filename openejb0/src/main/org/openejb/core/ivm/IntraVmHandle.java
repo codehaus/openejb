@@ -45,10 +45,8 @@
 package org.openejb.core.ivm;
 
 import java.io.ObjectStreamException;
-
 import javax.ejb.EJBHome;
 import javax.ejb.EJBObject;
-
 import org.openejb.util.proxy.ProxyManager;
 
 /**

@@ -45,7 +45,6 @@
 package org.openejb.alt.assembler.modern;
 
 import java.net.URL;
-
 import org.openejb.OpenEJBException;
 
 /**

@@ -47,7 +47,6 @@ package org.openejb.client.proxy;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
-
 import org.opentools.proxies.Proxy;
 
 /**

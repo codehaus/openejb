@@ -44,17 +44,10 @@
  */
 package org.openejb.util;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarInputStream;
+import java.util.*;
+import java.util.jar.*;
 
 /**
  * Works around deficencies in Sun's URLClassLoader implementation.

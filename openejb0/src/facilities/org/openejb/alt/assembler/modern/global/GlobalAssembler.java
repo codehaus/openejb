@@ -44,27 +44,24 @@
  */
 package org.openejb.alt.assembler.modern.global;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Properties;
-
+import java.util.*;
+import java.util.jar.*;
 import javax.transaction.TransactionManager;
 
 import org.openejb.EnvProps;
 import org.openejb.OpenEJBException;
-import org.openejb.alt.assembler.modern.AssemblerUtilities;
-import org.openejb.alt.assembler.modern.DeployerService;
-import org.openejb.alt.assembler.modern.GlobalContainerSystem;
 import org.openejb.spi.Assembler;
 import org.openejb.spi.SecurityService;
 import org.openejb.util.SafeProperties;
+import org.openejb.util.SafeToolkit;
+import org.openejb.alt.assembler.modern.AssemblerUtilities;
+import org.openejb.alt.assembler.modern.DeployerService;
+import org.openejb.alt.assembler.modern.GlobalContainerSystem;
+import org.openejb.alt.assembler.modern.MetaData;
 
 /**
  * Assembler implementation that handles global OpenEJB configuration.  It

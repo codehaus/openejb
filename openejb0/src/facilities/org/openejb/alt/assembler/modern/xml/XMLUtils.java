@@ -44,12 +44,9 @@
  */
 package org.openejb.alt.assembler.modern.xml;
 
-import java.util.LinkedList;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.openejb.alt.assembler.modern.global.*;
+import java.util.*;
+import org.w3c.dom.*;
 
 /**
  * Utility functions for reading and writing DOM trees.

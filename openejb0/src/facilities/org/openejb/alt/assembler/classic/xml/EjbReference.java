@@ -48,6 +48,7 @@ package org.openejb.alt.assembler.classic.xml;
 
 import org.openejb.OpenEJBException;
 import org.openejb.alt.assembler.classic.EjbReferenceInfo;
+import org.openejb.alt.assembler.classic.EjbReferenceLocationInfo;
 import org.w3c.dom.Node;
 
 /**

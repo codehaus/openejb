@@ -44,9 +44,8 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.FilterInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>

@@ -44,6 +44,8 @@
  */
 package org.openejb.ui.jedi.openejb11.server;
 
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * The metadata for the Security Service.  Metadata is loaded by the XMLReader,

@@ -6,7 +6,6 @@
   <body>
   <sideimg src="images/diagram-tomcat-adapter.gif" width="240" height="500"/>
 
-
 <section title="Notes" ref-id="intro">
 <p>
 These are my notes from writing the Tomcat/OpenEJB integration.  These are 
@@ -22,7 +21,6 @@ that, there isn't a whole lot of information on what is going on behind
 the sences.  So, I encourage *anyone* to feel completely welcome (perhaps 
 obligated) to rewrite this document.  
 </p>
-
 
 <p>
 <i>Anyone...anyone...Bueller...Bueller....</i>
@@ -45,7 +43,6 @@ Here is some
 information about my setup </p>
 
 <p>
-
 <code-block>
 dblevins@Miles /dev/j2ee
 $ pwd
@@ -215,6 +212,7 @@ import javax.naming.*;
 import org.acme.*;
 
 public class HelloOpenEJB extends HttpServlet {
+
     String factory = "org.openejb.client.LocalInitialContextFactory";
 
     public void doGet(HttpServletRequest request, HttpServletResponse response)

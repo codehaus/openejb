@@ -44,7 +44,10 @@
  */
 package org.openejb.test.entity.cmp;
 
-import javax.ejb.EJBHome;
+import junit.framework.*;
+import javax.ejb.*;
+import java.util.Properties;
+import javax.naming.InitialContext;
 
 /**
  * [4] Should be run as the fourth test suite of the BasicCmpTestClients

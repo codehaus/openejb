@@ -44,17 +44,16 @@
  */
 package org.openejb.core.stateful;
 
+import org.openejb.util.FileUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Properties;
-
+import java.lang.reflect.Field;
+import java.util.*;
+import javax.ejb.SessionBean;
 import org.openejb.core.EnvProps;
-import org.openejb.util.FileUtils;
 /**
  * 
  * @author <a href="mailto:Richard@Monson-Haefel.com">Richard Monson-Haefel</a>

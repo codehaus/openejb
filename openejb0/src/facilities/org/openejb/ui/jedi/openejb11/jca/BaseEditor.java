@@ -45,6 +45,7 @@
 package org.openejb.ui.jedi.openejb11.jca;
 
 import org.opentools.deployer.plugins.Editor;
+import java.awt.Component;
 import org.opentools.deployer.plugins.Plugin;
 
 /**

@@ -44,31 +44,23 @@
  */
 package org.openejb.alt.config;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.io.*;
+import java.net.*;
 import java.util.Enumeration;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-
+import java.util.*;
+import java.util.Properties;
+import java.util.Vector;
+import java.util.jar.*;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
+import org.exolab.castor.xml.Unmarshaller;
 import org.openejb.OpenEJBException;
-import org.openejb.alt.config.ejb11.OpenejbJar;
-import org.openejb.alt.config.sys.Deployments;
-import org.openejb.alt.config.sys.Openejb;
+import org.openejb.alt.assembler.classic.*;
+import org.openejb.alt.config.ejb11.*;
+import org.openejb.alt.config.sys.*;
+import org.openejb.util.Logger;
 import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
-import org.openejb.util.Logger;
 import org.openejb.util.Messages;
 
 /**

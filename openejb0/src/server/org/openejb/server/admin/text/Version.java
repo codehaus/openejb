@@ -44,11 +44,10 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.util.Properties;
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import org.openejb.server.EjbDaemon;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -59,7 +58,7 @@ public class Version extends Command {
         Command.register("version", Version.class);
     }
 
-    public void exec(Arguments args, DataInputStream in, PrintStream out) throws IOException{
+    public void exec(String[] args, DataInputStream in, PrintStream out) throws IOException{
         /*
          * Output startup message
          */

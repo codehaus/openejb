@@ -44,17 +44,12 @@
  */
 package org.openejb.alt.config;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.HashMap;
-
+import java.io.*;
+import java.util.*;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import java.net.URL;
 
 /**
  * Loads DTDs from disk so you don't have to hit the web to validate

@@ -45,9 +45,10 @@
 
 package org.openejb.alt.assembler.classic.xml;
 
-import org.openejb.OpenEJBException;
 import org.openejb.alt.assembler.classic.StatelessBeanInfo;
+
 import org.w3c.dom.Node;
+import org.openejb.OpenEJBException;
 
 /**
  * A subclass of StatelessBeanInfo filled with data from an XML file.

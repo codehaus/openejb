@@ -46,6 +46,8 @@
 
 package org.openejb.ri.server;
 
+import java.util.HashMap;
+import java.util.Vector;
 import org.openejb.Container;
 import org.openejb.DeploymentInfo;
 import org.openejb.util.proxy.ProxyManager;

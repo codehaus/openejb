@@ -45,6 +45,7 @@
 package org.openejb.loader;
 
 import java.util.Hashtable;
+import org.openejb.util.ClasspathUtils;
 
 
 /**

@@ -44,9 +44,9 @@
  */
 package org.openejb.server.admin.text;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -57,11 +57,11 @@ public class Prompt extends Command {
         Command.register("prompt", Prompt.class);
     }
 
-    public void exec(Arguments args, DataInputStream in, PrintStream out) throws IOException{
+    public void exec(String[] args, DataInputStream in, PrintStream out) throws IOException{
         try{
-            if (args.count() == 0) return;
+            if (args.length == 0) return;
 
-            TextConsole.PROMPT = args.get(0);
+            TextConsole.PROMPT = args[0];
 
         } catch (Exception e){
             e.printStackTrace();

@@ -55,12 +55,10 @@ import java.util.HashMap;
 import javax.ejb.EntityContext;
 
 import net.sf.cglib.proxy.CallbackFilter;
-import net.sf.cglib.proxy.Callbacks;
 import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.Factory;
-import net.sf.cglib.proxy.SimpleCallbacks;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.NoOp;
 import net.sf.cglib.reflect.FastClass;
-
 import org.openejb.nova.dispatch.AbstractOperationFactory;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
@@ -77,8 +75,14 @@ import org.openejb.nova.persistence.QueryCommand;
 public class CMPOperationFactory extends AbstractOperationFactory {
     public static CMPOperationFactory newInstance(CMPEntityContainer container, CMPQuery[] queries, CMPCommandFactory persistenceFactory, String[] fieldNames, CMRelation[] relations) {
         Class beanClass = container.getBeanClass();
-        Factory factory = Enhancer.create(beanClass, new Class[0], FILTER, new SimpleCallbacks());
-        Class enhancedClass = factory.getClass();
+
+        // create a factory to generate concrete subclasses of the abstract cmp implementation class
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(beanClass);
+        enhancer.setCallbackTypes(new Class[]{NoOp.class, MethodInterceptor.class});
+        enhancer.setCallbackFilter(FILTER);
+        enhancer.setUseFactory(false);
+        Class enhancedClass = enhancer.createClass();
 
         FastClass fastClass = FastClass.create(enhancedClass);
 
@@ -221,7 +225,7 @@ public class CMPOperationFactory extends AbstractOperationFactory {
         }
 
 
-        CMPInstanceContextFactory contextFactory = new CMPInstanceContextFactory(container, factory);
+        CMPInstanceContextFactory contextFactory = new CMPInstanceContextFactory(container, enhancer);
         return new CMPOperationFactory(vtable, signatures, itable, contextFactory);
     }
 
@@ -244,7 +248,10 @@ public class CMPOperationFactory extends AbstractOperationFactory {
 
     private static final CallbackFilter FILTER = new CallbackFilter() {
         public int accept(Method method) {
-            return (Modifier.isAbstract(method.getModifiers())) ? Callbacks.INTERCEPT : Callbacks.NO_OP;
+            if (Modifier.isAbstract(method.getModifiers())) {
+                return 1;
+            }
+            return 0;
         }
     };
 }

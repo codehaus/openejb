@@ -71,7 +71,7 @@ public class EntityClientContainerFactory implements ClientContainerFactory {
     private final EntityLocalClientContainer localContainer;
     private final EntityRemoteClientContainer remoteContainer;
 
-    public EntityClientContainerFactory(Class pkClass, VirtualOperationFactory vopFactory, URI uri, Class home, Class remote, Interceptor localEndpoint, Class localHome, Class local) {
+    public EntityClientContainerFactory(Class pkClass, VirtualOperationFactory vopFactory, URI uri, Class home, Class remote, Interceptor localEndpoint, Class localHome, Class local) throws Exception {
         if (localHome != null) {
             localContainer = new EntityLocalClientContainer(localEndpoint, vopFactory.getSignatures(), localHome, local);
         } else {

@@ -47,7 +47,6 @@
  */
 package org.openejb.nova.entity;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 import javax.ejb.EJBException;
 import javax.ejb.EJBLocalHome;
@@ -56,21 +55,14 @@ import javax.ejb.RemoveException;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
-import net.sf.cglib.proxy.Callbacks;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.Factory;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
-import net.sf.cglib.proxy.SimpleCallbacks;
-import net.sf.cglib.reflect.FastClass;
 
 import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationImpl;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBLocalClientContainer;
-import org.openejb.nova.dispatch.MethodHelper;
+import org.openejb.nova.EJBProxyFactory;
+import org.openejb.nova.EJBProxyInterceptor;
 import org.openejb.nova.dispatch.MethodSignature;
-import org.openejb.nova.method.EJBCallbackFilter;
 
 /**
  * Container for the local interface to an EntityBean.
@@ -83,40 +75,25 @@ import org.openejb.nova.method.EJBCallbackFilter;
  * @version $Revision$ $Date$
  */
 public class EntityLocalClientContainer implements EJBLocalClientContainer {
-    private static final Class[] CONSTRUCTOR = new Class[]{EntityLocalClientContainer.class, Object.class};
-    private static final SimpleCallbacks PROXY_CALLBACK;
-    static {
-        PROXY_CALLBACK = new SimpleCallbacks();
-        PROXY_CALLBACK.setCallback(Callbacks.INTERCEPT, new EntityLocalObjectCallback());
-    }
-
     private final Interceptor firstInterceptor;
 
-    private final int[] homeMap;
     private final EJBLocalHome homeProxy;
 
+    private final EJBProxyFactory proxyFactory;
     private final int removeIndex;
-    private final int[] objectMap;
-    private final Factory proxyFactory;
+    private final int[] operationMap;
 
-    public EntityLocalClientContainer(Interceptor firstInterceptor, MethodSignature[] signatures, Class localHome, Class local) {
+    public EntityLocalClientContainer(Interceptor firstInterceptor, MethodSignature[] signatures, Class localHome, Class local) throws Exception {
         this.firstInterceptor = firstInterceptor;
-        SimpleCallbacks callbacks;
-        Enhancer enhancer;
-        Factory factory;
 
         // Create LocalHome proxy
-        callbacks = new SimpleCallbacks();
-        callbacks.setCallback(Callbacks.INTERCEPT, new EntityLocalHomeCallback());
-        enhancer = getEnhancer(localHome, EntityLocalHomeImpl.class, callbacks);
-        factory = enhancer.create(new Class[]{EntityLocalClientContainer.class}, new Object[]{this});
-        this.homeProxy = (EJBLocalHome) factory.newInstance(new Class[]{EntityLocalClientContainer.class}, new Object[]{this}, callbacks);
-        homeMap = MethodHelper.getHomeMap(signatures, FastClass.create(homeProxy.getClass()));
+        EJBProxyFactory factory = new EJBProxyFactory(EntityLocalHomeImpl.class, localHome);
+        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.LOCALHOME, factory.getType(), signatures);
+        homeProxy = (EJBLocalHome) factory.create(methodInterceptor, new Class[]{EntityLocalClientContainer.class}, new Object[]{this});
 
         // Create LocalObject Proxy
-        enhancer = getEnhancer(local, EntityLocalObjectImpl.class, PROXY_CALLBACK);
-        proxyFactory = enhancer.create(CONSTRUCTOR, new Object[]{this, null});
-        objectMap = MethodHelper.getObjectMap(signatures, FastClass.create(proxyFactory.getClass()));
+        proxyFactory = new EJBProxyFactory(EntityLocalObjectImpl.class, local);
+        operationMap = EJBProxyInterceptor.getOperationMap(EJBInvocationType.LOCAL, proxyFactory.getType(), signatures);
 
         // Get VOP index for ejbRemove method
         int index = -1;
@@ -131,21 +108,16 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
         removeIndex = index;
     }
 
-    private static Enhancer getEnhancer(Class local, Class baseClass, SimpleCallbacks callbacks) {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(baseClass);
-        enhancer.setInterfaces(new Class[]{local});
-        enhancer.setCallbackFilter(new EJBCallbackFilter(baseClass));
-        enhancer.setCallbacks(callbacks);
-        return enhancer;
-    }
-
     public EJBLocalHome getEJBLocalHome() {
         return homeProxy;
     }
 
     public EJBLocalObject getEJBLocalObject(Object primaryKey) {
-        return (EJBLocalObject) proxyFactory.newInstance(CONSTRUCTOR, new Object[] { this, primaryKey }, PROXY_CALLBACK);
+        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.LOCAL, operationMap, primaryKey);
+        return (EJBLocalObject) proxyFactory.create(
+                methodInterceptor,
+                new Class[]{EntityLocalClientContainer.class, Object.class},
+                new Object[]{this, primaryKey});
     }
 
     private void remove(Object id) throws RemoveException {
@@ -167,9 +139,10 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
         }
     }
 
-    private Object invoke(EJBInvocation invocation) throws Throwable {
+    public Object invoke(EJBInvocationType ejbInvocationType, Object id, int methodIndex, Object[] args) throws Throwable {
         InvocationResult result;
         try {
+            EJBInvocation invocation = new EJBInvocationImpl(ejbInvocationType, id, methodIndex, args);
             result = firstInterceptor.invoke(invocation);
         } catch (Throwable t) {
             // System exception from interceptor chain - throw as is or wrapped in an EJBException
@@ -198,18 +171,6 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
 
         public void remove(Object primaryKey) throws RemoveException, EJBException {
             container.remove(primaryKey);
-        }
-    }
-
-    /**
-     * Callback handler for EJBLocalHome that handles methods not directly
-     * implemented by the base class.
-     */
-    private static class EntityLocalHomeCallback implements MethodInterceptor {
-        public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
-            EntityLocalClientContainer container = ((EntityLocalHomeImpl) o).container;
-            int vopIndex = container.homeMap[methodProxy.getSuperIndex()];
-            return container.invoke(new EJBInvocationImpl(EJBInvocationType.LOCALHOME, vopIndex, objects));
         }
     }
 
@@ -246,19 +207,6 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
 
         public void remove() throws RemoveException, EJBException {
             container.remove(id);
-        }
-    }
-
-    /**
-     * Callback handler for EJBLocalObject that handles methods not directly
-     * implemented by the base class.
-     */
-    private static class EntityLocalObjectCallback implements MethodInterceptor {
-        public Object intercept(Object o, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
-            EntityLocalObjectImpl entityLocalObject = ((EntityLocalObjectImpl)o);
-            EntityLocalClientContainer container = entityLocalObject.container;
-            int vopIndex = container.objectMap[methodProxy.getSuperIndex()];
-            return container.invoke(new EJBInvocationImpl(EJBInvocationType.LOCAL, entityLocalObject.id, vopIndex, args));
         }
     }
 }

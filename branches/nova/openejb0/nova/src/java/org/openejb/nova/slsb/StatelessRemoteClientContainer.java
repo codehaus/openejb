@@ -61,19 +61,14 @@ import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.security.ContextManager;
 
-import net.sf.cglib.proxy.Callbacks;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.Factory;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
-import net.sf.cglib.proxy.SimpleCallbacks;
-import net.sf.cglib.reflect.FastClass;
 import org.openejb.nova.EJBInvocationImplRemote;
 import org.openejb.nova.EJBInvocationType;
+import org.openejb.nova.EJBProxyFactory;
+import org.openejb.nova.EJBProxyInterceptor;
 import org.openejb.nova.EJBRemoteClientContainer;
-import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
-import org.openejb.nova.method.EJBCallbackFilter;
 
 /**
  *
@@ -84,9 +79,6 @@ import org.openejb.nova.method.EJBCallbackFilter;
 public class StatelessRemoteClientContainer implements EJBRemoteClientContainer {
     private Interceptor firstInterceptor;
     private final int createIndex;
-    private final int[] objectMap;
-    private final Class home;
-    private final Class remote;
     private final EJBHome homeProxy;
     private final EJBObject objectProxy;
     private final EJBMetaData ejbMetadata;
@@ -95,40 +87,27 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
 
     public StatelessRemoteClientContainer(Interceptor firstInterceptor, MethodSignature[] signatures, Class home, Class remote) {
         this.firstInterceptor = firstInterceptor;
-        SimpleCallbacks callbacks;
-        Enhancer enhancer;
-        Factory factory;
 
-        callbacks = new SimpleCallbacks();
-        callbacks.setCallback(Callbacks.INTERCEPT, new StatelessHomeCallback());
-        enhancer = getEnhancer(home, StatelessHomeImpl.class, callbacks);
-        factory = enhancer.create(new Class[]{StatelessRemoteClientContainer.class}, new Object[]{null});
-        this.homeProxy = (EJBHome) factory.newInstance(new Class[]{StatelessRemoteClientContainer.class}, new Object[]{this}, callbacks);
-        createIndex = MethodHelper.getSuperIndex(FastClass.create(homeProxy.getClass()), "create", new Class[0]);
-        assert (createIndex != -1) : "No create method defined";
+        // Create LocalHome proxy
+        EJBProxyFactory homeFactory = new EJBProxyFactory(StatelessHomeImpl.class, home);
+        homeProxy = (EJBHome) homeFactory.create(new StatelessHomeInterceptor(), new Class[]{StatelessRemoteClientContainer.class}, new Object[]{this});
 
-        callbacks = new SimpleCallbacks();
-        callbacks.setCallback(Callbacks.INTERCEPT, new StatelessObjectCallback());
-        enhancer = getEnhancer(remote, StatelessObjectImpl.class, callbacks);
-        factory = enhancer.create(new Class[]{StatelessRemoteClientContainer.class}, new Object[]{null});
-        this.objectProxy = (EJBObject) factory.newInstance(new Class[]{StatelessRemoteClientContainer.class}, new Object[]{this}, callbacks);
-        objectMap = MethodHelper.getObjectMap(signatures, FastClass.create(objectProxy.getClass()));
+        // get the super index of the create method
+        try {
+            Class homeProxyClass = homeProxy.getClass();
+            createIndex = EJBProxyInterceptor.getSuperIndex(homeProxyClass, homeProxyClass.getMethod("create", null));
+        } catch (Exception e) {
+            throw new AssertionError("No create method found on home interface: " + home.getName());
+        }
 
-        this.home = home;
-        this.remote = remote;
+        // Create LocalObject Proxy
+        EJBProxyFactory objectFactory = new EJBProxyFactory(StatelessObjectImpl.class, remote);
+        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.REMOTE, objectFactory.getType(), signatures);
+        objectProxy = (EJBObject) objectFactory.create(methodInterceptor, new Class[]{StatelessRemoteClientContainer.class}, new Object[]{this});
 
-        this.ejbMetadata = new StatelessMetaData();
+        this.ejbMetadata = new StatelessMetaData(homeProxy, home, remote);
         this.homeHandle = null;
         this.handle = null;
-    }
-
-    private static Enhancer getEnhancer(Class local, Class baseClass, SimpleCallbacks callbacks) {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(baseClass);
-        enhancer.setInterfaces(new Class[]{local});
-        enhancer.setCallbackFilter(new EJBCallbackFilter(baseClass));
-        enhancer.setCallbacks(callbacks);
-        return enhancer;
     }
 
     public EJBHome getEJBHome() {
@@ -137,6 +116,25 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
 
     public EJBObject getEJBObject(Object primaryKey) {
         return objectProxy;
+    }
+
+    public Object invoke(EJBInvocationType ejbInvocationType, Object id, int methodIndex, Object[] args) throws Throwable {
+        InvocationResult result;
+        try {
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(ejbInvocationType, id, methodIndex, args, ContextManager.getCurrentCallerId());
+            result = firstInterceptor.invoke(invocation);
+        } catch (Throwable t) {
+            // System exception from interceptor chain - throw as is or wrapped in an EJBException
+            if (t instanceof Exception && t instanceof RuntimeException == false) {
+                t = new EJBException((Exception) t);
+            }
+            throw t;
+        }
+        if (result.isNormal()) {
+            return result.getResult();
+        } else {
+            throw result.getException();
+        }
     }
 
     /**
@@ -168,10 +166,10 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
     }
 
     /**
-     * Callback handler for EJBLocalHome invocations that cannot be handled
+     * Handler for EJBHome invocations that cannot be handled
      * directly by the proxy.
      */
-    private class StatelessHomeCallback implements MethodInterceptor {
+    private class StatelessHomeInterceptor implements MethodInterceptor {
         public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
             if (methodProxy.getSuperIndex() == createIndex) {
                 return objectProxy;
@@ -211,34 +209,17 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
         }
     }
 
-    /**
-     * Callback handler for EJBLocal invocations that cannot be handled
-     * directly by the proxy.
-     */
-    private class StatelessObjectCallback implements MethodInterceptor {
-        public Object intercept(Object o, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
-            InvocationResult result;
-            try {
-                int vopIndex = objectMap[methodProxy.getSuperIndex()];
-                EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.REMOTE, vopIndex, args, ContextManager.getCurrentCallerId());
-                result = firstInterceptor.invoke(invocation);
-            } catch (Throwable t) {
-                // System Exception from interceptor chain
-                // Wrap checked Exceptions in an EJBException, otherwise just throw
-                if (t instanceof Exception && t instanceof RuntimeException == false) {
-                    t = new EJBException((Exception) t);
-                }
-                throw t;
-            }
-            if (result.isNormal()) {
-                return result.getResult();
-            } else {
-                throw result.getException();
-            }
-        }
-    }
+    private static class StatelessMetaData implements EJBMetaData {
+        private final EJBHome homeProxy;
+        private final Class home;
+        private final Class remote;
 
-    private class StatelessMetaData implements EJBMetaData {
+        public StatelessMetaData(EJBHome homeProxy, Class home, Class remote) {
+            this.homeProxy = homeProxy;
+            this.home = home;
+            this.remote = remote;
+        }
+
         public EJBHome getEJBHome() {
             return homeProxy;
         }

@@ -47,8 +47,7 @@
  */
 package org.openejb.nova.entity.cmp;
 
-import net.sf.cglib.proxy.Factory;
-
+import net.sf.cglib.proxy.Enhancer;
 import org.openejb.nova.EJBContainer;
 import org.openejb.nova.entity.EntityInstanceContext;
 import org.openejb.nova.entity.EntityInstanceContextFactory;
@@ -60,15 +59,15 @@ import org.openejb.nova.entity.EntityInstanceContextFactory;
  */
 public class CMPInstanceContextFactory implements EntityInstanceContextFactory {
     private final EJBContainer container;
-    private final Factory factory;
+    private final Enhancer enhancer;
 
-    public CMPInstanceContextFactory(EJBContainer container, Factory factory) {
+    public CMPInstanceContextFactory(EJBContainer container, Enhancer enhancer) {
         this.container = container;
-        this.factory = factory;
+        this.enhancer = enhancer;
     }
 
-    public EntityInstanceContext newInstance() throws Exception {
-        return new CMPInstanceContext(container, factory);
+    public synchronized EntityInstanceContext newInstance() throws Exception {
+        return new CMPInstanceContext(container, enhancer);
     }
 
 }

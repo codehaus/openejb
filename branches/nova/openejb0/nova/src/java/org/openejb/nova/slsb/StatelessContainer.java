@@ -50,18 +50,19 @@ package org.openejb.nova.slsb;
 import java.net.URI;
 
 import org.apache.geronimo.core.service.Interceptor;
+import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 
 import org.openejb.nova.AbstractEJBContainer;
+import org.openejb.nova.ConnectionTrackingInterceptor;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.SystemExceptionInterceptor;
-import org.openejb.nova.ConnectionTrackingInterceptor;
-import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
-import org.openejb.nova.security.EJBRunAsInterceptor;
-import org.openejb.nova.security.EJBSecurityInterceptor;
-import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
+import org.openejb.nova.security.EJBIdentityInterceptor;
+import org.openejb.nova.security.EJBRunAsInterceptor;
+import org.openejb.nova.security.EJBSecurityInterceptor;
+import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
@@ -74,7 +75,7 @@ public class StatelessContainer extends AbstractEJBContainer {
         super(config);
     }
 
-    public void doStart() {
+    public void doStart() throws WaitingException, Exception {
         super.doStart();
 
         StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(beanClass);
@@ -121,7 +122,7 @@ public class StatelessContainer extends AbstractEJBContainer {
 
     }
 
-    public void doStop() {
+    public void doStop() throws WaitingException, Exception {
         stopServerRemoting();
         remoteClientContainer = null;
         localClientContainer = null;

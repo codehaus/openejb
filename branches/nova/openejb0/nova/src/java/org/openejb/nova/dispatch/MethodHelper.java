@@ -47,15 +47,14 @@
  */
 package org.openejb.nova.dispatch;
 
-import javax.security.jacc.EJBMethodPermission;
 import java.lang.reflect.Method;
+import java.security.Permission;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.security.Permission;
+import javax.security.jacc.EJBMethodPermission;
 
 import net.sf.cglib.reflect.FastClass;
-import org.openejb.nova.dispatch.MethodSignature;
 
 /**
  * Helper methods to deal with the whack handeling of indexes in cglib MethodProxy objects.
@@ -105,7 +104,7 @@ public final class MethodHelper {
      * @return the number that MethodProxy.getSuperIndex() will return when the specifiec method is
      * intercepted or -1 if the method can not be intercepted (i.e., it was not enhanced)
      */
-    public static int getSuperIndex(FastClass proxyImpl, String methodName, Class[] methodParameters) {
+    private static int getSuperIndex(FastClass proxyImpl, String methodName, Class[] methodParameters) {
         String prefix = ACCESS_PREFIX + methodName + "_";
         int lastUnderscore = prefix.length() - 1;
 
@@ -180,9 +179,9 @@ public final class MethodHelper {
         // for each translated method (the method signature on the proxy),
         // fill in it's id into the shadowIndex table
         for (int i = 0; i < translated.length; i++) {
-            if(translated[i] != null) {
-                Integer shadowIndex = (Integer)proxyToShadowIndex.get(translated[i]);
-                if(shadowIndex != null) {
+            if (translated[i] != null) {
+                Integer shadowIndex = (Integer) proxyToShadowIndex.get(translated[i]);
+                if (shadowIndex != null) {
                     shadowIndexToProxy[shadowIndex.intValue()] = i;
                 }
             }
@@ -199,28 +198,28 @@ public final class MethodHelper {
     }
 
     public static Permission[] generatePermissions(String ejbName, MethodSignature[] signatures) {
-        Permission[] result = new Permission[5*signatures.length];
+        Permission[] result = new Permission[5 * signatures.length];
         MethodSignature signature;
 
-        for (int i=0; i<signatures.length; i++) {
+        for (int i = 0; i < signatures.length; i++) {
             signature = signatures[i];
             result[i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Remote", signature.getParameterTypes());
         }
-        for (int i=0; i<signatures.length; i++) {
+        for (int i = 0; i < signatures.length; i++) {
             signature = signatures[i];
-            result[signatures.length+i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Home", signature.getParameterTypes());
+            result[signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Home", signature.getParameterTypes());
         }
-        for (int i=0; i<signatures.length; i++) {
+        for (int i = 0; i < signatures.length; i++) {
             signature = signatures[i];
-            result[2*signatures.length+i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Local", signature.getParameterTypes());
+            result[2 * signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Local", signature.getParameterTypes());
         }
-        for (int i=0; i<signatures.length; i++) {
+        for (int i = 0; i < signatures.length; i++) {
             signature = signatures[i];
-            result[3*signatures.length+i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "LocalHome", signature.getParameterTypes());
+            result[3 * signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "LocalHome", signature.getParameterTypes());
         }
-        for (int i=0; i<signatures.length; i++) {
+        for (int i = 0; i < signatures.length; i++) {
             signature = signatures[i];
-            result[4*signatures.length+i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "ServiceEndpoint", signature.getParameterTypes());
+            result[4 * signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "ServiceEndpoint", signature.getParameterTypes());
         }
 
         return result;
@@ -242,7 +241,7 @@ public final class MethodHelper {
     private static Integer findMethodIndex(MethodSignature[] signatures, Method method) {
         for (int i = 0; i < signatures.length; i++) {
             MethodSignature signature = signatures[i];
-            if(signature != null && signature.match(method)) {
+            if (signature != null && signature.match(method)) {
                 return new Integer(i);
             }
         }
@@ -283,6 +282,7 @@ public final class MethodHelper {
     }
 
     private static final String ACCESS_PREFIX = "CGLIB$$ACCESS_";
+
     /**
      * Builds a map from the MethodKeys for the real method to the index of
      * the shadow method, which is the same number returned from MethodProxy.getSuperIndex().

@@ -55,21 +55,16 @@ import javax.ejb.RemoveException;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
-import net.sf.cglib.proxy.Callbacks;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.Factory;
+
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
-import net.sf.cglib.proxy.SimpleCallbacks;
-import net.sf.cglib.reflect.FastClass;
-
 import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationImpl;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBLocalClientContainer;
-import org.openejb.nova.dispatch.MethodHelper;
+import org.openejb.nova.EJBProxyFactory;
+import org.openejb.nova.EJBProxyInterceptor;
 import org.openejb.nova.dispatch.MethodSignature;
-import org.openejb.nova.method.EJBCallbackFilter;
 
 /**
  * Container for the local interface of a Stateless SessionBean.
@@ -84,7 +79,6 @@ import org.openejb.nova.method.EJBCallbackFilter;
 public class StatelessLocalClientContainer implements EJBLocalClientContainer {
     private final Interceptor firstInterceptor;
     private final int createIndex;
-    private final int[] objectMap;
     private final EJBLocalHome homeProxy;
     private final EJBLocalObject objectProxy;
 
@@ -96,33 +90,23 @@ public class StatelessLocalClientContainer implements EJBLocalClientContainer {
      */
     public StatelessLocalClientContainer(Interceptor firstInterceptor, MethodSignature[] signatures, Class localHome, Class local) {
         this.firstInterceptor = firstInterceptor;
-        SimpleCallbacks callbacks;
-        Enhancer enhancer;
-        Factory factory;
 
-        callbacks = new SimpleCallbacks();
-        callbacks.setCallback(Callbacks.INTERCEPT, new StatelessLocalHomeCallback());
-        enhancer = getEnhancer(localHome, StatelessLocalHomeImpl.class, callbacks);
-        factory = enhancer.create();
-        this.homeProxy = (EJBLocalHome) factory.newInstance(callbacks);
-        createIndex = MethodHelper.getSuperIndex(FastClass.create(homeProxy.getClass()), "create", new Class[0]);
-        assert (createIndex != -1) : "No create method defined";
+        // Create LocalHome proxy
+        EJBProxyFactory homeFactory = new EJBProxyFactory(StatelessLocalHomeImpl.class, localHome);
+        homeProxy = (EJBLocalHome) homeFactory.create(new StatelessLocalHomeInterceptor());
 
-        callbacks = new SimpleCallbacks();
-        callbacks.setCallback(Callbacks.INTERCEPT, new StatelessLocalObjectCallback());
-        enhancer = getEnhancer(local, StatelessLocalObjectImpl.class, callbacks);
-        factory = enhancer.create(new Class[]{EJBLocalHome.class}, new Object[]{homeProxy});
-        this.objectProxy = (EJBLocalObject) factory.newInstance(new Class[]{EJBLocalHome.class}, new Object[]{homeProxy}, callbacks);
-        objectMap = MethodHelper.getObjectMap(signatures, FastClass.create(objectProxy.getClass()));
-    }
+        // get the super index of the create method
+        try {
+            Class homeProxyClass = homeProxy.getClass();
+            createIndex = EJBProxyInterceptor.getSuperIndex(homeProxyClass, homeProxyClass.getMethod("create", null));
+        } catch (Exception e) {
+            throw new AssertionError("No create method found on local home interface: " + localHome.getName());
+        }
 
-    private static Enhancer getEnhancer(Class local, Class baseClass, SimpleCallbacks callbacks) {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(baseClass);
-        enhancer.setInterfaces(new Class[]{local});
-        enhancer.setCallbackFilter(new EJBCallbackFilter(baseClass));
-        enhancer.setCallbacks(callbacks);
-        return enhancer;
+        // Create LocalObject Proxy
+        EJBProxyFactory objectFactory = new EJBProxyFactory(StatelessLocalObjectImpl.class, local);
+        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.LOCAL, objectFactory.getType(), signatures);
+        objectProxy = (EJBLocalObject) objectFactory.create(methodInterceptor, new Class[]{EJBLocalHome.class}, new Object[]{homeProxy});
     }
 
     public EJBLocalHome getEJBLocalHome() {
@@ -133,8 +117,27 @@ public class StatelessLocalClientContainer implements EJBLocalClientContainer {
         return objectProxy;
     }
 
+    public Object invoke(EJBInvocationType ejbInvocationType, Object id, int methodIndex, Object[] args) throws Throwable {
+        InvocationResult result;
+        try {
+            EJBInvocation invocation = new EJBInvocationImpl(ejbInvocationType, id, methodIndex, args);
+            result = firstInterceptor.invoke(invocation);
+        } catch (Throwable t) {
+            // System exception from interceptor chain - throw as is or wrapped in an EJBException
+            if (t instanceof Exception && t instanceof RuntimeException == false) {
+                t = new EJBException((Exception) t);
+            }
+            throw t;
+        }
+        if (result.isNormal()) {
+            return result.getResult();
+        } else {
+            throw result.getException();
+        }
+    }
+
     /**
-     * Base class for EJBLocalHome invocations. Handles operations which can
+     * Base class for the EJBLocalHome proxy. Handles operations which can
      * be performed directly by the proxy.
      */
     public static abstract class StatelessLocalHomeImpl implements EJBLocalHome {
@@ -144,10 +147,9 @@ public class StatelessLocalClientContainer implements EJBLocalClientContainer {
     }
 
     /**
-     * Callback handler for EJBLocalHome invocations that cannot be handled
-     * directly by the proxy.
+     * Handler for EJBLocalHome invocations that cannot be handled directly by the proxy.
      */
-    private class StatelessLocalHomeCallback implements MethodInterceptor {
+    private class StatelessLocalHomeInterceptor implements MethodInterceptor {
         public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
             if (methodProxy.getSuperIndex() == createIndex) {
                 return objectProxy;
@@ -157,7 +159,7 @@ public class StatelessLocalClientContainer implements EJBLocalClientContainer {
     }
 
     /**
-     * Base class for EJBLocal invocations. Handles operations which can
+     * Base class for the EJBLocal proxy. Handles operations which can
      * be performed directly by the proxy.
      */
     public static abstract class StatelessLocalObjectImpl implements EJBLocalObject {
@@ -180,33 +182,6 @@ public class StatelessLocalClientContainer implements EJBLocalClientContainer {
         }
 
         public void remove() throws RemoveException, EJBException {
-        }
-    }
-
-    /**
-     * Callback handler for EJBLocal invocations that cannot be handled
-     * directly by the proxy.
-     */
-    private class StatelessLocalObjectCallback implements MethodInterceptor {
-        public Object intercept(Object o, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
-            InvocationResult result;
-            try {
-                int vopIndex = objectMap[methodProxy.getSuperIndex()];
-                EJBInvocation invocation = new EJBInvocationImpl(EJBInvocationType.LOCAL, vopIndex, args);
-                result = firstInterceptor.invoke(invocation);
-            } catch (Throwable t) {
-                // System Exception from interceptor chain
-                // Wrap checked Exceptions in an EJBException, otherwise just throw
-                if (t instanceof Exception && t instanceof RuntimeException == false) {
-                    t = new EJBException((Exception) t);
-                }
-                throw t;
-            }
-            if (result.isNormal()) {
-                return result.getResult();
-            } else {
-                throw result.getException();
-            }
         }
     }
 }

@@ -49,13 +49,13 @@ package org.openejb.nova.slsb;
 
 import java.net.URI;
 import java.util.HashSet;
-
 import javax.management.ObjectName;
 
-import junit.framework.TestCase;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
+
+import junit.framework.TestCase;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.MockTransactionManager;
 import org.openejb.nova.deployment.TransactionPolicySource;

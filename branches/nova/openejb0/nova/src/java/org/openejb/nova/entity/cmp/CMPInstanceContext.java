@@ -51,10 +51,11 @@ import java.lang.reflect.Method;
 import javax.ejb.EnterpriseBean;
 import javax.ejb.EntityBean;
 
-import net.sf.cglib.proxy.Factory;
+import net.sf.cglib.proxy.Callback;
+import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
-
+import net.sf.cglib.proxy.NoOp;
 import org.openejb.nova.EJBContainer;
 import org.openejb.nova.entity.EntityInstanceContext;
 
@@ -67,9 +68,10 @@ public final class CMPInstanceContext extends EntityInstanceContext implements M
     private final EntityBean instance;
     private InstanceData instanceData;
 
-    public CMPInstanceContext(EJBContainer container, Factory factory) throws Exception {
+    public CMPInstanceContext(EJBContainer container, Enhancer enhancer) throws Exception {
         super(container);
-        instance = (EntityBean) factory.newInstance(this);
+        enhancer.setCallbacks(new Callback[]{NoOp.INSTANCE, this});
+        instance = (EntityBean) enhancer.create();
     }
 
     public EnterpriseBean getInstance() {

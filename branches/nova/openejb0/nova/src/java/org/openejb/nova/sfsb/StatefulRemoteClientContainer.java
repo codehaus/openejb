@@ -48,7 +48,6 @@
 package org.openejb.nova.sfsb;
 
 import java.io.Serializable;
-import java.lang.reflect.Method;
 import java.rmi.RemoteException;
 import javax.ejb.EJBException;
 import javax.ejb.EJBHome;
@@ -58,24 +57,17 @@ import javax.ejb.Handle;
 import javax.ejb.HomeHandle;
 import javax.ejb.RemoveException;
 
-import net.sf.cglib.proxy.Callbacks;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.Factory;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
-import net.sf.cglib.proxy.SimpleCallbacks;
-import net.sf.cglib.reflect.FastClass;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.security.ContextManager;
 
-import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationImplRemote;
 import org.openejb.nova.EJBInvocationType;
+import org.openejb.nova.EJBProxyFactory;
+import org.openejb.nova.EJBProxyInterceptor;
 import org.openejb.nova.EJBRemoteClientContainer;
-import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
-import org.openejb.nova.method.EJBCallbackFilter;
+import org.openejb.nova.entity.EntityLocalClientContainer;
 
 /**
  *
@@ -84,50 +76,27 @@ import org.openejb.nova.method.EJBCallbackFilter;
  * @version $Revision$ $Date$
  */
 public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
-    private static final Class[] CONSTRUCTOR = new Class[]{StatefulRemoteClientContainer.class, Object.class};
-    private static final SimpleCallbacks PROXY_CALLBACK;
-
-    static {
-        PROXY_CALLBACK = new SimpleCallbacks();
-        PROXY_CALLBACK.setCallback(Callbacks.INTERCEPT, new StatefulObjectCallback());
-    }
-
     private Interceptor firstInterceptor;
 
-    private final Class home;
-    private final Class remote;
-
-    private final Factory proxyFactory;
-
-    private final int[] homeMap;
     private final EJBHome homeProxy;
 
+    private final EJBProxyFactory proxyFactory;
     private final int removeIndex;
-    private final int[] objectMap;
+    private final int[] operationMap;
 
     private final EJBMetaData ejbMetadata;
 
     public StatefulRemoteClientContainer(Interceptor firstInterceptor, MethodSignature[] signatures, Class home, Class remote) {
         this.firstInterceptor = firstInterceptor;
-        this.home = home;
-        this.remote = remote;
 
-        SimpleCallbacks callbacks;
-        Enhancer enhancer;
-        Factory factory;
+        // Create Home proxy
+        EJBProxyFactory factory = new EJBProxyFactory(StatefulHomeImpl.class, home);
+        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.HOME, factory.getType(), signatures);
+        homeProxy = (EJBHome) factory.create(methodInterceptor, new Class[]{StatefulRemoteClientContainer.class}, new Object[]{this});
 
-        // Create LocalHome proxy
-        callbacks = new SimpleCallbacks();
-        callbacks.setCallback(Callbacks.INTERCEPT, new StatefulHomeCallback());
-        enhancer = getEnhancer(home, StatefulHomeImpl.class, callbacks);
-        factory = enhancer.create(new Class[]{StatefulRemoteClientContainer.class}, new Object[]{this});
-        homeProxy = (EJBHome) factory.newInstance(new Class[]{StatefulRemoteClientContainer.class}, new Object[]{this}, callbacks);
-        homeMap = MethodHelper.getHomeMap(signatures, FastClass.create(homeProxy.getClass()));
-
-        // Create LocalObject Proxy
-        enhancer = getEnhancer(remote, StatefulObjectImpl.class, PROXY_CALLBACK);
-        proxyFactory = enhancer.create(CONSTRUCTOR, new Object[]{this, null});
-        objectMap = MethodHelper.getObjectMap(signatures, FastClass.create(proxyFactory.getClass()));
+        // Create Remote Proxy
+        proxyFactory = new EJBProxyFactory(StatefulObjectImpl.class, remote);
+        operationMap = EJBProxyInterceptor.getOperationMap(EJBInvocationType.REMOTE, proxyFactory.getType(), signatures);
 
         // Get VOP index for ejbRemove method
         int index = -1;
@@ -141,17 +110,7 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
         assert (index != -1) : "No ejbRemove VOP defined";
         removeIndex = index;
 
-        ejbMetadata = new StatefulMetaData();
-    }
-
-    private static Enhancer getEnhancer(Class local, Class baseClass, SimpleCallbacks callbacks) {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(baseClass);
-        enhancer.setInterfaces(new Class[]{local});
-        enhancer.setCallbackFilter(new EJBCallbackFilter(baseClass));
-        enhancer.setCallbacks(callbacks);
-        enhancer.setClassLoader(local.getClassLoader());
-        return enhancer;
+        ejbMetadata = new StatefulMetaData(homeProxy, home, remote);
     }
 
     public EJBHome getEJBHome() {
@@ -159,7 +118,11 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
     }
 
     public EJBObject getEJBObject(Object primaryKey) {
-        return (EJBObject) proxyFactory.newInstance(CONSTRUCTOR, new Object[]{this, primaryKey}, PROXY_CALLBACK);
+        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.REMOTE, operationMap, primaryKey);
+        return (EJBObject) proxyFactory.create(
+                methodInterceptor,
+                new Class[]{EntityLocalClientContainer.class, Object.class},
+                new Object[]{this, primaryKey});
     }
 
     private void remove(Object id) throws RemoveException, RemoteException {
@@ -177,9 +140,10 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
         }
     }
 
-    private Object invoke(EJBInvocation invocation) throws Throwable {
+    public Object invoke(EJBInvocationType ejbInvocationType, Object id, int methodIndex, Object[] args) throws Throwable {
         InvocationResult result;
         try {
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(ejbInvocationType, id, methodIndex, args, ContextManager.getCurrentCallerId());
             result = firstInterceptor.invoke(invocation);
         } catch (Throwable t) {
             // System exception from interceptor chain - throw as is or wrapped in an EJBException
@@ -226,19 +190,6 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
     }
 
     /**
-     * Callback handler for EJBHome that handles methods not directly
-     * implemented by the base class.
-     */
-    private static class StatefulHomeCallback implements MethodInterceptor {
-        public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
-            StatefulRemoteClientContainer container = ((StatefulHomeImpl) o).container;
-            int vopIndex = container.homeMap[methodProxy.getSuperIndex()];
-            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.HOME, vopIndex, objects, ContextManager.getCurrentCallerId());
-            return container.invoke(invocation);
-        }
-    }
-
-    /**
      * Base class for EJBLocalObject proxies.
      * Owns a reference to the container and the id of the Stateful.
      * Implements EJBLocalObject methods, such as getPrimaryKey(), that do
@@ -278,21 +229,17 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
         }
     }
 
-    /**
-     * Callback handler for EJBLocalObject that handles methods not directly
-     * implemented by the base class.
-     */
-    private static class StatefulObjectCallback implements MethodInterceptor {
-        public Object intercept(Object o, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
-            StatefulObjectImpl statefulObject = ((StatefulObjectImpl) o);
-            StatefulRemoteClientContainer container = statefulObject.container;
-            int vopIndex = container.objectMap[methodProxy.getSuperIndex()];
-            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.REMOTE, statefulObject.id, vopIndex, args, ContextManager.getCurrentCallerId());
-            return container.invoke(invocation);
-        }
-    }
-
     private class StatefulMetaData implements EJBMetaData, Serializable {
+        private final EJBHome homeProxy;
+        private final Class home;
+        private final Class remote;
+
+        public StatefulMetaData(EJBHome homeProxy, Class home, Class remote) {
+            this.homeProxy = homeProxy;
+            this.home = home;
+            this.remote = remote;
+        }
+
         public EJBHome getEJBHome() {
             return homeProxy;
         }

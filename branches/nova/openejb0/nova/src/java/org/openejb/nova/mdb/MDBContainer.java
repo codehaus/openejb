@@ -48,7 +48,6 @@
 package org.openejb.nova.mdb;
 
 import java.lang.reflect.Method;
-
 import javax.resource.ResourceException;
 import javax.resource.spi.ActivationSpec;
 import javax.resource.spi.ResourceAdapter;
@@ -59,17 +58,19 @@ import javax.transaction.xa.XAResource;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
+import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
+
 import org.openejb.nova.AbstractEJBContainer;
+import org.openejb.nova.ConnectionTrackingInterceptor;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.SystemExceptionInterceptor;
-import org.openejb.nova.ConnectionTrackingInterceptor;
-import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
-import org.openejb.nova.security.EJBIdentityInterceptor;
-import org.openejb.nova.security.EJBSecurityInterceptor;
-import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
+import org.openejb.nova.security.EJBIdentityInterceptor;
+import org.openejb.nova.security.EJBRunAsInterceptor;
+import org.openejb.nova.security.EJBSecurityInterceptor;
+import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
@@ -88,14 +89,14 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         this.activationSpec = activationSpec;
     }
 
-    public void doStart() {
+    public void doStart() throws WaitingException, Exception {
         super.doStart();
 
 
         try {
             mdbInterface = Thread.currentThread().getContextClassLoader().loadClass(messageEndpointClassName);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Could not load MDB interface class: "+messageEndpointClassName, e);
+            throw new RuntimeException("Could not load MDB interface class: " + messageEndpointClassName, e);
         }
 
         MDBOperationFactory vopFactory = MDBOperationFactory.newInstance(beanClass);
@@ -141,7 +142,7 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         }
     }
 
-    public void doStop() {
+    public void doStop() throws WaitingException, Exception {
         // Deactivate the endpoint.
         getAdapter().endpointDeactivation(this, activationSpec);
 

@@ -50,15 +50,13 @@ package org.openejb.nova;
 import javax.ejb.EJBHome;
 import javax.ejb.EJBObject;
 
-import org.apache.geronimo.core.service.Interceptor;
-
 /**
  *
  *
  *
  * @version $Revision$ $Date$
  */
-public interface EJBRemoteClientContainer {
+public interface EJBRemoteClientContainer extends ClientContainer {
     EJBHome getEJBHome();
 
     EJBObject getEJBObject(Object primaryKey);

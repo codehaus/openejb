@@ -47,6 +47,11 @@
  */
 package org.openejb.nova;
 
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import javax.ejb.EJBHome;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
@@ -65,9 +70,11 @@ import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.GBean;
 import org.apache.geronimo.gbean.GBeanContext;
+import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ReadOnlyContext;
 import org.apache.geronimo.remoting.DeMarshalingInterceptor;
 import org.apache.geronimo.remoting.InterceptorRegistry;
+
 import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
@@ -76,15 +83,13 @@ import org.openejb.nova.security.SubjectIdExtractInterceptor;
 import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TxnPolicy;
-//import org.openejb.nova.security.SubjectIdExtractInterceptor;
 
 /**
  *
  *
  * @version $Revision$ $Date$
  */
-public abstract class AbstractEJBContainer
-        implements EJBContainer, GBean {
+public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     protected final URI uri;
     protected final String ejbName;
@@ -160,13 +165,9 @@ public abstract class AbstractEJBContainer
     public void setGBeanContext(GBeanContext context) {
     }
 
-    /* Start the Component
-     * @see org.apache.geronimo.core.service.AbstractManagedObject#doStart()
-     */
-    public void doStart() {
-        //super.doStart();
+    public void doStart() throws WaitingException, Exception {
         classLoader = Thread.currentThread().getContextClassLoader();
-        System.out.println("classloader="+classLoader);
+        System.out.println("classloader=" + classLoader);
         try {
             if (userTransaction != null) {
                 userTransaction.setUp(txnManager, trackedConnectionAssociator);
@@ -195,10 +196,7 @@ public abstract class AbstractEJBContainer
         }
     }
 
-    /* Stop the Component
-     * @see org.apache.geronimo.core.service.AbstractManagedObject#doStop()
-     */
-    public void doStop() {
+    public void doStop() throws WaitingException, Exception {
         homeInterface = null;
         remoteInterface = null;
         localHomeInterface = null;
@@ -208,7 +206,6 @@ public abstract class AbstractEJBContainer
         if (userTransaction != null) {
             userTransaction.setUp(null, trackedConnectionAssociator);
         }
-        //super.doStop();
     }
 
     public void doFail() {
@@ -349,15 +346,15 @@ public abstract class AbstractEJBContainer
         mapPolicies("Local", localMethodMap, localPolicies);
         transactionPolicy[EJBInvocationType.LOCAL.getTransactionPolicyKey()] = localPolicies;
         transactionPolicy[EJBInvocationType.MESSAGE_ENDPOINT.getTransactionPolicyKey()] =
-                new TxnPolicy[] {ContainerPolicy.BeforeDelivery, ContainerPolicy.AfterDelivery};
+                new TxnPolicy[]{ContainerPolicy.BeforeDelivery, ContainerPolicy.AfterDelivery};
     }
 
     //TODO can the method map start out with MethodSignatures instead of methods?
     private void mapPolicies(String intfName, Map methodMap, TxnPolicy[] policies) {
         for (Iterator iterator = methodMap.entrySet().iterator(); iterator.hasNext();) {
             Map.Entry entry = (Map.Entry) iterator.next();
-            MethodSignature signature = new MethodSignature((Method)entry.getKey());
-            Integer index = (Integer)entry.getValue();
+            MethodSignature signature = new MethodSignature((Method) entry.getKey());
+            Integer index = (Integer) entry.getValue();
             TxnPolicy policy = transactionPolicySource.getTransactionPolicy(intfName, signature);
             policies[index.intValue()] = policy;
         }

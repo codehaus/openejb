@@ -45,31 +45,67 @@
  *
  * ====================================================================
  */
-package org.openejb.nova.method;
+package org.openejb.nova;
 
 import java.lang.reflect.Method;
 
+import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.CallbackFilter;
-import net.sf.cglib.proxy.Callbacks;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.NoOp;
 
 /**
- *
- *
  * @version $Revision$ $Date$
  */
-public class EJBCallbackFilter implements CallbackFilter {
-    private final Class baseClass;
+public class EJBProxyFactory {
+    private final Class type;
+    private final Enhancer enhancer;
 
-    public EJBCallbackFilter(Class baseClass) {
-        this.baseClass = baseClass;
+    public EJBProxyFactory(Class superClass, Class clientInterface) {
+        this(superClass, new Class[]{clientInterface});
     }
 
-    public int accept(Method method) {
-        Class methodClass = method.getDeclaringClass();
-        if (methodClass == Object.class || methodClass == baseClass) {
-            return Callbacks.NO_OP;
-        } else {
-            return Callbacks.INTERCEPT;
+    public EJBProxyFactory(Class superClass, Class[] clientInterfaces) {
+        assert superClass != null;
+        assert clientInterfaces != null;
+        enhancer = new Enhancer();
+        enhancer.setSuperclass(superClass);
+        enhancer.setInterfaces(clientInterfaces);
+        enhancer.setCallbackFilter(new NoOverrideCallbackFilter(superClass));
+        enhancer.setCallbackTypes(new Class[]{NoOp.class, MethodInterceptor.class});
+        enhancer.setUseFactory(false);
+        this.type = enhancer.createClass();
+    }
+
+    public Class getType() {
+        return type;
+    }
+
+    public Object create(MethodInterceptor methodInterceptor) {
+        return create(methodInterceptor, new Class[0], new Object[0]);
+    }
+
+    public synchronized Object create(MethodInterceptor methodInterceptor, Class[] types, Object[] arguments) {
+        assert methodInterceptor != null;
+        enhancer.setCallbacks(new Callback[]{NoOp.INSTANCE, methodInterceptor});
+        return enhancer.create(types, arguments);
+    }
+
+    private static class NoOverrideCallbackFilter implements CallbackFilter {
+        private Class superClass;
+
+        public NoOverrideCallbackFilter(Class superClass) {
+            this.superClass = superClass;
+        }
+
+        public int accept(Method method) {
+            try {
+                superClass.getMethod(method.getName(), method.getParameterTypes());
+                return 0;
+            } catch (Throwable e) {
+                return 1;
+            }
         }
     }
 }

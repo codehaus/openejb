@@ -50,15 +50,13 @@ package org.openejb.nova;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
 
-import org.apache.geronimo.core.service.Interceptor;
-
 /**
  *
  *
  *
  * @version $Revision$ $Date$
  */
-public interface EJBLocalClientContainer {
+public interface EJBLocalClientContainer extends ClientContainer {
     EJBLocalHome getEJBLocalHome();
 
     EJBLocalObject getEJBLocalObject(Object primaryKey);

@@ -60,7 +60,7 @@ import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
-import org.apache.geronimo.security.util.ContextManager;
+import org.apache.geronimo.security.ContextManager;
 
 import org.openejb.nova.transaction.ContainerTransactionContext;
 import org.openejb.nova.transaction.TransactionContext;

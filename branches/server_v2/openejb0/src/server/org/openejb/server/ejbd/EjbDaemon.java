@@ -60,7 +60,6 @@ import org.openejb.client.RequestMethods;
 import org.openejb.client.ResponseCodes;
 import org.openejb.util.Logger;
 import org.openejb.util.Messages;
-import org.openejb.util.SafeToolkit;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -68,50 +67,39 @@ import org.openejb.util.SafeToolkit;
  */
 public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCodes, RequestMethods {
 
-    private SafeToolkit toolkit = SafeToolkit.getToolkit("OpenEJB EJB Server");
-
     Messages _messages = new Messages( "org.openejb.server.util.resources" );
     Logger logger = Logger.getInstance( "OpenEJB.server.remote", "org.openejb.server.util.resources" );
 
     Properties props;
-    
-	ClientObjectFactory clientObjectFactory;
+
+    ClientObjectFactory clientObjectFactory;
     DeploymentIndex deploymentIndex;
     EjbRequestHandler ejbHandler;
     JndiRequestHandler jndiHandler;
     AuthRequestHandler authHandler;
 
     boolean stop = false;
-    
+
     static EjbDaemon thiss;
 
-    private EjbDaemon() {}
+    private EjbDaemon() {
+    }
 
     public static EjbDaemon getEjbDaemon() {
         if ( thiss == null ) {
             thiss = new EjbDaemon();
         }
-
         return thiss;
     }
 
     public void init(Properties props) throws Exception{
-
         this.props = props;
-        //printVersion();
-
-        System.out.println( _messages.message( "ejbdaemon.startup" ) );
-
-        //TODO: Pass this class to the ServerManager before calls
-        //OpenEJB.init(props, this);
-
-        System.out.println("[init] OpenEJB Remote Server");
-
-
-
+        
         deploymentIndex = new DeploymentIndex();
 
         clientObjectFactory = new ClientObjectFactory(this);
+        
+        // Request Handlers
         ejbHandler  = new EjbRequestHandler(this);
         jndiHandler = new JndiRequestHandler(this);
         authHandler = new AuthRequestHandler(this);
@@ -133,6 +121,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
 
         try {
 
+            //TODO: Implement multiple request processing
             //while ( !stop ) {
 
             // Read the request
@@ -148,10 +137,10 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
 
             // Process the request
             switch (requestType) {
-                case EJB_REQUEST:  processEjbRequest(ois, oos); break;
-                case JNDI_REQUEST: processJndiRequest(ois, oos);break;
-                case AUTH_REQUEST: processAuthRequest(ois, oos);break;
-                default: logger.error("Unknown request type "+requestType);
+            case EJB_REQUEST:  processEjbRequest(ois, oos); break;
+            case JNDI_REQUEST: processJndiRequest(ois, oos);break;
+            case AUTH_REQUEST: processAuthRequest(ois, oos);break;
+            default: logger.error("Unknown request type "+requestType);
             }
             try {
                 if ( oos != null ) {
@@ -193,17 +182,13 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         ejbHandler.processRequest(in,out);
     }
 
-
-
     public void processJndiRequest(ObjectInputStream in, ObjectOutputStream out) throws Exception{
         jndiHandler.processRequest(in,out);
     }
 
-    public void processAuthRequest(ObjectInputStream in, ObjectOutputStream out){
+    public void processAuthRequest(ObjectInputStream in, ObjectOutputStream out) {
         authHandler.processRequest(in,out);
     }
-
-
 
     //=============================================================
     //  ApplicationServer interface methods

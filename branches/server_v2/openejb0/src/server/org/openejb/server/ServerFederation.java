@@ -159,7 +159,9 @@ public class ServerFederation implements ApplicationServer {
      * @return 
      */
     public static ApplicationServer getApplicationServer( ) {
-        return (ApplicationServer)threadStorage.get();
+        Object obj = threadStorage.get();
+        System.out.println("[] Get App Server "+obj);
+        return (ApplicationServer)obj;
     }
 
 }

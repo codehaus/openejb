@@ -137,6 +137,7 @@ public class ServiceLogger implements ServerService {
         org.apache.log4j.MDC.put("SERVER", getName());
 
         try{
+            logIncoming();
             next.service(socket);
             logSuccess();
         } catch (Exception e){
@@ -145,6 +146,9 @@ public class ServiceLogger implements ServerService {
         }
     }
 
+    private void logIncoming(){
+        logger.info("incomming request");
+    }
     private void logSuccess(){
         logger.info("successful request");
     }

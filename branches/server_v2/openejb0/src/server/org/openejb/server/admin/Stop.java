@@ -81,7 +81,7 @@ public class Stop implements org.openejb.client.RequestMethods {
             String host = "localhost";
 
             // The port the Remote Server is running on      
-            int port = 4201;
+            int port = 4200;
 
             for (int i=0; i < args.length; i++){
                 if (args[i].equals("-h")){

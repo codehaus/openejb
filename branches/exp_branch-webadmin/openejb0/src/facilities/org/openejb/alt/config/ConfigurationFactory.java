@@ -29,13 +29,16 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
 
     public static final String DEFAULT_SECURITY_ROLE = "openejb.default.security.role";
 
-    Openejb openejb;
-    DeployedJar[] jars;
+    // DMB: Making these public static is just a temporary hack
+    public static Openejb openejb;
+    public static DeployedJar[] jars;
+    
     ServicesJar openejbDefaults = null;
 
 
 
-    String configLocation = "";
+    // DMB: Making these public static is just a temporary hack
+    public static String configLocation = "";
 
     Vector deploymentIds = new Vector();
     Vector securityRoles = new Vector();
@@ -50,7 +53,8 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
     //   I n f o   O b j e c t s
     //
     //------------------------------------------------//
-    OpenEjbConfiguration sys;
+    // DMB: Making these public static is just a temporary hack
+    public static OpenEjbConfiguration sys;
 
     ContainerInfo[] cntrs;
     EntityContainerInfo[] entyCntrs;
@@ -1185,16 +1189,16 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
     }
 }
 
-class DeployedJar {
-
-    EjbJar ejbJar;
-    OpenejbJar openejbJar;
-    String jarURI;
-
-
-    public DeployedJar(String jar, EjbJar ejbJar, OpenejbJar openejbJar) {
-        this.ejbJar = ejbJar;
-        this.openejbJar = openejbJar;
-        this.jarURI = jar;
-    }
-}
+//  class DeployedJar {
+//  
+//      EjbJar ejbJar;
+//      OpenejbJar openejbJar;
+//      String jarURI;
+//  
+//  
+//      public DeployedJar(String jar, EjbJar ejbJar, OpenejbJar openejbJar) {
+//          this.ejbJar = ejbJar;
+//          this.openejbJar = openejbJar;
+//          this.jarURI = jar;
+//      }
+//  }

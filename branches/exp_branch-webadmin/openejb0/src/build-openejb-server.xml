@@ -39,6 +39,7 @@
   
     <mkdir dir="${build.openejb.server.src}"/>
     <mkdir dir="${build.openejb.server.dest}"/>
+    <mkdir dir="${build.openejb.server.dest}/openejb"/>
     <mkdir dir="${dest.openejb.server.javadoc.dir}"/>
     
     <copy todir="${build.openejb.server.src}">
@@ -47,6 +48,14 @@
         <include name="**/**"/>
         <exclude name="**/CVS/**"/>
         <exclude name="**/*.class"/>
+      </fileset>
+    
+    </copy>
+    
+    <copy todir="${build.openejb.server.dest}/openejb">
+    
+      <fileset dir="${build.openejb.server.src}" >
+        <include name="webadmin/**"/>
       </fileset>
     
     </copy>

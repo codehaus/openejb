@@ -49,6 +49,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.NotSerializableException;
@@ -120,7 +121,6 @@ public class HttpDaemon implements Runnable{
             serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
         } catch (Exception e){
             System.out.println("Cannot bind to the ip: "+ip+" and port: "+port+".  Received exception: "+ e.getClass().getName()+":"+ e.getMessage());
-            System.exit(1);
         }
     }
 
@@ -158,7 +158,7 @@ public class HttpDaemon implements Runnable{
                 // things up with the client accordingly.
             } catch ( Throwable e ) {
                 logger.error( "Unexpected error", e );
-                //System.out.println("ERROR: "+clienntIP.getHostAddress()+": " +e.getMessage());
+                System.out.println("ERROR: "+clientIP.getHostAddress()+": " +e.getMessage());
             } finally {
                 try {
                     if ( out != null ) {
@@ -172,53 +172,136 @@ public class HttpDaemon implements Runnable{
                 }
             }
         }
-
     }
     
-    private void replyWithFatalError(OutputStream out, Throwable error, String message){
-//      logger.fatal(message, error);
-//      RemoteException re = new RemoteException
-//          ("The server has encountered a fatal error: "+message+" "+error);
-//      EJBResponse res = new EJBResponse();
-//      res.setResponse(EJB_ERROR, re);
-//      try
-//      {
-//          res.writeExternal(out);
-//      }
-//      catch (java.io.IOException ie)
-//      {
-//          logger.error("Failed to write to EJBResponse", ie);
-//      }
-    }
-
     public void processRequest(InputStream in, OutputStream out) {
 
         HttpRequest req = new HttpRequest();
         HttpResponse res = new HttpResponse();
 
+        System.out.println("[] reading request");
         try {
             req.readExternal( in );
         } catch (Throwable t) {
-	    //replyWithFatalError(out, t, "Error caught during request processing");
             t.printStackTrace();
+            res = HttpResponse.createError("Could read the request.\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            try {
+                res.writeExternal( out );
+            } catch (Throwable t2) {
+                t2.printStackTrace();
+            }
             return;
         }
         
-        java.io.PrintWriter body = res.getPrintWriter();
+        System.out.println("[] read");
+        URL uri = null;
+        String file = null;
 
-        body.println("<html>");
-        body.println("<body>");
-        body.println("<br><br><br><br>");
-        body.println("<h1>Hello World</h1>");
-        body.println("</body>");
-        body.println("</html>");
+        try{
+            uri = req.getURI();
+            file = uri.getFile();
+            int querry = file.indexOf("?");
+            if (querry != -1) {
+                file = file.substring(0, querry);
+            }
+            System.out.println("[] file="+file);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            res = HttpResponse.createError("Could not determine the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage());
+            try {
+                res.writeExternal( out );
+            } catch (Throwable t2) {
+                t2.printStackTrace();
+            }
+            return;
+        }
+        HttpBean httpbean = null;
+        try{
+            httpbean = getHttpBean(file);
+            System.out.println("[] module="+httpbean);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            res = HttpResponse.createError("Could not load the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            System.out.println("[] res="+res);
+            try {
+                res.writeExternal( out );
+            } catch (Throwable t2) {
+                t2.printStackTrace();
+            }
+            return;
+        }
+        
+        try{
+            httpbean.onMessage(req, res);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            res = HttpResponse.createError("Error occurred while executing the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            try {
+                res.writeExternal( out );
+            } catch (Throwable t2) {
+                t2.printStackTrace();
+            }
+            return;
+        }
+//      java.io.PrintWriter body = res.getPrintWriter();
+//
+//      body.println("<html>");
+//      body.println("<body>");
+//      body.println("<br><br><br><br>");
+//      body.println("<h1>"+file+"</h1>");
+//      body.println("</body>");
+//      body.println("</html>");
         
         try {
             res.writeExternal( out );
         } catch (Throwable t) {
-	    //replyWithFatalError(out, t, "Error caught during request processing");
             t.printStackTrace();
             return;
         }
+    }
+
+    private void writeResponse(HttpResponse res){
+    }
+    
+    protected HashMap httpbeans = new HashMap();
+
+    protected HttpBean defaultBean = getDefaultBean();
+    
+    private HttpBean getDefaultBean(){
+        HttpBean bean = new DefaultHttpBean();
+        bean.ejbActivate();
+        return bean;
+    }
+
+    protected HttpBean getHttpBean(String beanName) throws IOException{
+        HttpBean httpBean = (HttpBean)httpbeans.get(beanName);
+        if (httpBean == null) {
+            httpBean = loadHttpBean(beanName);
+        }
+
+        if (httpBean == null) httpBean = defaultBean;
+
+        return httpBean;
+    }
+
+    protected HttpBean loadHttpBean(String beanName) throws IOException{
+        Class beanClass = null;
+        try{
+            beanName = "org.openejb.server.admin"+beanName.replace('/', '.');
+            System.out.println("[] loading "+beanName);
+            beanClass = Class.forName(beanName);
+        } catch(Exception e){
+            return null;
+        }
+        
+        HttpBean bean = null;
+        try{
+            bean = (HttpBean)beanClass.newInstance();
+        } catch(Exception e){
+            throw new IOException("Cannot instantiate module "+beanClass+"\n"+e.getClass().getName()+":\n"+e.getMessage());
+        }
+        
+        bean.ejbActivate();
+        return bean;
     }
 }

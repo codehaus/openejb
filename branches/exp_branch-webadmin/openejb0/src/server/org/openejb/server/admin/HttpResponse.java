@@ -44,6 +44,7 @@
  */
 package org.openejb.server.admin;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -98,14 +99,19 @@ public class HttpResponse {
     public HttpResponse(int code, String responseString, String contentType){
         this.code = code;
         this.responseString = responseString;
+        
         headers = new HashMap();
         
         // Default headers
         setHeader("Server", getServerName());
         setHeader("Connection","close");
         setHeader("Content-Type",contentType);
-
         // create the body.
+        initBody();
+
+    }
+    
+    private void initBody(){
         baos = new ByteArrayOutputStream();
         writer = new PrintWriter( baos );
     }
@@ -122,6 +128,40 @@ public class HttpResponse {
         return writer;
     }
     
+    public OutputStream getOutputStream(){
+        return baos;
+    }
+    
+    public void setCode(int code){
+        this.code = code;
+    }
+    
+    public int getCode(){
+        return code;
+    }
+    
+    public void setContentType(String type){
+        setHeader("Content-Type", type);
+    }
+    
+    public String getContentType(){
+        return getHeader("Content-Type");
+    }
+    
+    public void setResponseString(String responseString){
+       this.responseString = responseString;
+    }
+
+    public void reset(){
+        initBody();
+    }
+    
+    public void reset(int code, String responseString){
+        setCode(code);
+        setResponseString(responseString);
+        initBody();
+    }
+
     /**
      */
     public void readExternal(InputStream in) throws IOException{
@@ -140,15 +180,27 @@ public class HttpResponse {
         DataOutput out = new DataOutputStream(output);
         DataOutput log = new DataOutputStream(System.out);
         closeMessage();
+        writeResponseLine(log);
+        writeHeaders(log);
+        writeBody(log);
+        
         writeResponseLine(out);
         writeHeaders(out);
         writeBody(out);
         
-        writeResponseLine(log);
-        writeHeaders(log);
-        writeBody(log);
     }
 
+    public String toString(){
+        StringBuffer buf = new StringBuffer(40);
+
+        buf.append( HTTP_VERSION );
+        buf.append(SP);
+        buf.append(code+"");
+        buf.append(SP);
+        buf.append(responseString);
+
+        return buf.toString();
+    }
     private void closeMessage() throws IOException{
         writer.flush();
         writer.close();
@@ -164,6 +216,7 @@ public class HttpResponse {
         out.writeBytes(HTTP_VERSION);
         out.writeBytes(SP);
         out.writeBytes(code+"");
+        out.writeBytes(SP);
         out.writeBytes(responseString);
         out.writeBytes(CRLF);
     }
@@ -203,4 +256,55 @@ public class HttpResponse {
         return server;
     }    
 
+    
+    /**
+     * This could be improved at some day in the future 
+     * to also include a stack trace of the exceptions
+     * 
+     * @param message
+     * @return 
+     */
+    public static HttpResponse createError(String message){
+        return createError(message, null);
+    }
+
+    public static HttpResponse createError(String message, Throwable t){
+        HttpResponse res = new HttpResponse(500, "Internal Server Error", "text/html");
+        java.io.PrintWriter body = res.getPrintWriter();
+
+        body.println("<html>");
+        body.println("<body>");
+        body.println("<h3>Internal Server Error</h3>");
+        body.println("<br><br>");
+
+        if (message != null) {
+            StringTokenizer msg = new StringTokenizer(message, "\n\r");
+            while (msg.hasMoreTokens()) {
+                body.print( msg.nextToken() );
+                body.println("<br>");
+            }
+        }
+        if (t != null) {
+            try{
+                body.println("<br><br>");
+                body.println("Stack Trace:<br>");
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                PrintWriter writer = new PrintWriter( baos );
+                t.printStackTrace(writer);
+                writer.flush();
+                writer.close();
+                message = new String(baos.toByteArray());
+                StringTokenizer msg = new StringTokenizer(message, "\n\r");
+                while (msg.hasMoreTokens()) {
+                    body.print( msg.nextToken() );
+                    body.println("<br>");
+                }
+            } catch (Exception e){
+            }
+        }
+        body.println("</body>");
+        body.println("</html>");
+
+        return res;
+    }
 }

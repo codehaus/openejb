@@ -66,6 +66,7 @@ import java.util.Vector;
 import javax.ejb.EJBHome;
 import javax.ejb.EJBObject;
 import javax.naming.*;
+import org.openejb.server.admin.*;
 import org.openejb.client.*;
 import org.openejb.client.proxy.*;
 import org.openejb.Container;
@@ -863,6 +864,14 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
             EjbDaemon ejbd = new EjbDaemon();
             ejbd.init(props);
+            
+            // Start the WebAdmin thread
+            // TODO:1: Make this configurable
+            // using vm properties
+            HttpDaemon httpd = new HttpDaemon(ejbd);
+            httpd.init(props);
+            Thread admin = new Thread(httpd);
+            admin.start();
 
             int threads = Integer.parseInt( (String)props.get("openejb.server.threads") );
             for (int i=0; i < threads; i++){

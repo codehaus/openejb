@@ -72,21 +72,22 @@ public class HttpRequest {
     /** 5.1.1    Method */
     int method;
          
-    public static int OPTIONS = 0; // Section 9.2
-    public static int GET     = 1; // Section 9.3
-    public static int HEAD    = 2; // Section 9.4
-    public static int POST    = 3; // Section 9.5
-    public static int PUT     = 4; // Section 9.6
-    public static int DELETE  = 5; // Section 9.7
-    public static int TRACE   = 6; // Section 9.8
-    public static int CONNECT = 7; // Section 9.9
-    public static int UNSUPPORTED = 8;
+    public static final int OPTIONS = 0; // Section 9.2
+    public static final int GET     = 1; // Section 9.3
+    public static final int HEAD    = 2; // Section 9.4
+    public static final int POST    = 3; // Section 9.5
+    public static final int PUT     = 4; // Section 9.6
+    public static final int DELETE  = 5; // Section 9.7
+    public static final int TRACE   = 6; // Section 9.8
+    public static final int CONNECT = 7; // Section 9.9
+    public static final int UNSUPPORTED = 8;
 
     /** 5.1.2    Request-URI */
     URL uri;
 
     HashMap headers;
-    HashMap params;
+    HashMap formParams = new HashMap();
+    HashMap queryParams = new HashMap();
     byte[] body;
     
     /**
@@ -106,6 +107,22 @@ public class HttpRequest {
 
     public String getHeader(String name){
         return (String)headers.get(name);
+    }
+    
+    public String getFormParameter(String name){
+        return (String)formParams.get(name);
+    }
+    
+    public String getQueryParameter(String name){
+        return (String)queryParams.get(name);
+    }
+    
+    public int getMethod(){
+        return method;
+    }
+    
+    public URL getURI(){
+        return uri;
     }
     
     private void readRequestLine(DataInput in) throws IOException{
@@ -155,6 +172,31 @@ public class HttpRequest {
             uri = new URL("http","localhost", token );
         } catch (java.net.MalformedURLException e){
             throw new IOException("Malformed URL :"+ token +" Exception: "+e.getMessage());
+        }
+        parseQueryParams( uri.getQuery() );
+
+
+    }
+    
+    private void parseQueryParams(String query) throws IOException{
+        if (query == null) return;
+        StringTokenizer parameters = new StringTokenizer(query, "&");
+
+        while (parameters.hasMoreTokens()) {
+            StringTokenizer param = new StringTokenizer(parameters.nextToken(), "=");    
+            
+            /* [1] Parse the Name */
+            if (!param.hasMoreTokens()) continue;
+            String name = param.nextToken();
+            if (name == null) continue;
+            
+            /* [2] Parse the Value */
+            if (!param.hasMoreTokens()) continue;
+            String value = param.nextToken();
+            if (value == null) continue;
+
+            System.out.println("[] "+name+" = "+value);
+            queryParams.put(name, value);
         }
     }
 
@@ -237,7 +279,7 @@ public class HttpRequest {
             String value = parameters.nextToken();
             if (value == null) value = "";
 
-            params.put(name, value);
+            formParams.put(name, value);
         }
     }
 }

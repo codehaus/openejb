@@ -82,10 +82,28 @@ public class HomeBean extends WebAdminBean {
      *
      */
     public void writeBody(PrintWriter body) throws IOException {
-        body.println("Welcome to the OpenEJB Web Administration console.  This console is designed to help automate");
+        body.println("Welcome to the OpenEJB Web Administration website.  This website is designed to help automate");
         body.println("many of the command line processes in OpenEJB.  Please begin by selecting from one of the menu");
         body.println("options.<br><br>");
-        body.println("Some more content can go here such as general system info...");
+        body.println("We encourage our users to participate in giving suggestions and submitting code and documentation");
+        body.println("for the improvement of OpenEJB.  Because it’s open source, it’s not just our project, it’s everyone’s");
+        body.println("project!  <b>Your feedback and contributions make OpenEJB a better project for everyone!</b>  ");
+        body.println("If you have a contribution or feature request, post it to the");
+        body.println("<a href=\"http://sourceforge.net/tracker/?atid=439276&group_id=44351\" target=\"_blank\">patch tracker</a>");
+        body.println("or <a href=\"http://sourceforge.net/tracker/?atid=439277&group_id=44351\" target=\"_blank\">feature request tracker</a>");
+        body.println("and we will review it and add it to the project.<br><br>");
+        body.println("Future revisions of the OpenEJB Web Administration will contain:");
+        body.println("<ul type=\"disc\">");
+	body.println("<li>Better bean deployment with more features</li>");
+	body.println("<li>Container Managed Persistance Mapping</li>");
+        body.println("<li>More system information</li>");
+        body.println("<li>Extensive help section</li>");
+        body.println("<li>Your suggestions!!</li>");
+        body.println("</ul>");
+        body.println("<hr>");
+        body.println("If you have any problems with this website, please don’t hesitate to email the OpenEJB users list: ");
+        body.println("<a href=\"mailto:openejb-user@lists.sourceforge.net\">openejb-user@lists.sourceforge.net</a> and we’ll");
+        body.println("respond to you as soon as possible.");
     }
     
     /** Write the TITLE of the HTML document.  This is the part
@@ -107,7 +125,7 @@ public class HomeBean extends WebAdminBean {
      *
      */
     public void writePageTitle(PrintWriter body) throws IOException {
-        body.println("Home");
+        body.println("Web Administration Home");
     }
     
     /** Write the sub items for this bean in the left navigation bar of

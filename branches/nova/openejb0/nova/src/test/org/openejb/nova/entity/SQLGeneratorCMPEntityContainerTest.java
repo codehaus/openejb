@@ -105,6 +105,9 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
     private final jdbcDataSource ds = new jdbcDataSource();
 
     public void testLocalInvoke() throws Exception {
+        //
+        // Note: this connection must be held open for the entire test or hsqldb will drop the in memory datatbase
+        //
         Connection c = initDatabase();
 
         MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
@@ -120,6 +123,9 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
     }
 
     public void testFields() throws Exception {
+        //
+        // Note: this connection must be held open for the entire test or hsqldb will drop the in memory datatbase
+        //
         Connection c = initDatabase();
         Statement s = c.createStatement();
         MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
@@ -137,6 +143,9 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
     }
 
     public void testLifeCycle() throws Exception {
+        //
+        // Note: this connection must be held open for the entire test or hsqldb will drop the in memory datatbase
+        //
         Connection c = initDatabase();
         MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
 
@@ -164,6 +173,9 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
     }
 
     public void testSelect() throws Exception {
+        //
+        // Note: this connection must be held open for the entire test or hsqldb will drop the in memory datatbase
+        //
         Connection c = initDatabase();
         MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
 
@@ -196,7 +208,10 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
 
 
     public void testACID() throws Exception {
-        initDatabase();
+        //
+        // Note: this connection must be held open for the entire test or hsqldb will drop the in memory datatbase
+        //
+        Connection c = initDatabase();
         final String DENT = "Huh? What? Where's the tea?";
 
         MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
@@ -230,6 +245,7 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
 
         assertTrue(beanRemoved);
 
+        c.close();
     }
 
     protected void setUp() throws Exception {

@@ -49,30 +49,27 @@ package org.openejb.nova.slsb;
 
 import java.net.URI;
 import java.rmi.RemoteException;
+
 import javax.ejb.EJBHome;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
 import javax.ejb.EJBObject;
 import javax.ejb.SessionBean;
 import javax.ejb.SessionContext;
-import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.transaction.UserTransaction;
 
+import junit.framework.TestCase;
+import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
-import org.apache.geronimo.naming.java.ComponentContextBuilder;
-import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
-import org.apache.geronimo.xbeans.j2ee.SessionBeanType;
-
-import junit.framework.TestCase;
-
+import org.apache.geronimo.naming.deployment.ComponentContextBuilder;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.MockTransactionManager;
+import org.openejb.nova.deployment.TransactionPolicyHelper;
 import org.openejb.nova.transaction.EJBUserTransaction;
-import org.openejb.nova.util.ServerUtil;
 
 /**
  *
@@ -83,10 +80,8 @@ import org.openejb.nova.util.ServerUtil;
 public class StatelessContextTest extends TestCase {
     private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=MockEJB");
     private URI uri;
-    private MBeanServer mbServer;
     private StatelessContainer container;
     private EJBContainerConfiguration config;
-    private SessionBeanType session;
     private static boolean cmt;
     private static boolean setSessionCalled;
     private static boolean ejbCreateCalled;
@@ -94,10 +89,9 @@ public class StatelessContextTest extends TestCase {
 
     public void XtestSessionContextCMT() throws Exception {
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-        config.componentContext = new ComponentContextBuilder(null, null, this.getClass().getClassLoader()).buildContext(session.getEjbRefArray(), session.getEjbLocalRefArray(), session.getEnvEntryArray(), session.getResourceRefArray());
+        config.componentContext = new ComponentContextBuilder(null, this.getClass().getClassLoader()).buildContext(null, null, null, null, null, null, null, null, null, null, null, null);
         cmt = true;
         container = new StatelessContainer(config, new MockTransactionManager(), new ConnectionTrackingCoordinator());
-        mbServer.registerMBean(container, CONTAINER_NAME);
         container.doStart();
 
         StatelessInstanceFactory factory = new StatelessInstanceFactory(container);
@@ -118,10 +112,9 @@ public class StatelessContextTest extends TestCase {
     public void XtestSessionContextBMT() throws Exception {
         config.txnDemarcation = TransactionDemarcation.BEAN;
         config.userTransaction = new EJBUserTransaction();
-        config.componentContext = new ComponentContextBuilder(null, config.userTransaction, this.getClass().getClassLoader()).buildContext(session.getEjbRefArray(), session.getEjbLocalRefArray(), session.getEnvEntryArray(), session.getResourceRefArray());
+        config.componentContext = new ComponentContextBuilder(null, this.getClass().getClassLoader()).buildContext(null, null, null, null, null, null, null, null, null, null, null, config.userTransaction);
         cmt = false;
         container = new StatelessContainer(config, new MockTransactionManager(), new ConnectionTrackingCoordinator());
-        mbServer.registerMBean(container, CONTAINER_NAME);
         container.doStart();
 
         StatelessInstanceFactory factory = new StatelessInstanceFactory(container);
@@ -149,12 +142,7 @@ public class StatelessContextTest extends TestCase {
     }
 
     protected void setUp() throws Exception {
-        super.setUp();
-
-        mbServer = ServerUtil.newLocalServer();
         uri = new URI("async", null, "localhost", 3434, "/JMX", null, CONTAINER_NAME.toString());
-
-        session = SessionBeanType.Factory.newInstance();
 
         config = new EJBContainerConfiguration();
         config.uri = uri;
@@ -163,10 +151,10 @@ public class StatelessContextTest extends TestCase {
         config.localHomeInterfaceName = MockLocalHome.class.getName();
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
+        config.transactionPolicySource = TransactionPolicyHelper.StatelessBeanPolicySource;
     }
 
     protected void tearDown() throws Exception {
-        ServerUtil.stopLocalServer(mbServer);
         super.tearDown();
     }
 

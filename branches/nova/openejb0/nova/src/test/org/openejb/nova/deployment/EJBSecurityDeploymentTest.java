@@ -80,7 +80,7 @@ import org.openejb.nova.transaction.TxnPolicy;
  * @version $Revision$ $Date$
  *
  * */
-public class EJBSecurityDeploymentTest extends ContextBuilderTest {
+public class EJBSecurityDeploymentTest extends AbstractContextBuilderTest {
 
     private static final String SESSION_NAME = "geronimo.j2ee:J2eeType=SessionBean,name=MockSession";
     private static final String MDB_NAME = "geronimo.j2ee:J2eeType=SessionBean,name=MockMDB";
@@ -98,13 +98,6 @@ public class EJBSecurityDeploymentTest extends ContextBuilderTest {
     };
 
     protected void setUp() throws Exception {
-        setUpKernel();
-        kernel.getMBeanServer().createMBean("org.apache.geronimo.gbean.jmx.DependencyService", new ObjectName("geronimo.boot:role=DependencyService2"));
-
-        //GeronimoMBeanContext context = new GeronimoMBeanContext(kernel.getMBeanServer(), null, null);
-
-        //planner = new EJBModuleDeploymentPlanner();
-        //planner.setMBeanContext(context);
         ejbJar = EjbJarType.Factory.newInstance();
 
         security = GerSecurityType.Factory.newInstance();
@@ -126,7 +119,7 @@ public class EJBSecurityDeploymentTest extends ContextBuilderTest {
 
     private void buildSession() throws Exception {
         SessionBeanType session = SessionBeanType.Factory.newInstance();
-        setUpContext();
+        setUpContext(null);
 
         session.addNewEjbClass().setStringValue(MockEJB.class.getName());
         session.addNewEjbName().setStringValue("MockSession");
@@ -178,7 +171,7 @@ public class EJBSecurityDeploymentTest extends ContextBuilderTest {
 
     private void buildMDB() throws Exception {
         MessageDrivenBeanType messageDriven = MessageDrivenBeanType.Factory.newInstance();
-        setUpContext();
+        setUpContext(null);
 
         messageDriven.addNewEjbClass().setStringValue(org.openejb.nova.mdb.MockEJB.class.getName());
         messageDriven.addNewEjbName().setStringValue("MockMDB");

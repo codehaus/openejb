@@ -58,7 +58,7 @@ import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBLocalClientContainer;
 import org.openejb.nova.dispatch.MethodSignature;
-import org.openejb.nova.proxy.EBJProxyHelper;
+import org.openejb.nova.proxy.EJBProxyHelper;
 import org.openejb.nova.proxy.EJBProxy;
 import org.openejb.nova.proxy.EJBProxyFactory;
 import org.openejb.nova.proxy.EJBProxyHandler;
@@ -91,7 +91,7 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
 
         // Create LocalObject Proxy
         objectFactory = new EJBProxyFactory(EntityLocalObjectProxy.class, local);
-        operationMap = EBJProxyHelper.getOperationMap(EJBInvocationType.LOCAL, objectFactory.getType(), signatures);
+        operationMap = EJBProxyHelper.getOperationMap(EJBInvocationType.LOCAL, objectFactory.getType(), signatures);
     }
 
     public EJBLocalHome getEJBLocalHome() {

@@ -62,7 +62,7 @@ import org.openejb.nova.dispatch.MethodSignature;
 /**
  * @version $Revision$ $Date$
  */
-public class EBJProxyHelper {
+public class EJBProxyHelper {
     public static int[] getOperationMap(EJBInvocationType ejbInvocationType, Class proxyType, MethodSignature[] signatures) {
         // translate the method names
         MethodSignature[] translated = translate(ejbInvocationType, signatures);

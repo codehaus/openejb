@@ -63,7 +63,7 @@ import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBRemoteClientContainer;
 import org.openejb.nova.dispatch.MethodSignature;
-import org.openejb.nova.proxy.EBJProxyHelper;
+import org.openejb.nova.proxy.EJBProxyHelper;
 import org.openejb.nova.proxy.EJBMetaDataImpl;
 import org.openejb.nova.proxy.EJBProxy;
 import org.openejb.nova.proxy.EJBProxyFactory;
@@ -92,7 +92,7 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
 
         // Create Remote Proxy
         objectFactory = new EJBProxyFactory(StatefulEJBObjectProxy.class, remote);
-        operationMap = EBJProxyHelper.getOperationMap(EJBInvocationType.REMOTE, objectFactory.getType(), signatures);
+        operationMap = EJBProxyHelper.getOperationMap(EJBInvocationType.REMOTE, objectFactory.getType(), signatures);
 
         ejbMetadata = EJBMetaDataImpl.createStatefulSession(homeProxy, home, remote);
     }

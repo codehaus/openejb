@@ -63,7 +63,7 @@ import org.openejb.nova.proxy.EJBProxyFactory;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.proxy.EJBProxy;
 import org.openejb.nova.proxy.EJBProxyHandler;
-import org.openejb.nova.proxy.EBJProxyHelper;
+import org.openejb.nova.proxy.EJBProxyHelper;
 
 /**
  * Container for the local interface of a Message Driven Bean.
@@ -93,7 +93,7 @@ public class MDBLocalClientContainer implements ClientContainer {
         this.firstInterceptor = firstInterceptor;
 
         objectFactory = new EJBProxyFactory(MDBMessageEndpointProxy.class, new Class[]{mdbInterface, MessageEndpoint.class});
-        operationMap = EBJProxyHelper.getOperationMap(EJBInvocationType.LOCAL, objectFactory.getType(), signatures);
+        operationMap = EJBProxyHelper.getOperationMap(EJBInvocationType.LOCAL, objectFactory.getType(), signatures);
 
         fastClass = FastClass.create(objectFactory.getType());
     }

@@ -89,7 +89,7 @@ public class EJBProxyHandler implements MethodInterceptor, Serializable {
     private final int[] operationMap;
 
     public EJBProxyHandler(ClientContainer container, EJBInvocationType ejbInvocationType, Class proxyType, MethodSignature[] signatures) {
-        this(container, ejbInvocationType, EBJProxyHelper.getOperationMap(ejbInvocationType, proxyType, signatures), null);
+        this(container, ejbInvocationType, EJBProxyHelper.getOperationMap(ejbInvocationType, proxyType, signatures), null);
     }
 
     public EJBProxyHandler(ClientContainer container, EJBInvocationType ejbInvocationType, int[] operationMap, Object id) {

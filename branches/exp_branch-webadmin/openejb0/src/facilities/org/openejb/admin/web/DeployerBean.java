@@ -131,12 +131,6 @@ public class DeployerBean implements javax.ejb.SessionBean {
             // TODO: Better exception handling.
             e.printStackTrace();
         }
-        
-        //put all the used deployments into the array
-        DeploymentInfo[] deployments = OpenEJB.deployments();
-        for(int i=0; i<deployments.length; i++) {
-            this.usedBeanNames.add(deployments[i].getDeploymentID());
-        }
     }
 
     public void setBooleanValues(boolean[] booleanValues) {
@@ -185,8 +179,15 @@ public class DeployerBean implements javax.ejb.SessionBean {
         EjbDeployment deployment = new EjbDeployment();
         ResourceLink link;
 
-        //set the deployment info
-        deployment.setEjbName(deployerBeans[i].getEjbName());
+        if(this.usedBeanNames.contains(deploymentId)) {
+            throw new RemoteException("The deployment id: " + deploymentId + 
+            " is already being used by another bean, please choose another deployment id.");
+        }
+        
+        this.usedBeanNames.add(deploymentId);
+
+            //set the deployment info
+            deployment.setEjbName(deployerBeans[i].getEjbName());
         deploymentHTML.append("<tr>\n<td>").append(deployerBeans[i].getEjbName()).append("</td>\n");
         deployment.setDeploymentId(deploymentId);
         deploymentHTML.append("<td>").append(deploymentId).append("</td>\n");
@@ -211,9 +212,9 @@ public class DeployerBean implements javax.ejb.SessionBean {
                     link = new ResourceLink();
                     link.setResId(resourceRef[j][0]);
                     link.setResRefName(resourceRef[j][1]);
-                    deploymentHTML.append("<tr>\n<td>").append(resourceRef[j][1]).append(
-                        "</td>\n");
-                    deploymentHTML.append("<td>").append(resourceRef[j][0]).append("</td>\n</tr>\n");
+                    deploymentHTML.append("<tr>\n<td>").append(resourceRef[j][1]).append("</td>\n");
+                    deploymentHTML.append("<td>").append(resourceRef[j][0]).append(
+                        "</td>\n</tr>\n");
                     deployment.addResourceLink(link);
                 }
             }
@@ -262,13 +263,14 @@ public class DeployerBean implements javax.ejb.SessionBean {
     }
 
     private String autoAssignDeploymentId(Bean bean) {
+        this.resetUsedDeploymentIds();
         String ejbName = bean.getEjbName();
         String newEjbName;
 
         //first check for the deployment id in the list
         //and make sure that all the bean names are unique
         if (this.usedBeanNames.contains(ejbName)) {
-            while(true) {
+            while (true) {
                 newEjbName = ejbName + (Long.MAX_VALUE * Math.random());
                 if (!this.usedBeanNames.contains(newEjbName)) {
                     this.usedBeanNames.add(newEjbName);
@@ -378,6 +380,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
             "<tr><td colspan=\"4\"><input type=\"submit\" name=\"submitDeploymentAndContainerIds\"");
         htmlString.append(" value=\"Continue &gt;&gt;\"></td></tr></table>\n");
 
+        this.resetUsedDeploymentIds();
         return htmlString.toString();
     }
 
@@ -470,6 +473,16 @@ public class DeployerBean implements javax.ejb.SessionBean {
         }
 
         htmlString.append("</table>\n");
+    }
+
+    private void resetUsedDeploymentIds() {
+        this.usedBeanNames = new ArrayList();
+        
+        //put all the used deployments into the array
+        DeploymentInfo[] deployments = OpenEJB.deployments();
+        for (int i = 0; i < deployments.length; i++) {
+            this.usedBeanNames.add(deployments[i].getDeploymentID());
+        }
     }
 
     /*------------------------------------------------------*/

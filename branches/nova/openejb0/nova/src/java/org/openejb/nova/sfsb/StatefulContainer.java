@@ -49,6 +49,8 @@ package org.openejb.nova.sfsb;
 
 import java.net.URI;
 
+import javax.transaction.TransactionManager;
+
 import org.apache.geronimo.cache.InstanceCache;
 import org.apache.geronimo.cache.SimpleInstanceCache;
 import org.apache.geronimo.core.service.Interceptor;
@@ -63,6 +65,7 @@ import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
+import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
@@ -73,19 +76,18 @@ import org.openejb.nova.transaction.TransactionContextInterceptor;
  * @version $Revision$ $Date$
  */
 public class StatefulContainer extends AbstractEJBContainer {
-    private StatefulInstanceFactory instanceFactory;
-    private InstanceCache instanceCache;
+    private final StatefulInstanceFactory instanceFactory;
+    private final InstanceCache instanceCache;
+    private final Interceptor interceptor;
+    private final MethodSignature[] signatures;
 
-    public StatefulContainer(EJBContainerConfiguration config) throws Exception {
-        super(config);
-    }
-
-    public void doStart() throws WaitingException, Exception {
-        super.doStart();
+    public StatefulContainer(EJBContainerConfiguration config, TransactionManager transactionManager) throws Exception {
+        super(config, transactionManager);
 
         // build the ops
         StatefulOperationFactory vopFactory = StatefulOperationFactory.newInstance(this, beanClass);
         vtable = vopFactory.getVTable();
+        signatures = vopFactory.getSignatures();
         buildTransactionPolicyMap(vopFactory.getSignatures());
 
         // setup the instance factory and cache
@@ -111,20 +113,26 @@ public class StatefulContainer extends AbstractEJBContainer {
             firstInterceptor = new PolicyContextHandlerEJBInterceptor(firstInterceptor);
         }
         firstInterceptor = new StatefulInstanceInterceptor(firstInterceptor, this, instanceFactory, instanceCache);
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
+
+        this.interceptor = firstInterceptor;
+    }
+
+    public void doStart() throws WaitingException, Exception {
+        super.doStart();
 
         URI target;
         if (homeInterface != null) {
             // set up server side remoting endpoint
-            target = startServerRemoting(firstInterceptor);
+            target = startServerRemoting(interceptor);
         } else {
             target = null;
         }
 
         // set up client containers
-        StatefulClientContainerFactory clientFactory = new StatefulClientContainerFactory(vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
+        StatefulClientContainerFactory clientFactory = new StatefulClientContainerFactory(signatures, target, homeInterface, remoteInterface, interceptor, localHomeInterface, localInterface);
         remoteClientContainer = clientFactory.getRemoteClient();
         localClientContainer = clientFactory.getLocalClient();
     }
@@ -133,7 +141,6 @@ public class StatefulContainer extends AbstractEJBContainer {
         stopServerRemoting();
         remoteClientContainer = null;
         localClientContainer = null;
-        pool = null;
         super.doStop();
     }
 

@@ -140,8 +140,7 @@ public class EJBSecurityInterceptorTest extends TestCase {
         config.contextId = CONTEXT_ID;
         config.setSecurityInterceptor = true;
 
-        container = new StatelessContainer(config);
-        container.setTransactionManager(new MockTransactionManager());
+        container = new StatelessContainer(config, new MockTransactionManager());
         container.doStart();
     }
 

@@ -93,7 +93,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
     protected final String ejbName;
 
     protected final TransactionDemarcation txnDemarcation;
-    protected TransactionManager txnManager;         //not final until Endpoints can be Constructor args.
+    protected final TransactionManager transactionManager;
     protected TrackedConnectionAssociator trackedConnectionAssociator; //not final until Endpoints can be Constructor args.
     protected final ReadOnlyContext componentContext;
     protected final EJBUserTransaction userTransaction;
@@ -122,7 +122,8 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
     private Long remoteId;
     protected TxnPolicy[][] transactionPolicy = new TxnPolicy[EJBInvocationType.getMaxTransactionPolicyKey() + 1][];
 
-    public AbstractEJBContainer(EJBContainerConfiguration config) throws Exception {
+    public AbstractEJBContainer(EJBContainerConfiguration config, TransactionManager transactionManager) throws Exception {
+        this.transactionManager = transactionManager;
         uri = config.uri;
         ejbName = config.ejbName;
         txnDemarcation = config.txnDemarcation;
@@ -139,7 +140,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
         classLoader = Thread.currentThread().getContextClassLoader();
         if (userTransaction != null) {
-            userTransaction.setUp(txnManager, trackedConnectionAssociator);
+            userTransaction.setUp(this.transactionManager, trackedConnectionAssociator);
         }
         beanClass = classLoader.loadClass(config.beanClassName);
 
@@ -159,10 +160,6 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
         }
     }
 
-    public void setTransactionManager(TransactionManager txnManager) {
-        this.txnManager = txnManager;
-    }
-
     public void setTrackedConnectionAssociator(TrackedConnectionAssociator trackedConnectionAssociator) {
         this.trackedConnectionAssociator = trackedConnectionAssociator;
     }
@@ -172,7 +169,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     public void doStart() throws WaitingException, Exception {
         if (userTransaction != null) {
-            userTransaction.setUp(txnManager, trackedConnectionAssociator);
+            userTransaction.setUp(transactionManager, trackedConnectionAssociator);
         }
     }
 
@@ -292,8 +289,8 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
          * constructors), must override by setting their own constructor at GBEAN_INFO initialisation.
          */
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration"},
-                new Class[]{EJBContainerConfiguration.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager"},
+                new Class[]{EJBContainerConfiguration.class, TransactionManager.class}));
 
         infoFactory.addAttribute(new GAttributeInfo("EJBContainerConfiguration", true));
 

@@ -50,6 +50,8 @@ package org.openejb.nova.entity.cmp;
 import java.net.URI;
 import java.util.List;
 
+import javax.transaction.TransactionManager;
+
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.gbean.GAttributeInfo;
 import org.apache.geronimo.gbean.GBeanInfo;
@@ -88,9 +90,11 @@ public class CMPEntityContainer extends AbstractEJBContainer {
     private InstanceOperation[] itable;
     private final String[] cmpFieldNames;
     private final CMRelation[] relations;
+    private final Interceptor interceptor;
+    private final MethodSignature[] signatures;
 
-    public CMPEntityContainer(EntityContainerConfiguration config, CMPConfiguration cmpConfig) throws Exception {
-        super(config);
+    public CMPEntityContainer(EntityContainerConfiguration config, TransactionManager transactionManager, CMPConfiguration cmpConfig) throws Exception {
+        super(config, transactionManager);
 
         primaryKeyClass = classLoader.loadClass(config.pkClassName);
 
@@ -101,18 +105,12 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         this.queries = cmpConfig.queries;
         this.cmpFieldNames = cmpConfig.cmpFieldNames;
         this.relations = cmpConfig.relations;
-    }
 
-    public Class getPrimaryKeyClass() {
-        return primaryKeyClass;
-    }
-
-    public void doStart() throws WaitingException, Exception {
-        super.doStart();
 
         CMPOperationFactory vopFactory = CMPOperationFactory.newInstance(this, queries, persistenceFactory, cmpFieldNames, relations);
         vtable = vopFactory.getVTable();
         itable = vopFactory.getITable();
+        signatures = vopFactory.getSignatures();
 
         ejbLoadCommand = persistenceFactory.getQueryCommand(new MethodSignature("ejbLoad"));
         ejbStoreCommand = persistenceFactory.getUpdateCommand(new MethodSignature("ejbStore"));
@@ -139,19 +137,28 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         }
         firstInterceptor = new EntityInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
+        this.interceptor = firstInterceptor;
+    }
+
+    public Class getPrimaryKeyClass() {
+        return primaryKeyClass;
+    }
+
+    public void doStart() throws WaitingException, Exception {
+        super.doStart();
 
         URI target;
         if (homeInterface != null) {
             // set up server side remoting endpoint
-            target = startServerRemoting(firstInterceptor);
+            target = startServerRemoting(interceptor);
         } else {
             target = null;
         }
 
         // set up client containers
-        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(primaryKeyClass, vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
+        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(primaryKeyClass, signatures, target, homeInterface, remoteInterface, interceptor, localHomeInterface, localInterface);
         remoteClientContainer = clientFactory.getRemoteClient();
         localClientContainer = clientFactory.getLocalClient();
 
@@ -161,7 +168,6 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         stopServerRemoting();
         remoteClientContainer = null;
         localClientContainer = null;
-        pool = null;
         super.doStop();
     }
 
@@ -193,8 +199,8 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         GBeanInfoFactory infoFactory = new GBeanInfoFactory(CMPEntityContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
 
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration", "CMPConfiguration"},
-                new Class[]{EntityContainerConfiguration.class, CMPConfiguration.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager", "CMPConfiguration"},
+                new Class[]{EntityContainerConfiguration.class, TransactionManager.class, CMPConfiguration.class}));
         infoFactory.addAttribute(new GAttributeInfo("CMPConfiguration", true));
 
         GBEAN_INFO = infoFactory.getBeanInfo();

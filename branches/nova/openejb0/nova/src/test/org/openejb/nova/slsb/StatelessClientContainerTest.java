@@ -218,7 +218,7 @@ public class StatelessClientContainerTest extends TestCase {
         super.setUp();
         URI uri = new URI("async://localhost:3434#1234");
         StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(MockEJB.class);
-        StatelessClientContainerFactory clientFactory = new StatelessClientContainerFactory(vopFactory, uri, MockHome.class, MockRemote.class, null, MockLocalHome.class, MockLocal.class);
+        StatelessClientContainerFactory clientFactory = new StatelessClientContainerFactory(vopFactory.getSignatures(), uri, MockHome.class, MockRemote.class, null, MockLocalHome.class, MockLocal.class);
         remoteContainer = clientFactory.getRemoteClient();
         localContainer = clientFactory.getLocalClient();
     }

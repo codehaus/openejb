@@ -68,6 +68,7 @@ import org.apache.geronimo.naming.java.ComponentContextBuilder;
 import junit.framework.TestCase;
 
 import org.openejb.nova.EJBContainerConfiguration;
+import org.openejb.nova.MockTransactionManager;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.util.ServerUtil;
 
@@ -93,7 +94,7 @@ public class StatelessContextTest extends TestCase {
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
         config.componentContext = new ComponentContextBuilder(null, null).buildContext(session);
         cmt = true;
-        container = new StatelessContainer(config);
+        container = new StatelessContainer(config, new MockTransactionManager());
         mbServer.registerMBean(container, CONTAINER_NAME);
         container.doStart();
 
@@ -117,7 +118,7 @@ public class StatelessContextTest extends TestCase {
         config.userTransaction = new EJBUserTransaction();
         config.componentContext = new ComponentContextBuilder(null, config.userTransaction).buildContext(session);
         cmt = false;
-        container = new StatelessContainer(config);
+        container = new StatelessContainer(config, new MockTransactionManager());
         mbServer.registerMBean(container, CONTAINER_NAME);
         container.doStart();
 

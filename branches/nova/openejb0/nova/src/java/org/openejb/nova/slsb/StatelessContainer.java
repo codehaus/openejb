@@ -49,6 +49,8 @@ package org.openejb.nova.slsb;
 
 import java.net.URI;
 
+import javax.transaction.TransactionManager;
+
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.gbean.GBeanInfo;
 import org.apache.geronimo.gbean.GBeanInfoFactory;
@@ -61,6 +63,7 @@ import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
+import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
@@ -72,15 +75,15 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class StatelessContainer extends AbstractEJBContainer {
-    public StatelessContainer(EJBContainerConfiguration config) throws Exception {
-        super(config);
-    }
+    private final Interceptor interceptor;
+    private final MethodSignature[] signatures;
 
-    public void doStart() throws WaitingException, Exception {
-        super.doStart();
+    public StatelessContainer(EJBContainerConfiguration config, TransactionManager transactionManager) throws Exception {
+        super(config, transactionManager);
 
         StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
+        signatures = vopFactory.getSignatures();
         buildTransactionPolicyMap(vopFactory.getSignatures());
 
         pool = new SoftLimitedInstancePool(new StatelessInstanceFactory(this), 1);
@@ -91,7 +94,7 @@ public class StatelessContainer extends AbstractEJBContainer {
         if (trackedConnectionAssociator != null) {
             firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
         }
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
         if (setIdentity) {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }
@@ -108,16 +111,22 @@ public class StatelessContainer extends AbstractEJBContainer {
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
 
+        this.interceptor = firstInterceptor;
+    }
+
+    public void doStart() throws WaitingException, Exception {
+        super.doStart();
+
         URI target;
         if (homeInterface != null) {
             // set up server side remoting endpoint
-            target = startServerRemoting(firstInterceptor);
+            target = startServerRemoting(interceptor);
         } else {
             target = null;
         }
 
         // set up client containers
-        StatelessClientContainerFactory clientFactory = new StatelessClientContainerFactory(vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
+        StatelessClientContainerFactory clientFactory = new StatelessClientContainerFactory(signatures, target, homeInterface, remoteInterface, interceptor, localHomeInterface, localInterface);
         remoteClientContainer = clientFactory.getRemoteClient();
         localClientContainer = clientFactory.getLocalClient();
 
@@ -135,7 +144,6 @@ public class StatelessContainer extends AbstractEJBContainer {
 
     static {
         GBeanInfoFactory infoFactory = new GBeanInfoFactory(StatelessContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
-
         GBEAN_INFO = infoFactory.getBeanInfo();
     }
 

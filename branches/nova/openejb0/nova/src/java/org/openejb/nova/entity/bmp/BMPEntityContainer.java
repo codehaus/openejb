@@ -49,6 +49,8 @@ package org.openejb.nova.entity.bmp;
 
 import java.net.URI;
 
+import javax.transaction.TransactionManager;
+
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.gbean.GBeanInfo;
 import org.apache.geronimo.gbean.GBeanInfoFactory;
@@ -62,6 +64,7 @@ import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.VirtualOperationFactory;
+import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.entity.EntityClientContainerFactory;
 import org.openejb.nova.entity.EntityContainerConfiguration;
 import org.openejb.nova.entity.EntityInstanceFactory;
@@ -78,28 +81,22 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  */
 public class BMPEntityContainer extends AbstractEJBContainer {
     private final Class primaryKeyClass;
+    private final Interceptor interceptor;
+    private final MethodSignature[] signatures;
 
-    public BMPEntityContainer(EntityContainerConfiguration config) throws Exception {
-        super(config);
+    public BMPEntityContainer(EntityContainerConfiguration config, TransactionManager transactionManager) throws Exception {
+        super(config, transactionManager);
+
         primaryKeyClass = classLoader.loadClass(config.pkClassName);
-    }
-
-    public Class getPrimaryKeyClass() {
-        return primaryKeyClass;
-    }
-
-    public void doStart() throws Exception {
-        super.doStart();
-
 
         VirtualOperationFactory vopFactory = BMPOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
+        signatures = vopFactory.getSignatures();
         buildTransactionPolicyMap(vopFactory.getSignatures());
 
         pool = new SoftLimitedInstancePool(new EntityInstanceFactory(componentContext, new BMPInstanceContextFactory(this)), 1);
 
-        Interceptor firstInterceptor;
-        firstInterceptor = new DispatchInterceptor(vtable);
+        Interceptor firstInterceptor = new DispatchInterceptor(vtable);
         if (trackedConnectionAssociator != null) {
             firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
         }
@@ -117,29 +114,37 @@ public class BMPEntityContainer extends AbstractEJBContainer {
         }
         firstInterceptor = new EntityInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
+
+        this.interceptor = firstInterceptor;
+    }
+
+    public Class getPrimaryKeyClass() {
+        return primaryKeyClass;
+    }
+
+    public void doStart() throws WaitingException, Exception {
+        super.doStart();
 
         URI target;
         if (homeInterface != null) {
             // set up server side remoting endpoint
-            target = startServerRemoting(firstInterceptor);
+            target = startServerRemoting(interceptor);
         } else {
             target = null;
         }
 
         // set up client containers
-        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(primaryKeyClass, vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
+        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(primaryKeyClass, signatures, target, homeInterface, remoteInterface, interceptor, localHomeInterface, localInterface);
         remoteClientContainer = clientFactory.getRemoteClient();
         localClientContainer = clientFactory.getLocalClient();
-
     }
 
     public void doStop() throws WaitingException, Exception {
         stopServerRemoting();
         remoteClientContainer = null;
         localClientContainer = null;
-        pool = null;
         super.doStop();
     }
 
@@ -149,8 +154,8 @@ public class BMPEntityContainer extends AbstractEJBContainer {
         GBeanInfoFactory infoFactory = new GBeanInfoFactory(BMPEntityContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
 
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration"},
-                new Class[]{EntityContainerConfiguration.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager"},
+                new Class[]{EntityContainerConfiguration.class, TransactionManager.class}));
         GBEAN_INFO = infoFactory.getBeanInfo();
     }
 

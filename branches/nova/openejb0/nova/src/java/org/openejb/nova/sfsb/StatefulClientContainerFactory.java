@@ -60,7 +60,7 @@ import org.apache.geronimo.remoting.transport.RemoteTransportInterceptor;
 import org.openejb.nova.ClientContainerFactory;
 import org.openejb.nova.EJBLocalClientContainer;
 import org.openejb.nova.EJBRemoteClientContainer;
-import org.openejb.nova.dispatch.VirtualOperationFactory;
+import org.openejb.nova.dispatch.MethodSignature;
 
 /**
  *
@@ -71,9 +71,9 @@ public class StatefulClientContainerFactory implements ClientContainerFactory {
     private final StatefulLocalClientContainer localContainer;
     private final StatefulRemoteClientContainer remoteContainer;
 
-    public StatefulClientContainerFactory(VirtualOperationFactory vopFactory, URI uri, Class home, Class remote, Interceptor localEndpoint, Class localHome, Class local) {
+    public StatefulClientContainerFactory(MethodSignature[] signatures, URI uri, Class home, Class remote, Interceptor localEndpoint, Class localHome, Class local) {
         if (localHome != null) {
-            localContainer = new StatefulLocalClientContainer(localEndpoint, vopFactory.getSignatures(), localHome, local);
+            localContainer = new StatefulLocalClientContainer(localEndpoint, signatures, localHome, local);
         } else {
             localContainer = null;
         }
@@ -86,7 +86,7 @@ public class StatefulClientContainerFactory implements ClientContainerFactory {
             clientStack = new MarshalingInterceptor(clientStack);
             clientStack = new IntraVMRoutingInterceptor(clientStack, remoteId, true);
             clientStack = new InterVMRoutingInterceptor(transport, clientStack);
-            remoteContainer = new StatefulRemoteClientContainer(clientStack, vopFactory.getSignatures(), home, remote);
+            remoteContainer = new StatefulRemoteClientContainer(clientStack, signatures, home, remote);
         } else {
             remoteContainer = null;
         }

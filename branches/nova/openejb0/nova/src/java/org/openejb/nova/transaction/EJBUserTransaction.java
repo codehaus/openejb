@@ -90,7 +90,7 @@ public class EJBUserTransaction implements UserTransaction {
 
     public void setOnline(boolean online) {
         //too bad there's no implies operation
-        // online implies txnManager != null
+        // online implies transactionManager != null
         assert !online & txnManager != null : "online requires a tx manager";
         state.set(online ? ONLINE : OFFLINE);
     }

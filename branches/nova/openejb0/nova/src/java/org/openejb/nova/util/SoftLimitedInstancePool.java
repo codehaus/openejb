@@ -58,9 +58,9 @@ import org.apache.geronimo.cache.InstancePool;
  * @version $Revision$ $Date$
  */
 public final class SoftLimitedInstancePool implements InstancePool {
-    private InstanceFactory factory;
-    private int maxSize;
-    private LinkedList pool;
+    private final InstanceFactory factory;
+    private final int maxSize;
+    private final LinkedList pool;
 
     public SoftLimitedInstancePool(final InstanceFactory factory, final int maxSize) {
         this.factory = factory;

@@ -49,13 +49,13 @@ package org.openejb.nova.mdb;
 
 import java.lang.reflect.Method;
 import java.util.Map;
-import javax.resource.ResourceException;
 import javax.resource.spi.ActivationSpec;
 import javax.resource.spi.ResourceAdapter;
 import javax.resource.spi.UnavailableException;
 import javax.resource.spi.endpoint.MessageEndpoint;
 import javax.resource.spi.endpoint.MessageEndpointFactory;
 import javax.transaction.xa.XAResource;
+import javax.transaction.TransactionManager;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
@@ -69,8 +69,8 @@ import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
 import org.openejb.nova.EJBContainerConfiguration;
-import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.EJBInvocationType;
+import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
@@ -78,9 +78,9 @@ import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
+import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.transaction.TxnPolicy;
-import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
@@ -89,21 +89,14 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
 public class MDBContainer extends AbstractEJBContainer implements MessageEndpointFactory {
     private final ActivationSpec activationSpec;
     private final Class messageEndpointInterface;
-    private MDBLocalClientContainer messageClientContainer;
+    private final MDBLocalClientContainer messageClientContainer;
 
-    public MDBContainer(EJBContainerConfiguration config, ActivationSpec activationSpec) throws Exception {
-        super(config);
+    public MDBContainer(EJBContainerConfiguration config, TransactionManager transactionManager, ActivationSpec activationSpec) throws Exception {
+        super(config, transactionManager);
         this.activationSpec = activationSpec;
 
         messageEndpointInterface = Thread.currentThread().getContextClassLoader().loadClass(config.messageEndpointInterfaceName);
-    }
 
-    public Class getMessageEndpointInterface() {
-        return messageEndpointInterface;
-    }
-
-    public void doStart() throws WaitingException, Exception {
-        super.doStart();
 
         MDBOperationFactory vopFactory = MDBOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
@@ -117,7 +110,7 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         if (trackedConnectionAssociator != null) {
             firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
         }
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
         if (setIdentity) {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }
@@ -138,35 +131,26 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         // set up client containers
         MDBClientContainerFactory clientFactory = new MDBClientContainerFactory(vopFactory, firstInterceptor, messageEndpointInterface);
         messageClientContainer = clientFactory.getMessageClientContainer();
-        //buildMDBMethodMap(vopFactory.getSignatures());
+    }
 
-        try {
-            // Setup the endpoint.
-            getAdapter().endpointActivation(this, activationSpec);
-        } catch (ResourceException e) {
-            throw new RuntimeException("The resource adapter did not accept the activation of the MDB endpoint", e);
-        }
+    public Class getMessageEndpointInterface() {
+        return messageEndpointInterface;
+    }
+
+    public void doStart() throws WaitingException, Exception {
+        super.doStart();
+        getAdapter().endpointActivation(this, activationSpec);
     }
 
     public void doStop() throws WaitingException, Exception {
-        // Deactivate the endpoint.
         getAdapter().endpointDeactivation(this, activationSpec);
-
-        localClientContainer = null;
-        pool = null;
         super.doStop();
     }
 
-    /**
-     * @see javax.resource.spi.endpoint.MessageEndpointFactory#createEndpoint(javax.transaction.xa.XAResource)
-     */
     public MessageEndpoint createEndpoint(XAResource adapterXAResource) throws UnavailableException {
         return messageClientContainer.getMessageEndpoint(adapterXAResource);
     }
 
-    /**
-     * @see javax.resource.spi.endpoint.MessageEndpointFactory#isDeliveryTransacted(java.lang.reflect.Method)
-     */
     public boolean isDeliveryTransacted(Method method) throws NoSuchMethodException {
         // TODO: need to see if the method is Supports or Required.
         return MDBContainer.this.txnDemarcation == TransactionDemarcation.CONTAINER;
@@ -195,8 +179,8 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         GBeanInfoFactory infoFactory = new GBeanInfoFactory(MDBContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
 
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration", "ActivationSpec"},
-                new Class[]{EJBContainerConfiguration.class, ActivationSpec.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager", "ActivationSpec"},
+                new Class[]{EJBContainerConfiguration.class, TransactionManager.class, ActivationSpec.class}));
 
         infoFactory.addAttribute(new GAttributeInfo("ActivationSpec", true));
         GBEAN_INFO = infoFactory.getBeanInfo();

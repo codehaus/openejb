@@ -146,7 +146,7 @@ public class BasicBMPEntityContainerTest extends TestCase {
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-//        config.txnManager = new MockTransactionManager();
+//        config.transactionManager = new MockTransactionManager();
         config.pkClassName = Integer.class.getName();
         config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();

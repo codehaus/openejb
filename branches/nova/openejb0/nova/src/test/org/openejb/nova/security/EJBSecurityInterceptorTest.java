@@ -130,7 +130,6 @@ public class EJBSecurityInterceptorTest extends TestCase {
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-        config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();
         config.transactionPolicySource = new TransactionPolicySource() {
             public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
@@ -140,7 +139,7 @@ public class EJBSecurityInterceptorTest extends TestCase {
         config.contextId = CONTEXT_ID;
         config.setSecurityInterceptor = true;
 
-        container = new StatelessContainer(config, new MockTransactionManager());
+        container = new StatelessContainer(config, new MockTransactionManager(), new ConnectionTrackingCoordinator());
         container.doStart();
     }
 

@@ -49,17 +49,13 @@ package org.openejb.nova;
 
 import java.net.URI;
 import java.util.Set;
-
-import javax.transaction.TransactionManager;
 import javax.security.auth.Subject;
 
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.naming.java.ReadOnlyContext;
-import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
-import org.openejb.nova.transaction.EJBUserTransaction;
-import org.openejb.nova.transaction.TxnPolicy;
 import org.openejb.nova.deployment.TransactionPolicySource;
+import org.openejb.nova.transaction.EJBUserTransaction;
 
 /**
  *
@@ -78,7 +74,6 @@ public class EJBContainerConfiguration {
     public TransactionDemarcation txnDemarcation;
     public EJBUserTransaction userTransaction;
     public ReadOnlyContext componentContext;
-    public TrackedConnectionAssociator trackedConnectionAssociator;
     public Set unshareableResources;
     public TransactionPolicySource transactionPolicySource;
     public String contextId;

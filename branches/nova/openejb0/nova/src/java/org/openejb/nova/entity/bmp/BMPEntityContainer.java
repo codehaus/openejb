@@ -57,6 +57,8 @@ import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
+import org.apache.geronimo.cache.InstancePool;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
@@ -65,6 +67,7 @@ import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.VirtualOperationFactory;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.entity.EntityClientContainerFactory;
 import org.openejb.nova.entity.EntityContainerConfiguration;
 import org.openejb.nova.entity.EntityInstanceFactory;
@@ -80,12 +83,14 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class BMPEntityContainer extends AbstractEJBContainer {
+    private final VirtualOperation[] vtable;
     private final Class primaryKeyClass;
     private final Interceptor interceptor;
     private final MethodSignature[] signatures;
+    private final InstancePool pool;
 
-    public BMPEntityContainer(EntityContainerConfiguration config, TransactionManager transactionManager) throws Exception {
-        super(config, transactionManager);
+    public BMPEntityContainer(EntityContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
+        super(config, transactionManager, trackedConnectionAssociator);
 
         primaryKeyClass = classLoader.loadClass(config.pkClassName);
 
@@ -154,8 +159,8 @@ public class BMPEntityContainer extends AbstractEJBContainer {
         GBeanInfoFactory infoFactory = new GBeanInfoFactory(BMPEntityContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
 
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration", "TransactionManager"},
-                new Class[]{EntityContainerConfiguration.class, TransactionManager.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager", "TrackedConnectionAssociator"},
+                new Class[]{EntityContainerConfiguration.class, TransactionManager.class, TrackedConnectionAssociator.class}));
         GBEAN_INFO = infoFactory.getBeanInfo();
     }
 

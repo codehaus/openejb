@@ -91,6 +91,8 @@ import org.openejb.nova.transaction.TxnPolicy;
  */
 public class SQLGeneratorCMPEntityContainerTest extends TestCase {
     private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
+    private static final ObjectName TM_NAME = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
+    private static final ObjectName TCA_NAME = JMXUtil.getObjectName("geronimo.test:role=TrackedConnectionAssociator");
     private EntityContainerConfiguration config;
     private Kernel kernel;
     private GBeanMBean container;
@@ -101,7 +103,6 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
     }
 
     private final jdbcDataSource ds = new jdbcDataSource();
-    private ObjectName tmName;
 
     public void testLocalInvoke() throws Exception {
         Connection c = initDatabase();
@@ -251,7 +252,6 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
         config.pkClassName = Integer.class.getName();
-        config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();
         config.transactionPolicySource = new TransactionPolicySource() {
             public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
@@ -343,13 +343,16 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
 
         GBeanMBean transactionManager = new GBeanMBean(TransactionManagerProxy.GBEAN_INFO);
         transactionManager.setAttribute("Delegate", new MockTransactionManager());
-        tmName = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
-        start(tmName, transactionManager);
+        start(TM_NAME, transactionManager);
+
+        GBeanMBean trackedConnectionAssociator = new GBeanMBean(ConnectionTrackingCoordinator.GBEAN_INFO);
+        start(TCA_NAME, trackedConnectionAssociator);
 
         container = new GBeanMBean(CMPEntityContainer.GBEAN_INFO);
         container.setAttribute("EJBContainerConfiguration", config);
         container.setAttribute("CMPConfiguration", cmpConfig);
-        container.setReferencePatterns("TransactionManager", Collections.singleton(tmName));
+        container.setReferencePatterns("TransactionManager", Collections.singleton(TM_NAME));
+        container.setReferencePatterns("TrackedConnectionAssociator", Collections.singleton(TCA_NAME));
         start(CONTAINER_NAME, container);
 
     }
@@ -367,7 +370,8 @@ public class SQLGeneratorCMPEntityContainerTest extends TestCase {
 
     protected void tearDown() throws Exception {
         stop(CONTAINER_NAME);
-        stop(tmName);
+        stop(TM_NAME);
+        stop(TCA_NAME);
         kernel.shutdown();
     }
 

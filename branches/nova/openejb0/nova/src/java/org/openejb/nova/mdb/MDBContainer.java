@@ -65,6 +65,8 @@ import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
+import org.apache.geronimo.cache.InstancePool;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
@@ -74,6 +76,7 @@ import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
@@ -87,12 +90,14 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class MDBContainer extends AbstractEJBContainer implements MessageEndpointFactory {
+    private final VirtualOperation[] vtable;
     private final ActivationSpec activationSpec;
     private final Class messageEndpointInterface;
     private final MDBLocalClientContainer messageClientContainer;
+    private final InstancePool pool;
 
-    public MDBContainer(EJBContainerConfiguration config, TransactionManager transactionManager, ActivationSpec activationSpec) throws Exception {
-        super(config, transactionManager);
+    public MDBContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator, ActivationSpec activationSpec) throws Exception {
+        super(config, transactionManager, trackedConnectionAssociator);
         this.activationSpec = activationSpec;
 
         messageEndpointInterface = Thread.currentThread().getContextClassLoader().loadClass(config.messageEndpointInterfaceName);
@@ -179,8 +184,8 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         GBeanInfoFactory infoFactory = new GBeanInfoFactory(MDBContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
 
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration", "TransactionManager", "ActivationSpec"},
-                new Class[]{EJBContainerConfiguration.class, TransactionManager.class, ActivationSpec.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager", "TrackedConnectionAssociator", "ActivationSpec"},
+                new Class[]{EJBContainerConfiguration.class, TransactionManager.class, TrackedConnectionAssociator.class, ActivationSpec.class}));
 
         infoFactory.addAttribute(new GAttributeInfo("ActivationSpec", true));
         GBEAN_INFO = infoFactory.getBeanInfo();

@@ -59,7 +59,6 @@ import javax.ejb.EJBObject;
 import javax.security.auth.Subject;
 import javax.transaction.TransactionManager;
 
-import org.apache.geronimo.cache.InstancePool;
 import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
@@ -79,7 +78,6 @@ import org.apache.geronimo.remoting.InterceptorRegistry;
 import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
-import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.SubjectIdExtractInterceptor;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TxnPolicy;
@@ -94,7 +92,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     protected final TransactionDemarcation txnDemarcation;
     protected final TransactionManager transactionManager;
-    protected TrackedConnectionAssociator trackedConnectionAssociator; //not final until Endpoints can be Constructor args.
+    protected final TrackedConnectionAssociator trackedConnectionAssociator;
     protected final ReadOnlyContext componentContext;
     protected final EJBUserTransaction userTransaction;
     protected final Set unshareableResources;
@@ -108,28 +106,27 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     protected final ClassLoader classLoader;
     protected final Class beanClass;
-    protected VirtualOperation[] vtable;
 
-    protected EJBRemoteClientContainer remoteClientContainer;
     protected final Class homeInterface;
     protected final Class remoteInterface;
 
-    protected EJBLocalClientContainer localClientContainer;
     protected final Class localHomeInterface;
     protected final Class localInterface;
 
-    protected InstancePool pool;
-    private Long remoteId;
     protected TxnPolicy[][] transactionPolicy = new TxnPolicy[EJBInvocationType.getMaxTransactionPolicyKey() + 1][];
 
-    public AbstractEJBContainer(EJBContainerConfiguration config, TransactionManager transactionManager) throws Exception {
+    protected EJBRemoteClientContainer remoteClientContainer;
+    protected EJBLocalClientContainer localClientContainer;
+    private Long remoteId;
+
+    public AbstractEJBContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
         this.transactionManager = transactionManager;
+        this.trackedConnectionAssociator = trackedConnectionAssociator;
         uri = config.uri;
         ejbName = config.ejbName;
         txnDemarcation = config.txnDemarcation;
         userTransaction = config.userTransaction;
         componentContext = config.componentContext;
-        trackedConnectionAssociator = config.trackedConnectionAssociator;
         unshareableResources = config.unshareableResources;
         transactionPolicySource = config.transactionPolicySource;
         contextId = config.contextId;
@@ -158,10 +155,6 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
             localHomeInterface = null;
             localInterface = null;
         }
-    }
-
-    public void setTrackedConnectionAssociator(TrackedConnectionAssociator trackedConnectionAssociator) {
-        this.trackedConnectionAssociator = trackedConnectionAssociator;
     }
 
     public void setGBeanContext(GBeanContext context) {
@@ -289,8 +282,8 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
          * constructors), must override by setting their own constructor at GBEAN_INFO initialisation.
          */
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration", "TransactionManager"},
-                new Class[]{EJBContainerConfiguration.class, TransactionManager.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager", "TrackedConnectionAssociator"},
+                new Class[]{EJBContainerConfiguration.class, TransactionManager.class, TrackedConnectionAssociator.class}));
 
         infoFactory.addAttribute(new GAttributeInfo("EJBContainerConfiguration", true));
 

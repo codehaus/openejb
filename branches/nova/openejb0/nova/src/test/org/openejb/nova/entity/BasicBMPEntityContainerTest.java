@@ -76,11 +76,13 @@ import org.openejb.nova.transaction.TxnPolicy;
  */
 public class BasicBMPEntityContainerTest extends TestCase {
     private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
+    private static final ObjectName TM_NAME = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
+    private static final ObjectName TCA_NAME = JMXUtil.getObjectName("geronimo.test:role=TrackedConnectionAssociator");
     private EntityContainerConfiguration config;
     private Kernel kernel;
     private GBeanMBean container;
     private MBeanServer mbServer;
-    private ObjectName tmName;
+
 
     public void testSimpleConfig() throws Throwable {
 //        EJBInvocationImpl invocation = new EJBInvocationImpl(EJBInvocationType.HOME, ejbClass.getIndex("ejbHomeIntMethod", new Class[]{Integer.TYPE}), new Object[]{new Integer(1)});
@@ -146,9 +148,7 @@ public class BasicBMPEntityContainerTest extends TestCase {
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-//        config.transactionManager = new MockTransactionManager();
         config.pkClassName = Integer.class.getName();
-        config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();
         config.transactionPolicySource = new TransactionPolicySource() {
             public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
@@ -162,12 +162,15 @@ public class BasicBMPEntityContainerTest extends TestCase {
 
         GBeanMBean transactionManager = new GBeanMBean(TransactionManagerProxy.GBEAN_INFO);
         transactionManager.setAttribute("Delegate", new MockTransactionManager());
-        tmName = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
-        start(tmName, transactionManager);
+        start(TM_NAME, transactionManager);
+
+        GBeanMBean trackedConnectionAssociator = new GBeanMBean(ConnectionTrackingCoordinator.GBEAN_INFO);
+        start(TCA_NAME, trackedConnectionAssociator);
 
         container = new GBeanMBean(BMPEntityContainer.GBEAN_INFO);
         container.setAttribute("EJBContainerConfiguration", config);
-        container.setReferencePatterns("TransactionManager", Collections.singleton(tmName));
+        container.setReferencePatterns("TransactionManager", Collections.singleton(TM_NAME));
+        container.setReferencePatterns("TrackedConnectionAssociator", Collections.singleton(TCA_NAME));
         start(CONTAINER_NAME, container);
     }
 
@@ -184,7 +187,8 @@ public class BasicBMPEntityContainerTest extends TestCase {
 
     protected void tearDown() throws Exception {
         stop(CONTAINER_NAME);
-        stop(tmName);
+        stop(TCA_NAME);
+        stop(TM_NAME);
         kernel.shutdown();
     }
 }

@@ -65,6 +65,8 @@ import org.apache.geronimo.deployment.model.geronimo.ejb.Session;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
 import org.apache.geronimo.naming.java.ComponentContextBuilder;
+import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
+
 import junit.framework.TestCase;
 
 import org.openejb.nova.EJBContainerConfiguration;
@@ -94,7 +96,7 @@ public class StatelessContextTest extends TestCase {
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
         config.componentContext = new ComponentContextBuilder(null, null).buildContext(session);
         cmt = true;
-        container = new StatelessContainer(config, new MockTransactionManager());
+        container = new StatelessContainer(config, new MockTransactionManager(), new ConnectionTrackingCoordinator());
         mbServer.registerMBean(container, CONTAINER_NAME);
         container.doStart();
 
@@ -118,7 +120,7 @@ public class StatelessContextTest extends TestCase {
         config.userTransaction = new EJBUserTransaction();
         config.componentContext = new ComponentContextBuilder(null, config.userTransaction).buildContext(session);
         cmt = false;
-        container = new StatelessContainer(config, new MockTransactionManager());
+        container = new StatelessContainer(config, new MockTransactionManager(), new ConnectionTrackingCoordinator());
         mbServer.registerMBean(container, CONTAINER_NAME);
         container.doStart();
 

@@ -59,6 +59,8 @@ import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
+import org.apache.geronimo.cache.InstancePool;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
@@ -66,6 +68,7 @@ import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.entity.EntityClientContainerFactory;
 import org.openejb.nova.entity.EntityContainerConfiguration;
 import org.openejb.nova.entity.EntityInstanceFactory;
@@ -84,6 +87,7 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class CMPEntityContainer extends AbstractEJBContainer {
+    private final VirtualOperation[] vtable;
     private final Class primaryKeyClass;
     private final CMPCommandFactory persistenceFactory;
     private final CMPQuery[] queries;
@@ -92,9 +96,10 @@ public class CMPEntityContainer extends AbstractEJBContainer {
     private final CMRelation[] relations;
     private final Interceptor interceptor;
     private final MethodSignature[] signatures;
+    private final InstancePool pool;
 
-    public CMPEntityContainer(EntityContainerConfiguration config, TransactionManager transactionManager, CMPConfiguration cmpConfig) throws Exception {
-        super(config, transactionManager);
+    public CMPEntityContainer(EntityContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator, CMPConfiguration cmpConfig) throws Exception {
+        super(config, transactionManager, trackedConnectionAssociator);
 
         primaryKeyClass = classLoader.loadClass(config.pkClassName);
 
@@ -199,8 +204,8 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         GBeanInfoFactory infoFactory = new GBeanInfoFactory(CMPEntityContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
 
         infoFactory.setConstructor(new GConstructorInfo(
-                new String[]{"EJBContainerConfiguration", "TransactionManager", "CMPConfiguration"},
-                new Class[]{EntityContainerConfiguration.class, TransactionManager.class, CMPConfiguration.class}));
+                new String[]{"EJBContainerConfiguration", "TransactionManager", "TrackedConnectionAssociator", "CMPConfiguration"},
+                new Class[]{EntityContainerConfiguration.class, TransactionManager.class, TrackedConnectionAssociator.class, CMPConfiguration.class}));
         infoFactory.addAttribute(new GAttributeInfo("CMPConfiguration", true));
 
         GBEAN_INFO = infoFactory.getBeanInfo();

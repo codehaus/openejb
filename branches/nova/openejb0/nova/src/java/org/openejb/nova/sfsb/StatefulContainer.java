@@ -58,6 +58,7 @@ import org.apache.geronimo.gbean.GBeanInfo;
 import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
@@ -66,6 +67,7 @@ import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
@@ -76,13 +78,14 @@ import org.openejb.nova.transaction.TransactionContextInterceptor;
  * @version $Revision$ $Date$
  */
 public class StatefulContainer extends AbstractEJBContainer {
+    private final VirtualOperation[] vtable;
     private final StatefulInstanceFactory instanceFactory;
     private final InstanceCache instanceCache;
     private final Interceptor interceptor;
     private final MethodSignature[] signatures;
 
-    public StatefulContainer(EJBContainerConfiguration config, TransactionManager transactionManager) throws Exception {
-        super(config, transactionManager);
+    public StatefulContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
+        super(config, transactionManager, trackedConnectionAssociator);
 
         // build the ops
         StatefulOperationFactory vopFactory = StatefulOperationFactory.newInstance(this, beanClass);

@@ -56,6 +56,8 @@ import org.apache.geronimo.gbean.GBeanInfo;
 import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
+import org.apache.geronimo.cache.InstancePool;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
@@ -64,6 +66,7 @@ import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
@@ -75,11 +78,13 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class StatelessContainer extends AbstractEJBContainer {
+    private final VirtualOperation[] vtable;
     private final Interceptor interceptor;
     private final MethodSignature[] signatures;
+    private final InstancePool pool;
 
-    public StatelessContainer(EJBContainerConfiguration config, TransactionManager transactionManager) throws Exception {
-        super(config, transactionManager);
+    public StatelessContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
+        super(config, transactionManager, trackedConnectionAssociator);
 
         StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
@@ -136,7 +141,6 @@ public class StatelessContainer extends AbstractEJBContainer {
         stopServerRemoting();
         remoteClientContainer = null;
         localClientContainer = null;
-        pool = null;
         super.doStop();
     }
 

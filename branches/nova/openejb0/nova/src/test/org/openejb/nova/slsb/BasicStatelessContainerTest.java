@@ -48,9 +48,9 @@
 package org.openejb.nova.slsb;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Collections;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
@@ -60,7 +60,6 @@ import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.jmx.GBeanMBean;
 import org.apache.geronimo.kernel.Kernel;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
-import org.apache.geronimo.transaction.TransactionProxy;
 import org.apache.geronimo.transaction.TransactionManagerProxy;
 
 import junit.framework.TestCase;
@@ -76,13 +75,14 @@ import org.openejb.nova.transaction.TxnPolicy;
  */
 public class BasicStatelessContainerTest extends TestCase {
     private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
+    private static final ObjectName TM_NAME = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
+    private static final ObjectName TCA_NAME = JMXUtil.getObjectName("geronimo.test:role=TrackedConnectionAssociator");
     private EJBContainerConfiguration config;
     private Kernel kernel;
     private GBeanMBean container;
     private ObjectName containerName;
     private Set containerPatterns;
     private MBeanServer mbServer;
-    private ObjectName tmName;
 
     public void testRemoteInvocation() throws Throwable {
         MockHome home = (MockHome) mbServer.invoke(containerName, "getEJBHome", null, null);
@@ -162,7 +162,6 @@ public class BasicStatelessContainerTest extends TestCase {
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-        config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();
         config.transactionPolicySource = new TransactionPolicySource() {
             public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
@@ -180,12 +179,15 @@ public class BasicStatelessContainerTest extends TestCase {
 
         GBeanMBean transactionManager = new GBeanMBean(TransactionManagerProxy.GBEAN_INFO);
         transactionManager.setAttribute("Delegate", new MockTransactionManager());
-        tmName = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
-        start(tmName, transactionManager);
+        start(TM_NAME, transactionManager);
+
+        GBeanMBean trackedConnectionAssociator = new GBeanMBean(ConnectionTrackingCoordinator.GBEAN_INFO);
+        start(TCA_NAME, trackedConnectionAssociator);
 
         container = new GBeanMBean(StatelessContainer.GBEAN_INFO);
         container.setAttribute("EJBContainerConfiguration", config);
-        container.setReferencePatterns("TransactionManager", Collections.singleton(tmName));
+        container.setReferencePatterns("TransactionManager", Collections.singleton(TM_NAME));
+        container.setReferencePatterns("TrackedConnectionAssociator", Collections.singleton(TCA_NAME));
         start(containerName, container);
 
     }
@@ -203,7 +205,8 @@ public class BasicStatelessContainerTest extends TestCase {
 
     protected void tearDown() throws Exception {
         stop(containerName);
-        stop(tmName);
+        stop(TM_NAME);
+        stop(TCA_NAME);
         kernel.shutdown();
     }
 }

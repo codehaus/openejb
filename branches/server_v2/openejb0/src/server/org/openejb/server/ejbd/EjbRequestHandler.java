@@ -52,6 +52,7 @@ import java.rmi.RemoteException;
 import org.openejb.client.EJBRequest;
 import org.openejb.client.EJBResponse;
 import org.openejb.util.Messages;
+import org.openejb.util.Logger;
 
 /**
  * 
@@ -68,8 +69,8 @@ public class EjbRequestHandler implements RequestHandler {
     
     Messages messages = new Messages( "org.openejb.server.ejbd" );
     
-    // Get the logger from the ServerManager/ or context
-    //Logger logger = Logger.getInstance( "OpenEJB.server.remote", "org.openejb.server.ejbd" );
+    // TODO: Get the logger from the ServerManager/ or context
+    Logger logger = Logger.getInstance( "OpenEJB.server.remote", "org.openejb.server.ejbd" );
 
     static EjbMethod[] methods;
 
@@ -135,7 +136,7 @@ public class EjbRequestHandler implements RequestHandler {
 
     }
 
-    private writeResponse(EJBResponse res, ObjectOutputStream out){
+    private void writeResponse(EJBResponse res, ObjectOutputStream out){
         try {
             res.writeExternal(out);
         } catch (java.io.IOException ie) {

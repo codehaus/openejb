@@ -47,18 +47,17 @@
  */
 package org.openejb.nova;
 
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 import javax.ejb.EJBHome;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
 import javax.ejb.EJBObject;
 import javax.security.auth.Subject;
 import javax.transaction.TransactionManager;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.geronimo.cache.InstancePool;
 import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
@@ -73,6 +72,7 @@ import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.dispatch.VirtualOperation;
+import org.openejb.nova.security.SubjectIdExtractInterceptor;
 import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TxnPolicy;
@@ -312,9 +312,9 @@ public abstract class AbstractEJBContainer
 
     protected URI startServerRemoting(Interceptor firstInterceptor) {
         // set up server side remoting endpoint
-//        if (setSecurityInterceptor) {
-//            firstInterceptor = new SubjectIdExtractInterceptor(firstInterceptor);
-//        }
+        if (setSecurityInterceptor) {
+            firstInterceptor = new SubjectIdExtractInterceptor(firstInterceptor);
+        }
         DeMarshalingInterceptor demarshaller = new DeMarshalingInterceptor(firstInterceptor, classLoader);
         remoteId = InterceptorRegistry.instance.register(demarshaller);
         return uri.resolve("#" + remoteId);

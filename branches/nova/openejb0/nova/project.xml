@@ -20,6 +20,16 @@
     <!-- ============ -->
 
     <dependencies>
+
+        <!-- needed for xmlbeans runtime-->
+        <dependency>
+            <groupId>xmlbeans</groupId>
+            <artifactId>xbean-apache</artifactId>
+            <version>1.0-DEV</version>
+            <properties>
+            </properties>
+        </dependency>
+
         <!-- Module Dependencies -->
 
         <dependency>
@@ -27,7 +37,6 @@
             <artifactId>geronimo-common</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -36,7 +45,6 @@
             <artifactId>geronimo-connector</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -45,7 +53,6 @@
             <artifactId>geronimo-core</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -54,7 +61,6 @@
             <artifactId>geronimo-deployment</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -63,7 +69,6 @@
             <artifactId>geronimo-kernel</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -72,7 +77,6 @@
             <artifactId>geronimo-remoting</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -81,7 +85,6 @@
             <artifactId>geronimo-security</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -90,7 +93,14 @@
             <artifactId>geronimo-transaction</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
+            </properties>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo</groupId>
+            <artifactId>geronimo-naming</artifactId>
+            <version>DEV</version>
+            <properties>
             </properties>
         </dependency>
 
@@ -99,7 +109,6 @@
             <artifactId>geronimo-spec-ejb</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -108,7 +117,6 @@
             <artifactId>geronimo-spec-j2ee-connector</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -117,7 +125,6 @@
             <artifactId>geronimo-spec-j2ee-jacc</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -126,7 +133,6 @@
             <artifactId>geronimo-spec-jms</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
             </properties>
         </dependency>
 
@@ -135,7 +141,14 @@
             <artifactId>geronimo-spec-jta</artifactId>
             <version>DEV</version>
             <properties>
-                <module>true</module>
+            </properties>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo-spec</groupId>
+            <artifactId>geronimo-spec-j2eeschema</artifactId>
+            <version>DEV</version>
+            <properties>
             </properties>
         </dependency>
 

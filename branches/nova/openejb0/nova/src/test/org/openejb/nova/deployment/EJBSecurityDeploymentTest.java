@@ -51,19 +51,18 @@ package org.openejb.nova.deployment;
 import javax.jms.MessageListener;
 import javax.management.ObjectName;
 
-import org.apache.geronimo.deployment.model.ejb.SecurityIdentity;
-import org.apache.geronimo.deployment.model.geronimo.ejb.ActivationConfig;
-import org.apache.geronimo.deployment.model.geronimo.ejb.EjbJar;
-import org.apache.geronimo.deployment.model.geronimo.ejb.MessageDriven;
-import org.apache.geronimo.deployment.model.geronimo.ejb.Session;
-import org.apache.geronimo.deployment.model.geronimo.j2ee.BeanSecurity;
-import org.apache.geronimo.deployment.model.geronimo.j2ee.Principal;
-import org.apache.geronimo.deployment.model.geronimo.j2ee.Realm;
-import org.apache.geronimo.deployment.model.geronimo.j2ee.Role;
-import org.apache.geronimo.deployment.model.geronimo.j2ee.RoleMappings;
-import org.apache.geronimo.deployment.model.geronimo.j2ee.Security;
-import org.apache.geronimo.deployment.model.j2ee.RunAs;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
+import org.apache.geronimo.xbeans.geronimo.security.GerSecurityType;
+import org.apache.geronimo.xbeans.geronimo.security.GerRoleType;
+import org.apache.geronimo.xbeans.geronimo.security.GerRealmType;
+import org.apache.geronimo.xbeans.geronimo.security.GerPrincipalType;
+import org.apache.geronimo.xbeans.geronimo.security.GerRoleMappingsType;
+import org.apache.geronimo.xbeans.j2ee.EjbJarType;
+import org.apache.geronimo.xbeans.j2ee.SessionBeanType;
+import org.apache.geronimo.xbeans.j2ee.SecurityIdentityType;
+import org.apache.geronimo.xbeans.j2ee.RunAsType;
+import org.apache.geronimo.xbeans.j2ee.MessageDrivenBeanType;
+import org.apache.geronimo.xbeans.j2ee.ActivationConfigType;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.mdb.mockra.MockActivationSpec;
 import org.openejb.nova.slsb.MockEJB;
@@ -87,10 +86,10 @@ public class EJBSecurityDeploymentTest extends ContextBuilderTest {
     private static final String MDB_NAME = "geronimo.j2ee:J2eeType=SessionBean,name=MockMDB";
     private static final String RESOURCE_ADAPTER_NAME = "MockRA";
 
-    //private EJBModuleDeploymentPlanner planner;
     private ObjectName ejbObjectName;
-    //private MBeanMetadata ejbMetadata;
-    private EjbJar ejbJar;
+
+    private EjbJarType ejbJar;
+    private GerSecurityType security;
 
     private TransactionPolicySource transactionPolicySource = new TransactionPolicySource() {
         public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
@@ -106,61 +105,48 @@ public class EJBSecurityDeploymentTest extends ContextBuilderTest {
 
         //planner = new EJBModuleDeploymentPlanner();
         //planner.setMBeanContext(context);
-        ejbJar = new EjbJar();
+        ejbJar = EjbJarType.Factory.newInstance();
 
-        Security security = new Security();
-        RoleMappings roleMappings = new RoleMappings();
-        Role[] roles = new Role[1];
-        Realm[] realms = new Realm[1];
-        Principal[] principals = new Principal[2];
+        security = GerSecurityType.Factory.newInstance();
+        GerRoleMappingsType roleMappings = security.addNewRoleMappings();
+        GerRoleType role = roleMappings.addNewRole();
 
-        principals[0] = new Principal();
-        principals[0].setClassName("org.openejb.nova.security.TestPrincipal");
-        principals[0].setName("alan");
-        principals[1] = new Principal();
-        principals[1].setClassName("org.openejb.nova.security.TestPrincipal");
-        principals[1].setName("admin");
+        role.setRoleName("Administrator");
+        GerRealmType realm = role.addNewRealm();
+        realm.setRealmName("FooRealm");
+        GerPrincipalType principal = realm.addNewPrincipal();
+        principal.setClass1("org.openejb.nova.security.TestPrincipal");
+        principal.setName("alan");
+        principal = realm.addNewPrincipal();
+        principal.setClass1("org.openejb.nova.security.TestPrincipal");
+        principal.setName("admin");
 
-        realms[0] = new Realm();
-        realms[0].setRealmName("FooRealm");
-        realms[0].setPrincipal(principals);
-
-        roles[0] = new Role();
-        roles[0].setRoleName("Administrator");
-        roles[0].setRealm(realms);
-
-        roleMappings.setRole(roles);
-        security.setRoleMappings(roleMappings);
         security.setUseContextHandler(true);
-        ejbJar.setSecurity(security);
-        ejbJar.setModuleName("FooModule");
     }
 
     private void buildSession() throws Exception {
-        Session session = new Session();
-        ejb = session;
+        SessionBeanType session = SessionBeanType.Factory.newInstance();
         setUpContext();
 
-        session.setEJBClass(MockEJB.class.getName());
-        session.setEJBName("MockSession");
-        session.setTransactionType(TransactionDemarcation.CONTAINER.toString());
-        session.setHome(MockHome.class.getName());
-        session.setRemote(MockRemote.class.getName());
-        session.setLocalHome(MockLocalHome.class.getName());
-        session.setLocal(MockLocal.class.getName());
-        session.setSessionType("Stateless");
+        session.addNewEjbClass().setStringValue(MockEJB.class.getName());
+        session.addNewEjbName().setStringValue("MockSession");
+        session.addNewTransactionType().setStringValue(TransactionDemarcation.CONTAINER.toString());
+        session.addNewHome().setStringValue(MockHome.class.getName());
+        session.addNewRemote().setStringValue(MockRemote.class.getName());
+        session.addNewLocalHome().setStringValue(MockLocalHome.class.getName());
+        session.addNewLocal().setStringValue(MockLocal.class.getName());
+        session.addNewSessionType().setStringValue("Stateless");
 
-        SecurityIdentity securityIdentity = new SecurityIdentity();
-        RunAs runAs = new RunAs();
+        SecurityIdentityType securityIdentity = session.addNewSecurityIdentity();
+        RunAsType runAs = securityIdentity.addNewRunAs();
 
-        runAs.setRoleName("Administrator");
-        securityIdentity.setRunAs(runAs);
-        session.setSecurityIdentity(securityIdentity);
+        runAs.addNewRoleName().setStringValue("Administrator");
 
-        BeanSecurity beanSecurity = new BeanSecurity();
+        /*
+        BeanSecurityType beanSecurity = new BeanSecurity();
         beanSecurity.setUseIdentity(true);
         session.setBeanSecurity(beanSecurity);
-
+        */
         ejbObjectName = ObjectName.getInstance(SESSION_NAME);
         //ejbMetadata = new MBeanMetadata(ejbObjectName);
     }
@@ -191,30 +177,28 @@ public class EJBSecurityDeploymentTest extends ContextBuilderTest {
     }
 
     private void buildMDB() throws Exception {
-        MessageDriven messageDriven = new MessageDriven();
-        ejb = messageDriven;
+        MessageDrivenBeanType messageDriven = MessageDrivenBeanType.Factory.newInstance();
         setUpContext();
 
-        messageDriven.setEJBClass(org.openejb.nova.mdb.MockEJB.class.getName());
-        messageDriven.setEJBName("MockMDB");
-        messageDriven.setTransactionType(TransactionDemarcation.CONTAINER.toString());
-        messageDriven.setMessagingType(MessageListener.class.getName());
-        ActivationConfig activationConfig = new ActivationConfig();
-        activationConfig.setActivationSpecClass(MockActivationSpec.class.getName());
-        activationConfig.setResourceAdapterName(RESOURCE_ADAPTER_NAME);
+        messageDriven.addNewEjbClass().setStringValue(org.openejb.nova.mdb.MockEJB.class.getName());
+        messageDriven.addNewEjbName().setStringValue("MockMDB");
+        messageDriven.addNewTransactionType().setStringValue(TransactionDemarcation.CONTAINER.toString());
+        messageDriven.addNewMessagingType().setStringValue(MessageListener.class.getName());
+        ActivationConfigType activationConfig = messageDriven.addNewActivationConfig();
+        //activationConfig.addNewActivationSpecClass().setStringValue(MockActivationSpec.class.getName());
+        //activationConfig.addNewResourceAdapterName().setStringValue(RESOURCE_ADAPTER_NAME);
         messageDriven.setActivationConfig(activationConfig);
 
-        SecurityIdentity securityIdentity = new SecurityIdentity();
-        RunAs runAs = new RunAs();
+        SecurityIdentityType securityIdentity = messageDriven.addNewSecurityIdentity();
+        RunAsType runAs = securityIdentity.addNewRunAs();
 
-        runAs.setRoleName("Administrator");
-        securityIdentity.setRunAs(runAs);
+        runAs.addNewRoleName().setStringValue("Administrator");
         messageDriven.setSecurityIdentity(securityIdentity);
-
+        /*
         BeanSecurity beanSecurity = new BeanSecurity();
         beanSecurity.setUseIdentity(true);
         messageDriven.setBeanSecurity(beanSecurity);
-
+        */
         ejbObjectName = ObjectName.getInstance(MDB_NAME);
     }
 

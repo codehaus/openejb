@@ -50,11 +50,11 @@ import java.io.PrintWriter;
 import java.net.URL;
 import java.util.Properties;
 
-import javax.ejb.CreateException;
 import javax.ejb.SessionContext;
 import javax.naming.Context;
 import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;
+import org.openejb.OpenEJB;
 
 /** This is the template web admin bean to extend from.  It contains all the functionality for the webadministration.  To use
  *  this class, simply sub-class it:<br><br>
@@ -357,7 +357,7 @@ public abstract class WebAdminBean implements HttpBean {
     public void initNavSections(){
         try{
             java.util.Vector sections = new java.util.Vector();
-            Context ctx = org.openejb.OpenEJB.getJNDIContext();
+            Context ctx = OpenEJB.getJNDIContext(OpenEJB.getDefaultContainerSystemID());
             NamingEnumeration enum = ctx.list("openejb/ejb/webadmin");
             //System.out.println("\n\nENUM "+enum);
             
@@ -445,7 +445,7 @@ public abstract class WebAdminBean implements HttpBean {
     /** called with the bean is created
      * @throws CreateException if the bean cannot be created
      */    
-    public void ejbCreate() throws CreateException {} 
+    public void ejbCreate() throws javax.ejb.CreateException {} 
     
     /** called on a stateful sessionbean after the bean is
      * deserialized from storage and put back into use.      
@@ -473,7 +473,7 @@ public abstract class WebAdminBean implements HttpBean {
      * @throws EJBException if an exception is thrown
      * @throws RemoteException if an exception is thrown
      */    
-    public void setSessionContext(SessionContext sessionContext) {
+    public void setSessionContext(javax.ejb.SessionContext sessionContext) {
         ejbContext = sessionContext;
         if (navSections == null) {
             initNavSections();

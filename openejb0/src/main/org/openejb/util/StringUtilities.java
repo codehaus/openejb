@@ -56,9 +56,6 @@ public class StringUtilities {
 	/** the CRLF for use in String manipulation */
 	public static final String CRLF = "\r\n";
 
-	//we don't want anyone creating new instances
-	private StringUtilities() {}
-
 	/**
 	 * Gets the last token in a StringTokenizer.
 	 * @param tokenString - the string to get the last token from
@@ -82,8 +79,12 @@ public class StringUtilities {
 	 * @param stringToCheckForNull - the string to check for null
 	 * @return the checked string
 	 */
-	public static String nullToBlankString(String stringToCheckForNull) {
-		return (stringToCheckForNull == null) ? "" : stringToCheckForNull;
+	public static String replaceNullStringWithBlankString(String stringToCheckForNull) {
+		if (stringToCheckForNull == null) {
+			return "";
+		} else {
+			return stringToCheckForNull;
+		}
 	}
 
 	/**
@@ -100,17 +101,6 @@ public class StringUtilities {
 		}
 	}
 
-	/**
-	 * Creates a string representation of a reflection method for example
-	 * <br>
-	 * <code>
-	 * myMethod(String, String) throws Exception
-	 * </code> 
-	 * <br>
-	 * @param method - the reflection method
-	 * @param lineBreak - the type of line break usually \n or &lt;br&gt;
-	 * @return the string representation of the method
-	 */
 	public static String createMethodString(Method method, String lineBreak) {
 		Class[] parameterList = method.getParameterTypes();
 		Class[] exceptionList = method.getExceptionTypes();
@@ -142,22 +132,16 @@ public class StringUtilities {
 
 		return methodString.toString();
 	}
-
-	/**
-	 * Changes a string array into a comma delimted list
-	 * @param stringArray - The string array to be converted
-	 * @return the comma delimted list
-	 */
+	
 	public static String stringArrayToCommaDelimitedStringList(String[] stringArray) {
 		StringBuffer stringList = new StringBuffer();
 		for (int i = 0; i < stringArray.length; i++) {
 			stringList.append(stringArray[i]);
-			if (i != (stringArray.length - 1)) {
+			if(i != (stringArray.length-1)) {
 				stringList.append(",");
 			}
 		}
-
+		
 		return stringList.toString();
 	}
-
 }

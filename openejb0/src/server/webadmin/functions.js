@@ -52,25 +52,3 @@ function checkDeployValues(form)
 	
 	return true;
 }
-
-//submits a form
-function submitForm(form, action)
-{
-	form.action = action;
-	form.submit();
-}
-
-//confirms whether or not to submit the form
-function confirmSubmitForm(form, action, message)
-{
-  if(confirm(message))
-  {
-     submitForm(form, action);
-  }
-}
-
-//opens up a pop-up help window
-function popUpHelp(url)
-{
-   window.open(url, "helpWindow", "width=640,height=480,resizable,scrollbars");
-}

@@ -44,22 +44,6 @@
  */
 package org.openejb.alt.containers.castor_cmp11;
 
-import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Properties;
-
-import javax.ejb.EJBHome;
-import javax.ejb.EJBObject;
-import javax.ejb.EnterpriseBean;
-import javax.ejb.EntityBean;
-import javax.transaction.Status;
-import javax.transaction.Transaction;
-
 import org.exolab.castor.jdo.Database;
 import org.exolab.castor.jdo.JDO;
 import org.exolab.castor.jdo.OQLQuery;
@@ -67,13 +51,14 @@ import org.exolab.castor.jdo.QueryResults;
 import org.exolab.castor.persist.spi.CallbackInterceptor;
 import org.exolab.castor.persist.spi.Complex;
 import org.exolab.castor.persist.spi.InstanceFactory;
+import org.exolab.castor.persist.spi.LogInterceptor;
 import org.openejb.Container;
 import org.openejb.DeploymentInfo;
 import org.openejb.OpenEJB;
 import org.openejb.OpenEJBException;
 import org.openejb.ProxyInfo;
 import org.openejb.RpcContainer;
-import org.openejb.core.EnvProps;
+import org.openejb.spi.ContainerSystem;
 import org.openejb.core.Operations;
 import org.openejb.core.ThreadContext;
 import org.openejb.core.transaction.TransactionContainer;
@@ -84,6 +69,21 @@ import org.openejb.util.Logger;
 import org.openejb.util.SafeProperties;
 import org.openejb.util.SafeToolkit;
 import org.openejb.util.Stack;
+
+import javax.ejb.EJBHome;
+import javax.ejb.EJBObject;
+import javax.ejb.EnterpriseBean;
+import javax.ejb.EntityBean;
+import javax.transaction.Status;
+import javax.transaction.Transaction;
+import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Properties;
 
 /**
  * Container-Managed Persistence EntityBean container based on Castor
@@ -218,6 +218,9 @@ implements RpcContainer, TransactionContainer, CallbackInterceptor, InstanceFact
     // this map contains the Java language initial values for all all data types
     protected HashMap resetMap;
 
+    // The container system configured for this container
+    private ContainerSystem containerSystem;
+
     //DMB:TODO:1: make logger for life cycle info.
 
     /**
@@ -235,8 +238,9 @@ implements RpcContainer, TransactionContainer, CallbackInterceptor, InstanceFact
      * @exception org.openejb.OpenEJBException
      * @see org.openejb.Container
      */
-    public void init( Object id, HashMap registry, Properties properties )
+    public void init( ContainerSystem system, Object id, HashMap registry, Properties properties )
     throws org.openejb.OpenEJBException {
+        setContainerSystem(system);
         containerID = id;
         deploymentRegistry = registry;
 
@@ -246,21 +250,21 @@ implements RpcContainer, TransactionContainer, CallbackInterceptor, InstanceFact
         SafeToolkit toolkit = SafeToolkit.getToolkit( "CastorCMP11_EntityContainer" );
         SafeProperties safeProps = toolkit.getSafeProperties( properties );
 
-        poolsize = safeProps.getPropertyAsInt(EnvProps.IM_POOL_SIZE, 100 );
-        Global_TX_Database = safeProps.getProperty(EnvProps.GLOBAL_TX_DATABASE);
-        Local_TX_Database = safeProps.getProperty(EnvProps.LOCAL_TX_DATABASE);
+        poolsize = safeProps.getPropertyAsInt( "PoolSize", 100 );
+        Global_TX_Database = safeProps.getProperty( "Global_TX_Database" );
+        Local_TX_Database = safeProps.getProperty( "Local_TX_Database" );
 
         File gTxDb = null;
         File lTxDb = null;
         try {
             gTxDb = org.openejb.util.FileUtils.getBase().getFile( Global_TX_Database );
         } catch ( Exception e ) {
-            throw new OpenEJBException( "Cannot locate the " + EnvProps.GLOBAL_TX_DATABASE + " file. " + e.getMessage() );
+            throw new OpenEJBException( "Cannot locate the Global_TX_Database file. " + e.getMessage() );
         }
         try {
             lTxDb = org.openejb.util.FileUtils.getBase().getFile( Local_TX_Database );
         } catch ( Exception e ) {
-            throw new OpenEJBException( "Cannot locate the " + EnvProps.LOCAL_TX_DATABASE + " file. " + e.getMessage() );
+            throw new OpenEJBException( "Cannot locate the Local_TX_Database file. " + e.getMessage() );
         }
 
         /*
@@ -292,20 +296,20 @@ implements RpcContainer, TransactionContainer, CallbackInterceptor, InstanceFact
         jdo_ForGlobalTransaction.setTransactionManager( "java:comp/" + transactionManagerJndiNameTyrex );
         jdo_ForGlobalTransaction.setDatabasePooling( true );
         jdo_ForGlobalTransaction.setConfiguration( gTxDb.getAbsolutePath() );
-        jdo_ForGlobalTransaction.setDatabaseName(EnvProps.GLOBAL_TX_DATABASE);
+        jdo_ForGlobalTransaction.setDatabaseName( "Global_TX_Database" );
         jdo_ForGlobalTransaction.setCallbackInterceptor( this );
         jdo_ForGlobalTransaction.setInstanceFactory( this );
-        jdo_ForGlobalTransaction.setLogInterceptor( new CMPLogger(EnvProps.GLOBAL_TX_DATABASE) );
+        jdo_ForGlobalTransaction.setLogInterceptor( new CMPLogger( "Global_TX_Database" ) );
 
         // Make sure the DB is registered as a as synchronization object before the transaction begins.
         jdo_ForLocalTransaction = new JDO();
 
 
         jdo_ForLocalTransaction.setConfiguration( lTxDb.getAbsolutePath() );
-        jdo_ForLocalTransaction.setDatabaseName(EnvProps.LOCAL_TX_DATABASE);
+        jdo_ForLocalTransaction.setDatabaseName( "Local_TX_Database" );
         jdo_ForLocalTransaction.setCallbackInterceptor( this );
         jdo_ForLocalTransaction.setInstanceFactory( this );
-        jdo_ForLocalTransaction.setLogInterceptor( new CMPLogger(EnvProps.LOCAL_TX_DATABASE) );
+        jdo_ForLocalTransaction.setLogInterceptor( new CMPLogger( "Local_TX_Database" ) );
 
 
         /*
@@ -410,9 +414,24 @@ implements RpcContainer, TransactionContainer, CallbackInterceptor, InstanceFact
             System.setProperty("user.dir",userDir);
         }
     }
+
     //===============================
     // begin Container Implementation
     //
+
+    /**
+     * Tracks the container system for this container
+     */
+    public ContainerSystem getContainerSystem() {
+        return containerSystem;
+    }
+
+    /**
+     * Tracks the container system for this container
+     */
+    public void setContainerSystem(ContainerSystem containerSystem) {
+        this.containerSystem = containerSystem;
+    }
 
     /**
      * Gets the <code>DeploymentInfo</code> objects for all the beans deployed
@@ -480,24 +499,23 @@ implements RpcContainer, TransactionContainer, CallbackInterceptor, InstanceFact
      * @param callMethod the method to be called on the bean instance
      * @param args the arguments to use when invoking the specified method
      * @param primKey the primary key class of the bean or null if the bean does not need a primary key
-     * @param securityIdentity
      * @return the result of invoking the specified method on the bean instance
      * @throws org.openejb.OpenEJBException
      * @see org.openejb.RpcContainer#invoke
      * @see org.openejb.core.stateful.StatefulContainer#invoke StatefulContainer.invoke
      */
-    public Object invoke( Object deployID, Method callMethod, Object[] args, Object primKey, Object securityIdentity )
+    public Object invoke( Object deployID, Method callMethod, Object[] args, Object primKey)
     throws org.openejb.OpenEJBException {
         postInit();
         try {
             org.openejb.core.DeploymentInfo deployInfo = ( org.openejb.core.DeploymentInfo ) this.getDeploymentInfo( deployID );
 
             ThreadContext callContext = ThreadContext.getThreadContext();
-            callContext.set( deployInfo, primKey, securityIdentity );
+            callContext.set(getContainerSystem(), deployInfo, primKey);
 
             // check authorization to invoke
 
-            boolean authorized = OpenEJB.getSecurityService().isCallerAuthorized( securityIdentity, deployInfo.getAuthorizedRoles( callMethod ) );
+            boolean authorized = getContainerSystem().getSecurityService().isCallerAuthorized(deployInfo.getAuthorizedRoles( callMethod ) );
             if ( !authorized )
                 throw new org.openejb.ApplicationException( new RemoteException( "Unauthorized Access by Principal Denied" ) );
 

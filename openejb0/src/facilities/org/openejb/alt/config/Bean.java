@@ -54,10 +54,10 @@ import org.openejb.alt.config.ejb11.SecurityRoleRef;
  */
 public interface Bean {
 
-    public static final String BMP_ENTITY = "BMP_ENTITY";
-    public static final String CMP_ENTITY = "CMP_ENTITY";
-    public static final String STATEFUL   = "STATEFUL";
-    public static final String STATELESS  = "STATELESS";
+    public final String BMP_ENTITY = "BMP_ENTITY";
+    public final String CMP_ENTITY = "CMP_ENTITY";
+    public final String STATEFUL   = "STATEFUL";
+    public final String STATELESS  = "STATELESS";
 
 
     public String getType();

@@ -42,7 +42,6 @@
  *
  * $Id$
  */
-
 package org.openejb.server.admin;
 
 import java.io.IOException;
@@ -57,40 +56,71 @@ import java.io.DataInput;
 import org.openejb.admin.web.HttpRequest;
 import java.net.URLDecoder;
 
-/**
- * 
+/** A class to take care of HTTP Requests.  It parses headers, content, form and url
+ * parameters.
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class HttpRequestImpl implements  HttpRequest {
     /** 5.1   Request-Line */
     private String line;
-    
     /** 5.1.1    Method */
     private int method;
-
     /** 5.1.2    Request-URI */
     private URL uri;
+    /** the headers for this page */    
     private HashMap headers;
+    /** the form parameters for this page */    
     private HashMap formParams = new HashMap();
+    /** the URL (or query) parameters for this page */    
     private HashMap queryParams = new HashMap();
+    /** the content of the body of this page */    
     private byte[] body;
 
+    /** Gets a header based the header name passed in.
+     * @param name The name of the header to get
+     * @return The value of the header
+     */    
     public String getHeader(String name){
         return (String)headers.get(name);
     }
 
+    /** Gets a form parameter based on the name passed in.
+     * @param name The name of the form parameter to get
+     * @return The value of the parameter
+     */    
     public String getFormParameter(String name){
         return (String)formParams.get(name);
     }
 
+    /** Gets a URL (or query) parameter based on the name passed in.
+     * @param name The name of the URL (or query) parameter
+     * @return The value of the URL (or query) parameter
+     */    
     public String getQueryParameter(String name){
         return (String)queryParams.get(name);
     }
 
+    /** Gets an integer value of the request method.  These values are:
+     *
+     * OPTIONS = 0
+     * GET     = 1
+     * HEAD    = 2
+     * POST    = 3
+     * PUT     = 4
+     * DELETE  = 5
+     * TRACE   = 6
+     * CONNECT = 7
+     * UNSUPPORTED = 8
+     * @return The integer value of the method
+     */    
     public int getMethod(){
         return method;
     }
 
+    /** Gets the URI for the current URL page.
+     * @return The URI
+     */    
     public URL getURI(){
         return uri;
     }
@@ -98,6 +128,10 @@ public class HttpRequestImpl implements  HttpRequest {
     /*------------------------------------------------------------*/
     /*  Methods for reading in and parsing a request              */
     /*------------------------------------------------------------*/
+    /** parses the request into the 3 different parts, request, headers, and body
+     * @param input the data input for this page
+     * @throws IOException if an exception is thrown
+     */    
     protected void readMessage(InputStream input) throws IOException{
         DataInput in = new DataInputStream(input);
         
@@ -106,6 +140,10 @@ public class HttpRequestImpl implements  HttpRequest {
         readBody(in);
     }
 
+    /** reads and parses the request line
+     * @param in the input to be read
+     * @throws IOException if an exception is thrown
+     */    
     private void readRequestLine(DataInput in) throws IOException{
         try{
             line = in.readLine();
@@ -120,6 +158,10 @@ public class HttpRequestImpl implements  HttpRequest {
         parseURI(lineParts);
     }
 
+    /** parses the method for this page
+     * @param lineParts a StringTokenizer of the request line
+     * @throws IOException if an exeption is thrown
+     */    
     private void parseMethod(StringTokenizer lineParts) throws IOException{
         String token = null;
         try{
@@ -138,6 +180,10 @@ public class HttpRequestImpl implements  HttpRequest {
         }
     }
 
+    /** parses the URI into the different parts
+     * @param lineParts a StringTokenizer of the URI
+     * @throws IOException if an exeption is thrown
+     */    
     private void parseURI(StringTokenizer lineParts) throws IOException{
         String token = null;
         try{
@@ -155,6 +201,10 @@ public class HttpRequestImpl implements  HttpRequest {
         parseQueryParams(uri.getQuery());
     }
 
+    /** parses the URL (or query) parameters
+     * @param query the URL (or query) parameters to be parsed
+     * @throws IOException if an exception is thrown
+     */    
     private void parseQueryParams(String query) throws IOException{
         if (query == null) return;
         StringTokenizer parameters = new StringTokenizer(query, "&");
@@ -177,6 +227,10 @@ public class HttpRequestImpl implements  HttpRequest {
         }
     }
 
+    /** reads the headers from the data input sent from the browser
+     * @param in the data input sent from the browser
+     * @throws IOException if an exeption is thrown
+     */    
     private void readHeaders(DataInput in) throws IOException{
         headers = new HashMap();
         while (true) {
@@ -216,6 +270,10 @@ public class HttpRequestImpl implements  HttpRequest {
         //end temp-debug---------------------------------------
      }
 
+    /** reads the body from the data input passed in
+     * @param in the data input with the body of the page
+     * @throws IOException if an exception is thrown
+     */    
     private void readBody(DataInput in) throws IOException{
         readRequestBody(in);
         //System.out.println("Body Length: " + body.length);
@@ -227,6 +285,10 @@ public class HttpRequestImpl implements  HttpRequest {
         }
     }
 
+    /** reads the request line of the data input
+     * @param in the data input that contains the request line
+     * @throws IOException if an exception is thrown
+     */    
     private void readRequestBody(DataInput in) throws IOException{
         // Content-length: 384
         String len  = getHeader("Content-Length");
@@ -254,6 +316,9 @@ public class HttpRequestImpl implements  HttpRequest {
         }
     }
 
+    /** parses form parameters into the formParams variable
+     * @throws IOException if an exeption is thrown
+     */    
     private void parseFormParams() throws IOException{
         String rawParams = new String( body );
         //System.out.println("rawParams: " + rawParams);

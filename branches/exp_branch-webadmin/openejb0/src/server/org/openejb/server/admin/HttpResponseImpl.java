@@ -42,7 +42,6 @@
  *
  * $Id$
  */
-
 package org.openejb.server.admin;
 
 import java.io.*;
@@ -58,9 +57,9 @@ import org.openejb.util.JarUtils;
 import javax.naming.*;
 import org.openejb.admin.web.HttpResponse;
 
-/**
- * 
+/** This class takes care of HTTP Responses.  It sends data back to the browser.
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class HttpResponseImpl implements HttpResponse {
     
@@ -76,55 +75,107 @@ public class HttpResponseImpl implements HttpResponse {
     /** Response body */
     private byte[] body = new byte[0];
     
+    /** the writer for the response */    
     private transient PrintWriter writer;
+    /** the raw body */    
     private transient ByteArrayOutputStream baos;
     
+    /** the HTTP version */    
     public static final String HTTP_VERSION = "HTTP/1.1";
+    /** a line feed character */    
     public static final String CRLF = "\r\n";
+    /** a space character */    
     public static final String SP = " ";
+    /** a colon and space */    
     public static final String CSP = ": ";
+    /** the server to send data from */    
     public static String server;
 
+    /** sets a header to be sent back to the browser
+     * @param name the name of the header
+     * @param value the value of the header
+     */    
     public void setHeader(String name, String value){
         headers.put(name, value);
     }
 
+    /** Gets a header based on the name passed in
+     * @param name The name of the header
+     * @return the value of the header
+     */    
     public String getHeader(String name){
         return (String) headers.get(name);
     }
 
+    /** Gets the PrintWriter to send data to the browser
+     * @return the PrintWriter to send data to the browser
+     */    
     public PrintWriter getPrintWriter(){
         return writer;
     }
 
+    /** gets the OutputStream to send data to the browser
+     * @return the OutputStream to send data to the browser
+     */    
     public OutputStream getOutputStream(){
         return baos;
     }
 
+    /** sets the HTTP response code to be sent to the browser.  These codes are:
+     *
+     * OPTIONS = 0
+     * GET     = 1
+     * HEAD    = 2
+     * POST    = 3
+     * PUT     = 4
+     * DELETE  = 5
+     * TRACE   = 6
+     * CONNECT = 7
+     * UNSUPPORTED = 8
+     * @param code the code to be sent to the browser
+     */    
     public void setCode(int code){
         this.code = code;
     }
 
+    /** gets the HTTP response code
+     * @return the HTTP response code
+     */    
     public int getCode(){
         return code;
     }
 
+    /** sets the content type to be sent back to the browser
+     * @param type the type to be sent to the browser (i.e. "text/html")
+     */    
     public void setContentType(String type){
         setHeader("Content-Type", type);
     }
 
+    /** gets the content type that will be sent to the browser
+     * @return the content type (i.e. "text/html")
+     */    
     public String getContentType(){
         return getHeader("Content-Type");
     }
 
+    /** Sets the response string to be sent to the browser
+     * @param responseString the response string
+     */    
     public void setResponseString(String responseString){
        this.responseString = responseString;
     }
 
+    /** resets the data to be sent to the browser */    
     public void reset(){
         initBody();
     }
 
+    /** resets the data to be sent to the browser with the response code and response
+     * string
+     * @param code the code to be sent to the browser
+     * @param responseString the response string to be sent to the browser
+     */    
     public void reset(int code, String responseString){
         setCode(code);
         setResponseString(responseString);
@@ -134,10 +185,17 @@ public class HttpResponseImpl implements HttpResponse {
     /*------------------------------------------------------------*/
     /*  Methods for writing out a response                        */
     /*------------------------------------------------------------*/
+    /** creates a new instance of HttpResponseImpl with default values */    
     protected HttpResponseImpl(){
         this(200, "OK", "text/html");
     }
 
+    /** Creates a new HttpResponseImpl with user provided parameters
+     * @param code the HTTP Response code, see <a href="http://www.ietf.org/rfc/rfc2616.txt">http://www.ietf.org/rfc/rfc2616.txt</a>
+     * for these codes
+     * @param responseString the response string to be sent back
+     * @param contentType the content type to be sent back
+     */    
     protected HttpResponseImpl(int code, String responseString, String contentType){
         this.responseString = responseString;
         this.headers = new HashMap();
@@ -152,13 +210,15 @@ public class HttpResponseImpl implements HttpResponse {
         initBody();
     }
 
-    /**
-     *  HTTP/1.1 200 OK
-     *  Server: Netscape-Enterprise/3.6 SP3
-     *  Date: Thu, 07 Jun 2001 17:30:42 GMT
-     *  Content-type: text/html
-     *  Connection: close
+    /** Takes care of sending the response line, headers and body
      *
+     * HTTP/1.1 200 OK
+     * Server: Netscape-Enterprise/3.6 SP3
+     * Date: Thu, 07 Jun 2001 17:30:42 GMT
+     * Content-Type: text/html
+     * Connection: close
+     * @param output the output to send the response to
+     * @throws IOException if an exception is thrown
      */
     protected void writeMessage(OutputStream output) throws IOException{
         DataOutput out = new DataOutputStream(output);
@@ -172,11 +232,17 @@ public class HttpResponseImpl implements HttpResponse {
         writeBody(out);
     }
 
+     /** initalizes the body */     
     private void initBody(){
         baos = new ByteArrayOutputStream();
         writer = new PrintWriter( baos );
     }
 
+    /** Creates a string version of the response similar to:
+     *
+     * HTTP/1.1 200 OK
+     * @return the string value of this HttpResponseImpl
+     */    
     public String toString(){
         StringBuffer buf = new StringBuffer(40);
 
@@ -189,6 +255,9 @@ public class HttpResponseImpl implements HttpResponse {
         return buf.toString();
     }
 
+    /** closes the message sent to the browser
+     * @throws IOException if an exception is thrown
+     */    
     private void closeMessage() throws IOException{
         writer.flush();
         writer.close();
@@ -196,8 +265,13 @@ public class HttpResponseImpl implements HttpResponse {
         setHeader("Content-Length", body.length+"");
     }
 
-    /**
-     *  HTTP/1.1 200 OK
+    /** Writes a response line similar to this:
+     *
+     * HTTP/1.1 200 OK
+     *
+     * to the browser
+     * @param out the output stream to write the response line to
+     * @throws IOException if an exception is thrown
      */
     private void writeResponseLine(DataOutput out) throws IOException{
         out.writeBytes(HTTP_VERSION);
@@ -208,6 +282,10 @@ public class HttpResponseImpl implements HttpResponse {
         out.writeBytes(CRLF);
     }
 
+    /** writes the headers out to the browser
+     * @param out the output stream to be sent to the browser
+     * @throws IOException if an exception is thrown
+     */    
     private void writeHeaders(DataOutput out) throws IOException{
         Iterator it =  headers.entrySet().iterator();
 
@@ -220,11 +298,18 @@ public class HttpResponseImpl implements HttpResponse {
         }
     }
 
+    /** writes the body out to the browser
+     * @param out the output stream that writes to the browser
+     * @throws IOException if an exception is thrown
+     */    
     private void writeBody(DataOutput out) throws IOException{
         out.writeBytes(CRLF);
         out.write(body);
     }
 
+    /** gets the name of the server being used
+     * @return the name of the server
+     */    
     public String getServerName(){
         if (server == null) {
             String version = "???";
@@ -245,18 +330,20 @@ public class HttpResponseImpl implements HttpResponse {
     }
     
     
-    /**
-     * This could be improved at some day in the future 
+    /** This could be improved at some day in the future
      * to also include a stack trace of the exceptions
-     * 
-     * @param message
-     * @return 
+     * @param message the error message to be sent
+     * @return the HttpResponseImpl that this error belongs to
      */
-
     protected static HttpResponseImpl createError(String message){
         return createError(message, null);
     }
 
+    /** creates an error with user defined variables
+     * @param message the message of the error
+     * @param t a Throwable to print a stack trace to
+     * @return the HttpResponseImpl that this error belongs to
+     */    
     protected static HttpResponseImpl createError(String message, Throwable t){
         HttpResponseImpl res = new HttpResponseImpl(500, "Internal Server Error", "text/html");
         java.io.PrintWriter body = res.getPrintWriter();
@@ -301,6 +388,10 @@ public class HttpResponseImpl implements HttpResponse {
         return res;
     }
 
+    /** Creates a forbidden response to be sent to the browser using IP authentication
+     * @param ip the ip that is forbidden
+     * @return the HttpResponseImpl that this error belongs to
+     */    
     protected static HttpResponseImpl createForbidden(String ip){
         HttpResponseImpl res = new HttpResponseImpl(403, "Forbidden", "text/html");
         java.io.PrintWriter body = res.getPrintWriter();
@@ -318,6 +409,10 @@ public class HttpResponseImpl implements HttpResponse {
         return res;
     }
 
+    /** writes this object out to a file
+     * @param out the ObjectOutputStream to write to
+     * @throws IOException if an exception is thrown
+     */    
     private void writeObject(java.io.ObjectOutputStream out) throws IOException{
         /** Response string */
         out.writeObject( responseString );
@@ -335,6 +430,11 @@ public class HttpResponseImpl implements HttpResponse {
         out.writeObject( body );
     }
     
+    /** Reads in a serilized HttpResponseImpl object from a file
+     * @param in the input to read the object from
+     * @throws IOException if an exception is thrown
+     * @throws ClassNotFoundException if an exception is thrown
+     */    
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
         /** Response string */
         this.responseString = (String)in.readObject();

@@ -88,16 +88,17 @@ import org.openejb.admin.web.HttpObject;
 import org.openejb.admin.web.HttpHome;
 import javax.rmi.PortableRemoteObject;
 
-/**
+/** This is the main class for the web administration.  It takes care of the
+ * processing from the browser, sockets and threading.
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  * @since 11/25/2001
  */
 public class HttpDaemon implements Runnable{
 
+    /** the tool kit for this HttpDaemon */    
     private SafeToolkit toolkit = SafeToolkit.getToolkit("OpenEJB EJB Server");
-
     Logger logger = Logger.getInstance( "OpenEJB", "org.openejb.server.util.resources" );
-
     Vector           clientSockets  = new Vector();
     ServerSocket     serverSocket   = null;
 
@@ -108,10 +109,17 @@ public class HttpDaemon implements Runnable{
     EjbDaemon ejbd;
     InitialContext jndiContext;
 
+    /** This creates a new instance of the HttpDaemon
+     * @param ejbd The EjbDaemon to connect to
+     */    
     public HttpDaemon(EjbDaemon ejbd) {
         this.ejbd = ejbd;
     }
 
+    /** Initalizes this instance and takes care of starting things up
+     * @param props a properties instance for system properties
+     * @throws Exception if an exeption is thrown
+     */    
     public void init(Properties props) throws Exception{
 
         props.putAll(System.getProperties());
@@ -137,6 +145,7 @@ public class HttpDaemon implements Runnable{
     boolean stop = false;
 
 
+    /** Starts the HttpDaemon thread and does most of the work */    
     public void run( ) {
 
         Socket socket = null;
@@ -202,6 +211,10 @@ public class HttpDaemon implements Runnable{
         }
     }
 
+    /** takes care of processing requests and creating the webadmin ejb's
+     * @param in the input stream from the browser
+     * @param out the output stream to the browser
+     */    
     public void processRequest(InputStream in, OutputStream out) {
 
         HttpRequestImpl req = new HttpRequestImpl();
@@ -294,6 +307,11 @@ public class HttpDaemon implements Runnable{
         }
     }
 
+    /** gets an ejb object reference for use in <code>processRequest</code>
+     * @param beanName the name of the ejb to look up
+     * @throws IOException if an exception is thrown
+     * @return an object reference of the ejb
+     */    
     protected HttpObject getHttpObject(String beanName) throws IOException{
         Object obj = null;
         

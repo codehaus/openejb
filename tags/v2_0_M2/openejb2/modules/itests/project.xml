@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<!DOCTYPE project [
+<!ENTITY % locator SYSTEM "file:locator.ent">
+%locator;
+%versions;
+]>
+
+<!-- $Revision$ $Date$ -->
+
+<project>
+    <pomVersion>3</pomVersion>
+    <extend>${basedir}/../../etc/project.xml</extend>
+
+    <!-- ===================== -->
+    <!-- Module Identification -->
+    <!-- ===================== -->
+
+    <name>OpenEJB :: Integration Tests</name>
+    <id>openejb-itests</id>
+    <shortDescription>Compliance and Integration Tests</shortDescription>
+    <description>EJB Compliance and Server Integration Tests</description>
+    <url>http://www.openejb.org</url>
+    <siteDirectory>/www/openejb.org/core</siteDirectory>
+    <distributionDirectory>/www/openejb.org//builds/core</distributionDirectory>
+
+    <!-- ============ -->
+    <!-- Dependencies -->
+    <!-- ============ -->
+
+    <dependencies>
+
+        <dependency>
+            <groupId>tranql</groupId>
+            <artifactId>tranql</artifactId>
+            <version>&tranql-version;</version>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo</groupId>
+            <artifactId>geronimo-security</artifactId>
+            <version>&geronimo-version;</version>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo-spec</groupId>
+            <artifactId>geronimo-spec-j2ee-jacc</artifactId>
+            <version>&geronimo-spec-j2ee-jacc-version;</version>
+            <properties>
+                <runtime>true</runtime>
+            </properties>
+        </dependency>
+
+        <dependency>
+            <groupId>cglib</groupId>
+            <artifactId>cglib-full</artifactId>
+            <version>&cglib-version;</version>
+            <url>http://cglib.sf.net</url>
+        </dependency>
+
+        <!-- Module Dependencies -->
+
+        <dependency>
+            <groupId>openejb</groupId>
+            <artifactId>openejb-core</artifactId>
+            <version>${pom.currentVersion}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>openejb</groupId>
+            <artifactId>openejb-assembly</artifactId>
+            <version>${pom.currentVersion}</version>
+        </dependency>
+
+        <!-- Thirdparty -->
+
+        <dependency>
+            <groupId>geronimo-spec</groupId>
+            <artifactId>geronimo-spec-jta</artifactId>
+            <version>&geronimo-spec-jta-version;</version>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo-spec</groupId>
+            <artifactId>geronimo-spec-ejb</artifactId>
+            <version>&geronimo-spec-ejb-version;</version>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo-spec</groupId>
+            <artifactId>geronimo-spec-servlet</artifactId>
+            <version>&geronimo-spec-servlet-version;</version>
+        </dependency>
+
+        <dependency>
+            <groupId>geronimo-spec</groupId>
+            <artifactId>geronimo-spec-j2ee-connector</artifactId>
+            <version>&geronimo-spec-j2ee-connector-version;</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>&junit-version;</version>
+            <properties>
+                <classloader>root</classloader>
+            </properties>
+        </dependency>
+    </dependencies>
+</project>

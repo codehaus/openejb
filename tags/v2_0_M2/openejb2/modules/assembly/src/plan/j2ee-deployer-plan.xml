@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2004 The Apache Software Foundation
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+
+
+<!--
+Configuration for the Geronimo deployer
+
+-->
+<configuration
+    xmlns="http://geronimo.apache.org/xml/ns/deployment"
+    configId="org/apache/geronimo/J2EEDeployer"
+    parentId="org/apache/geronimo/DeployerSystem"
+    >
+
+    <dependency>
+        <uri>openejb/jars/openejb-core-${openejb_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-connector-${geronimo_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-core-${geronimo_version}.jar</uri>
+    </dependency>
+    <!-- needed to load some connector and core classes-->
+    <dependency>
+        <uri>concurrent/jars/concurrent-${concurrent_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-j2ee-${geronimo_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-security-${geronimo_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-naming-${geronimo_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-timer-${geronimo_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-transaction-${geronimo_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo/jars/geronimo-j2ee-schema-${geronimo_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>geronimo-spec/jars/geronimo-spec-j2ee-${geronimo_spec_j2ee_version}.jar</uri>
+    </dependency>
+    <!-- required for rar 1.5 to load realms -->
+    <dependency>
+        <uri>regexp/jars/regexp-${regexp_version}.jar</uri>
+    </dependency>
+    <dependency>
+        <uri>tranql/jars/tranql-${tranql_version}.jar</uri>
+    </dependency>
+
+    <gbean name="geronimo.deployment:role=Deployer,config=org/apache/geronimo/J2EEDeployer" class="org.apache.geronimo.deployment.Deployer">
+        <reference name="Builders">geronimo.deployer:role=Builder,config=org/apache/geronimo/J2EEDeployer,*</reference>
+        <reference name="Store">geronimo.deployment:role=ConfigurationStore,type=Local</reference>
+    </gbean>
+
+    <gbean name="geronimo.deployer:role=Builder,type=Service,config=org/apache/geronimo/J2EEDeployer" class="org.apache.geronimo.deployment.service.ServiceConfigBuilder">
+        <reference name="Repository">*:role=Repository,*</reference>
+    </gbean>
+
+    <gbean name="geronimo.deployer:role=Builder,type=EAR,config=org/apache/geronimo/J2EEDeployer" class="org.apache.geronimo.j2ee.deployment.EARConfigBuilder">
+        <attribute name="j2eeServer" type="javax.management.ObjectName">geronimo.server:j2eeType=J2EEServer,name=geronimo</attribute>
+        <attribute name="transactionContextManagerObjectName" type="javax.management.ObjectName">geronimo.server:type=TransactionContextManager</attribute>
+        <attribute name="connectionTrackerObjectName" type="javax.management.ObjectName">geronimo.server:type=ConnectionTracker</attribute>
+        <attribute name="transactionalTimerObjectName" type="javax.management.ObjectName">geronimo.server:type=ThreadPooledTimer,name=TransactionalThreadPooledTimer</attribute>
+        <attribute name="nonTransactionalTimerObjectName" type="javax.management.ObjectName">geronimo.server:type=ThreadPooledTimer,name=NonTransactionalThreadPooledTimer</attribute>
+        <reference name="Repository">*:role=Repository,*</reference>
+        <reference name="EJBConfigBuilder">geronimo.deployer:role=ModuleBuilder,type=EJB,config=org/apache/geronimo/J2EEDeployer</reference>
+        <reference name="EJBReferenceBuilder">geronimo.deployer:role=ModuleBuilder,type=EJB,config=org/apache/geronimo/J2EEDeployer</reference>
+        <reference name="ConnectorConfigBuilder">geronimo.deployer:role=ModuleBuilder,type=Connector,config=org/apache/geronimo/J2EEDeployer</reference>
+    </gbean>
+
+    <gbean name="geronimo.deployer:role=ModuleBuilder,type=EJB,config=org/apache/geronimo/J2EEDeployer" class="org.openejb.deployment.OpenEJBModuleBuilder"/>
+
+    <gbean name="geronimo.deployer:role=ModuleBuilder,type=Connector,config=org/apache/geronimo/J2EEDeployer" class="org.apache.geronimo.connector.deployment.ConnectorModuleBuilder"/>
+</configuration>

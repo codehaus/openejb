@@ -59,20 +59,35 @@ import javax.naming.Context;
 import javax.ejb.*;
 import javax.naming.*;
 
-/**
+/** This is the template web admin bean to extend from.  It contains all the functionaltiy
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public abstract class WebAdminBean implements HttpBean {
-    
+    /** called automaticaly by the container
+     */    
     protected SessionContext ejbContext;
+    /** the substitue
+     */    
     public static final int SUBSTITUTE = 26;
-    
+    /** the navigation sections
+     */    
     public static String[] navSections;
-    
+    /** the section
+     */    
     protected String section = "";
+    /** the request
+     */    
     protected HttpRequest request;
+    /** the response
+     */    
     protected HttpResponse response;
 
+
+    /** the main method of this bean, it takes care of the processing
+     * @param request the http request
+     * @param response the http response
+     * @throws IOException if an exception is thrown
+     */    
     public void onMessage(HttpRequest request, HttpResponse response) throws IOException{
         this.request = request;
         this.response = response;
@@ -103,7 +118,6 @@ public abstract class WebAdminBean implements HttpBean {
         writeTemplate(body, template);
         writeBody(body);
 
-
         // Write till FOOTER
         writeTemplate(body, template);
         writeFooter(body);
@@ -113,29 +127,36 @@ public abstract class WebAdminBean implements HttpBean {
         postProcess(request, response);
     }
 
+    /** before the process is done
+     * @param request the http request
+     * @param response the http response
+     * @throws IOException if an exception is thrown
+     */    
     public abstract void preProcess(HttpRequest request, HttpResponse response) throws IOException;
+    /** after the processing is completed
+     * @param request the http request
+     * @param response the http response
+     * @throws IOException if an exception is thrown
+     */    
     public abstract void postProcess(HttpRequest request, HttpResponse response) throws IOException;
     
-    /**
-     * Write the TITLE of the HTML document.  This is the part
+    /** Write the TITLE of the HTML document.  This is the part
      * that goes into the <HEAD><TITLE></TITLE></HEAD> tags
      * 
-     * @param body
-     * @exception IOException
+     * @param body the output to write to
+     * @exception IOException of an exception is thrown
      */
     public abstract void writeHtmlTitle(PrintWriter body) throws IOException;
 
-    /**
-     * Write the title of the page.  This is displayed right
+    /** Write the title of the page.  This is displayed right
      * above the main block of content.
      * 
-     * @param body
-     * @exception IOException
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public abstract void writePageTitle(PrintWriter body) throws IOException;
 
-    /**
-     * Write the top navigation bar of the page. This should look somthing
+    /** Write the top navigation bar of the page. This should look somthing
      * like the one below:
      * 
      *     <a href="system?show=server">
@@ -151,8 +172,8 @@ public abstract class WebAdminBean implements HttpBean {
      *     <span class="menuTopOff">Logs</span>
      *     </a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
      * 
-     * @param body
-     * @exception IOException
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public void writeTopNavBar(PrintWriter body) throws IOException{
         for (int i=0; i < navSections.length; i+=2){
@@ -164,8 +185,7 @@ public abstract class WebAdminBean implements HttpBean {
         }
     }
     
-    /**
-     * Write the left navigation bar of the page.  This should look somthing
+     /** Write the left navigation bar of the page.  This should look somthing
      * like the one below:
      * 
      *      <tr>
@@ -190,8 +210,8 @@ public abstract class WebAdminBean implements HttpBean {
      *        </a></td>
      *      </tr>
      * 
-     * @param body
-     * @exception IOException
+      * @param body the output to write to
+      * @exception IOException if an exception is thrown
      */
     public void writeLeftNavBar(PrintWriter body) throws IOException{
         for (int i=0; i < navSections.length; i+=2){
@@ -205,8 +225,7 @@ public abstract class WebAdminBean implements HttpBean {
         }
     }
     
-    /**
-     * Write the sub items for this bean in the left navigation bar of 
+    /** Write the sub items for this bean in the left navigation bar of
      * the page.  This should look somthing like the one below:
      * 
      *      <tr>
@@ -220,11 +239,16 @@ public abstract class WebAdminBean implements HttpBean {
      * Alternately, the bean can use the method formatSubMenuItem(..) which
      * will create HTML like the one above
      * 
-     * @param body
-     * @exception IOException
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public abstract void writeSubMenuItems(PrintWriter body) throws IOException;
 
+    /** formats a sub menu item
+     * @param itemName the name for display
+     * @param url the url to link
+     * @return the html that is formatted
+     */    
     public String formatSubMenuItem(String itemName, String url){
         StringBuffer buff = new StringBuffer();
         buff.append("<tr>");
@@ -237,26 +261,29 @@ public abstract class WebAdminBean implements HttpBean {
         return buff.toString();
     }
 
-    /**
-     * Write the main content
+    /** Write the main content
      * 
-     * @param body
-     * @exception IOException
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public abstract void writeBody(PrintWriter body) throws IOException;
 
-    /**
-     * Write the footer
+    /** Write the footer
      * 
-     * @param body
-     * @exception IOException
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public  void writeFooter(PrintWriter body) throws IOException{
         body.print(footer);
     }
     
+    /** the footer
+     */    
     protected static String footer = getFooter();
 
+    /** gets a footer for the document
+     * @return the footer string
+     */    
     public static String getFooter(){
         StringBuffer out = new StringBuffer(100);
         try {
@@ -265,13 +292,17 @@ public abstract class WebAdminBean implements HttpBean {
             out.append( "<a href=\""+openejbProps.get("url")+"\">OpenEJB</a> ");
             out.append( openejbProps.get( "version" ) +"<br>");
             out.append( "build: "+openejbProps.get( "date" )+"-"+openejbProps.get( "time" ));
-
         } catch (java.io.IOException e) {
         }
 
         return out.toString();
     }
 
+    /** writes a template
+     * @param out the output to write to
+     * @param template the template to read
+     * @throws IOException if an exception is thrown
+     */    
     public void writeTemplate(PrintWriter out, InputStream template) throws IOException{
         int b = template.read();
         //System.out.println("[] read");
@@ -282,31 +313,36 @@ public abstract class WebAdminBean implements HttpBean {
         //System.out.println("[] done reading");
     }
 
+    /** gets the template
+     * @throws IOException if an exception is thrown
+     * @return the template
+     */    
     public InputStream getTemplate() throws IOException{
         System.out.println("[] get template");
         return new URL( "resource:/openejb/webadmin/template.html" ).openConnection().getInputStream();
     }
 
+    /** initalizes the left navigation
+     */    
     public void initNavSections(){
         try{
             java.util.Vector sections = new java.util.Vector();
-
             Context ctx = org.openejb.OpenEJB.getJNDIContext();
             NamingEnumeration enum = ctx.list("openejb/ejb/webadmin");
-
             System.out.println("\n\nENUM "+enum);
+            
             if ( enum == null){
                 return;
             }
 
             while (enum.hasMore()) {
-
                 NameClassPair entry = (NameClassPair)enum.next();
                 System.out.println("ITEM NAME  "+entry.getName());
                 System.out.println("ITEM CLASS "+entry.getClassName());
                 if ( !entry.getClassName().equals("org.openejb.core.stateless.EncReference") ) {
                     continue;
                 } 
+
                 if ( entry.getName().startsWith("Default") ) {
                     continue;
                 } 
@@ -323,26 +359,94 @@ public abstract class WebAdminBean implements HttpBean {
             e.printStackTrace();
         }
     }
+
+    /** prints a table row similar to this
+     *
+     * <tr>
+     *   <td>some info</td>
+     *   <td>some more info</td>
+     * </tr>
+     * @param col1 the first column
+     * @param col2 the second column
+     * @param out the output to write to
+     * @throws IOException if an exception is thrown
+     */    
+    protected void printRow(String col1, String col2, PrintWriter out) throws IOException{
+        out.println("<tr>"  );
+        out.print("<td><span class=\"bodyBlack\">");
+        out.print(col1);
+        out.println("</span></td>");
+        out.print("<td><span class=\"bodyBlack\">");
+        out.print(col2);
+        out.println("</span></td>");
+        out.println("</tr>");
+    }
+
+    /** prints a table row similar to this
+     *
+     * <tr>
+     *   <td>some info</td>
+     *   <td>some more info</td>
+     *   <td>yet some more info</td>
+     * </tr>
+     * @param col1 the first column
+     * @param col2 the second column
+     * @param col3 the third column
+     * @param out the output to write to
+     * @throws IOException if an exception is thrown
+     */    
+    protected void printRow(String col1, String col2, String col3, PrintWriter out) throws IOException{
+        out.println("<tr>");
+        out.print("<td><span class=\"bodyBlack\">");
+        out.print(col1);
+        out.println("</span></td>");
+        out.print("<td><span class=\"bodyBlack\">");
+        out.print(col2);
+        out.println("</span></td>");
+        out.print("<td><span class=\"bodyBlack\">");
+        out.print(col3);
+        out.println("</span></td>");
+        out.println("</tr>");
+    }
+
     /*---------------------------------------------------------------*/
     /* EJB API Callbacks                                             */
     /*---------------------------------------------------------------*/
-    
+    /** called with the bean is created
+     * @throws CreateException if the bean cannot be created
+     */    
     public void ejbCreate() throws javax.ejb.CreateException {} 
     
-    public void ejbActivate() throws javax.ejb.EJBException, java.rmi.RemoteException {
-    }
+    /** called on a stateful sessionbean after the bean is
+     * deserialized from storage and put back into use.      
+     * @throws EJBException if an exeption is thrown
+     * @throws RemoteException if an exception is thrown
+     */    
+    public void ejbActivate() throws javax.ejb.EJBException, java.rmi.RemoteException {}
 
-    public void ejbPassivate() throws javax.ejb.EJBException, java.rmi.RemoteException {
-    }
-    
-    public void ejbRemove() throws javax.ejb.EJBException, java.rmi.RemoteException {
-    }
-    
+    /** called on a stateful sessionbean before the bean is 
+     * removed from memory and serialized to a temporary store.  
+     * This method is never called on a stateless sessionbean
+     * @throws EJBException if an exception is thrown
+     * @throws RemoteException if an exception is thrown
+     */    
+    public void ejbPassivate() throws javax.ejb.EJBException, java.rmi.RemoteException {}
+
+    /** called when the bean is about to be garbage collected
+     * @throws EJBException if an exception is thrown
+     * @throws RemoteException if an exception is thrown
+     */    
+    public void ejbRemove() throws javax.ejb.EJBException, java.rmi.RemoteException {}
+
+    /** sets the session context
+     * @param sessionContext the session context
+     * @throws EJBException if an exception is thrown
+     * @throws RemoteException if an exception is thrown
+     */    
     public void setSessionContext(javax.ejb.SessionContext sessionContext) throws javax.ejb.EJBException, java.rmi.RemoteException {
         ejbContext = sessionContext;
         if (navSections == null) {
             initNavSections();
         }
     }
-    
 }

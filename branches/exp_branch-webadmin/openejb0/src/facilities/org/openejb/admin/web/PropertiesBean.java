@@ -83,7 +83,7 @@ public class PropertiesBean extends WebAdminBean {
         Enumeration e = p.keys();
         String[] propertyList = new String[p.size()];
 
-        body.println("<table border=\"0\" cellspacing=\"2\" cellpadding=\"2\">");
+        body.println("<table border=\"0\" cellspacing=\"0\" cellpadding=\"2\">");
         String currentProperty = null;
         body.println("<tr><th align=\"left\">Property Name</th><th align=\"left\">Property Value</th></tr>");
         int j = 0;

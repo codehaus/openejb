@@ -121,7 +121,7 @@ public class DeployBean extends WebAdminBean {
      *
      */
     public void writeBody(PrintWriter body) throws IOException {
-        String deploy = request.getFormParameter("deploy");
+        String deploy = request.getFormParameter("deploy").trim();
         String submitDeployment = request.getFormParameter("submitDeploymentAndContainerIds");
         
         try {
@@ -242,6 +242,16 @@ public class DeployBean extends WebAdminBean {
     private void setOptions() throws Exception {
         //the the form values
         String jarFile = request.getFormParameter("jarFile");
+    	String moveType = request.getFormParameter("moveType");
+    	String containerId = request.getFormParameter("assignC");
+    	String deploymentId = request.getFormParameter("assignD");
+    	String automate = request.getFormParameter("automate");
+    	String force = request.getFormParameter("force");
+    	String configFile = request.getFormParameter("configFile");
+    	String homeDir = request.getFormParameter("homeDir");
+    	String log4JFile = request.getFormParameter("log4JFile");
+    	File testForValidFile = null;
+        
         if(jarFile == null) {
             //do this for now, needs better exception handling
             throw new IOException("No jar file was provided, please try again.");
@@ -249,35 +259,58 @@ public class DeployBean extends WebAdminBean {
         //set the jar file
         this.deployer.setJarFile(jarFile);
         
-        //get the options
-        String moveType = request.getFormParameter("moveType");
+        
+        //copy or move the jar file
         if(moveType.equals("-c")) {
             options[3] = true;
         } else if (moveType.equals("-m")) {
             options[1] = true;
         }
         //set container id
-        String containerId = request.getFormParameter("assignC");
         if(containerId != null) {
             options[0] = true;
         }
         //set deployment id
-        String deploymentId = request.getFormParameter("assignD");
         if(deploymentId != null) {
             options[5] = true;
         }
         //automate deployment
-        String automate = request.getFormParameter("automate");
         if(automate != null) {
             options[0] = true;
             options[5] = true;
         }
         //force overwrite
-        String force = request.getFormParameter("force");
         if(force != null) {
             options[2] = true;
         }
+        //set the openejb config file
+        if(! configFile.trim().equals("")) {
+        	//first check to make sure it's a file, a check to
+        	//make sure it's a valid xml file will come later
+        	testForValidFile = new File(configFile);
+        	if(!testForValidFile.isFile()) 
+        		throw new IOException("OpenEJB configuration: " + configFile + " is not a file.");
+        	
+        	System.setProperty("openejb.configuration", configFile);
+        }
+        //set the OPENEJB_HOME directory
+        if(! homeDir.trim().equals("")) {
+        	//check for valid directory
+        	testForValidFile = new File(homeDir);
+        	if(!testForValidFile.isDirectory())
+        	    throw new IOException("OPENEJB_HOME: " + homeDir + " is not a directory.");
+        		
+        	System.setProperty("openejb.home", homeDir);
+        }
+        //set the log4j configuration
+        if(! log4JFile.trim().equals("")) {
+        	//check for valid file
+        	testForValidFile = new File(log4JFile);
+        	if(!testForValidFile.isFile())
+        	    throw new IOException("OpenEJB configuration: " + configFile + " is not a file.");
+        }
         
+        testForValidFile = null;
         this.deployer.setBooleanValues(options);
     }
     
@@ -291,12 +324,12 @@ public class DeployBean extends WebAdminBean {
         //the start table
         body.println("<table border=\"0\" cellspacing=\"0\" cellpadding=\"2\">");
         
-        //info about CMP mapping - let them know later
+        //info about CMP mapping - not yet implemented
         /*body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<strong>Important Note:</strong> If you are deploying a Container Managed Persistance");
-        body.println("bean, you must first <a href=\"\">map</a> the fields and then deploy.  Once that step is completed");
-        body.println("you will be sent to this page and your configuration will be set up for you.");
+        body.println("bean, you must first <a href=\"\">map the fields</a> and then deploy.  Once that step is completed");
+        body.println("you will be sent to this page and your configuration files will be set up for you.");
         body.println("(see the help section for more information).");
         body.println("</td>");
         body.println("</tr>");
@@ -365,21 +398,21 @@ public class DeployBean extends WebAdminBean {
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
-        body.println("<input type=\"radio\" name=\"moveType\" value=\"-m\" checked>Move File(s)");
-        body.println("<input type=\"radio\" name=\"moveType\" value=\"-c\">Copy File(s)");
-        body.println("<input type=\"radio\" name=\"moveType\" value=\"\">Do Not Move or Copy");
+    	body.println("<input type=\"radio\" name=\"moveType\" value=\"-c\" checked>Copy Jar");
+        body.println("<input type=\"radio\" name=\"moveType\" value=\"-m\">Move Jar");
+        body.println("<input type=\"radio\" name=\"moveType\" value=\"\">Leave Jar Where it is");
         body.println("</td>");
         body.println("</tr>");
         
         //automate deployment
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
-        body.println("<input type=\"checkbox\" name=\"automate\" value=\"-a\" checked>");
+        body.println("<input type=\"checkbox\" name=\"automate\" value=\"-a\">");
         body.println("Automate deployment as much as possible. (the equivalent of checking the next two check boxes)");
         body.println("</td>");
         body.println("</tr>");
                
-        /*assign the bean to the first containter - implment later */
+        //assign the bean to the first containter
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"assignC\" value=\"-C\">");
@@ -387,7 +420,7 @@ public class DeployBean extends WebAdminBean {
         body.println("</td>");
         body.println("</tr>"); 
         
-        /*assigns a deployment id - implement later */
+        //assigns a deployment id
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"assignD\" value=\"-D\">");
@@ -400,7 +433,7 @@ public class DeployBean extends WebAdminBean {
         body.println("</td>");
         body.println("</tr>");
         
-        //force over write
+        //force over write of the bean
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"force\" value=\"-f\">");
@@ -411,37 +444,37 @@ public class DeployBean extends WebAdminBean {
         body.println("<td colspan=\"2\">&nbsp;</td>");
         body.println("</tr>");
         
-        /* sets the openejb home env variable (not yet implemented) */
+    	// sets the OpenEJB configuration file 
+		body.println("<tr>");
+		body.println("<td colspan=\"2\">Sets the OpenEJB configuration to the specified file. (leave blank for non-use)</td>");
+		body.println("</tr>");
+		body.println("<tr>");
+		body.println("<td><nobr>Config File</nobr></td>");
+		body.println("<td><input type=\"text\" name=\"configFile\" size=\"35\" maxlength=\"75\"></td>");
+		body.println("</tr>");
+		body.println("<tr>");
+		body.println("<td colspan=\"2\">&nbsp;</td>");
+		body.println("</tr>");
+        
+        // sets the openejb home env variable 
         body.println("<tr>");
         body.println("<td colspan=\"2\">Set the OPENEJB_HOME to the specified directory. (leave blank for non-use)</td>");
         body.println("</tr>");
         body.println("<tr>");
-        body.println("<td><nobr>Directory</nobr></td>");
+        body.println("<td><nobr>OPENEJB_HOME:</nobr></td>");
         body.println("<td><input type=\"text\" name=\"homeDir\" size=\"35\" maxlength=\"75\"></td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td colspan=\"2\">&nbsp;</td>");
         body.println("</tr>"); 
         
-        /* sets the log4j configuration file (not yet implemented) */
+        // sets the log4j configuration file 
         body.println("<tr>");
         body.println("<td colspan=\"2\">Set the log4j configuration to the specified file. (leave blank for non-use)</td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td><nobr>Log4J File</nobr></td>");
         body.println("<td><input type=\"text\" name=\"log4JFile\" size=\"35\" maxlength=\"75\"></td>");
-        body.println("</tr>");
-        body.println("<tr>");
-        body.println("<td colspan=\"2\">&nbsp;</td>");
-        body.println("</tr>"); 
-        
-        /* sets the OpenEJB configuration file (not yet implemented) */
-        body.println("<tr>");
-        body.println("<td colspan=\"2\">Sets the OpenEJB configuration to the specified file. (leave blank for non-use)</td>");
-        body.println("</tr>");
-        body.println("<tr>");
-        body.println("<td><nobr>Config File</nobr></td>");
-        body.println("<td><input type=\"text\" name=\"configFile\" size=\"35\" maxlength=\"75\"></td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td colspan=\"2\">&nbsp;</td>");
@@ -460,12 +493,6 @@ public class DeployBean extends WebAdminBean {
         body.println("</tr>");
         
         //the end...
-        body.println("<tr>");
-        body.println("<td colspan=\"2\">&nbsp;</td>");
-        body.println("</tr>");
-        body.println("<tr>");
-        body.println("<td colspan=\"2\">&nbsp;</td>");
-        body.println("</tr>");
         /* we don't have help yet
         body.println("<tr>");
         body.println("<td colspan=\"2\">Note: see the help section for examples on how to deploy beans.</td>");

@@ -53,10 +53,8 @@ import org.openejb.alt.config.sys.Connector;
 import org.openejb.alt.config.ejb11.EjbDeployment;
 import org.openejb.alt.config.ejb11.EjbJar;
 import org.openejb.alt.config.ejb11.OpenejbJar;
-import org.openejb.alt.config.ejb11.ResourceLink;
 import org.openejb.alt.config.ejb11.ResourceRef;
 import org.openejb.OpenEJBException;
-import org.openejb.util.Messages;
 import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
 import java.util.Vector;
@@ -239,9 +237,9 @@ public class DeployerBean implements javax.ejb.SessionBean {
             if(! idsWritten) {
                 //here we want to check to see which options to set
                 if(options[5]) {
-                    writeDeploymentId(true);
+                    writeDeploymentIds(true);
                 } else {
-                    writeDeploymentId(false);
+                    writeDeploymentIds(false);
                 }
                 if(options[0]) {
                     writeContainerIds(true);
@@ -295,7 +293,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
     }
     
     /** writes the html for deployment id */
-    private void writeDeploymentId(boolean auto) {
+    private void writeDeploymentIds(boolean auto) {
         for(int i=0; i<deployerBeans.length; i++) {
             if(auto) {
                 containerDeployIdsHTML += "<input type=\"hidden\" name=\"deploymentId" + i + "\" value=\"" + 
@@ -339,6 +337,94 @@ public class DeployerBean implements javax.ejb.SessionBean {
         
         deploymentHTML += "<tr><td colspan=\"2\">Your bean has been deployed! You must restart the OpenEJB server " +
         "in order for your bean to be recognized.</td></tr>"; 
+    }
+    
+    private String createIdTable() throws OpenEJBException {
+        /*
+        <table cellspacing="1" cellpadding="2" border="1">
+        <tr align="left">
+            <th>Bean Name</th>
+            <th>Deployment Id</th>
+            <th>Container Id</th>
+            <th>Reference Name|Type</th>
+            <th>Reference Id</th>
+        </tr>
+        <tr>
+            <td>Bean Name</td>
+            <td>Deployment Id</td>
+            <td>Container Id</td>
+            <td>Reference Name|Type</td>
+            <td>Reference Id</td>
+        </tr>
+        </table>
+        */
+        
+        //string that contains all the html
+        StringBuffer htmlString = new StringBuffer();
+        String deploymentId = null;
+        String containerId = null;
+        Container[] cs = null;
+        ResourceRef[] refs = null;
+        
+        htmlString.append("<table cellspacing=\"1\" cellpadding=\"2\" border=\"1\">\n");
+        htmlString.append("<tr align=\"left\">\n");
+        htmlString.append("<th>Bean Name</th>\n");
+        htmlString.append("<th>Deployment Id</th>\n");
+        htmlString.append("<th>Container Id</th>\n");
+        htmlString.append("<th>Reference Name|Type</th>\n");
+        htmlString.append("<th>Reference Id</th>\n");
+        htmlString.append("</tr>\n");
+        
+        for(int i=0; i<deployerBeans.length; i++) {
+            //in here we check to see if we need to write the different parts or not
+            htmlString.append("<tr>\n");
+            htmlString.append("<td>" + deployerBeans[i].getEjbName() + "</td>\n");
+            
+            //deployment id
+            if(options[5]) {
+                deploymentId = autoAssignDeploymentId(deployerBeans[i]);
+                htmlString.append("<td><input type=\"hidden\" name=\"deploymentId").append(i).append("\" value=\"");
+                htmlString.append(deploymentId).append("\">").append(deploymentId).append("</td>\n");
+            } else {
+                htmlString.append("<td><input type=\"text\" name=\"deploymentId").append(i);
+                htmlString.append("\" size=\"25\" maxlength=\"50\"></td>\n");
+            }
+            
+            //container id
+            if (options[0]) {
+                containerId = autoAssignContainerId(deployerBeans[i]);
+                htmlString.append("<td><input type=\"hidden\" name=\"containerId").append(i).append("\" value=\"");
+                htmlString.append(containerId).append("\">").append(containerId).append("</td>\n");
+            } else {
+                htmlString.append("<td><select name=\"containerId").append(i).append("\">\n");
+                cs = getUsableContainers(deployerBeans[i]);
+                //loop through the continer
+                for(int j=0; j<cs.length; j++) {
+                    htmlString.append("<option value=\"").append(cs[j].getId()).append("\">");
+                    htmlString.append(cs[j].getId()).append("</option>\n");
+                }
+                htmlString.append("</select></td>\n");
+            }
+            
+            //outside references go here - put in a seperate method
+            refs = deployerBeans[i].getResourceRef();
+            if(refs.length > 0) {
+                createIdTableOutsideRef(htmlString, refs);
+            } else {
+                htmlString.append("<td>N/A</td>\n<td>N/A</td>\n");
+            }
+            
+            htmlString.append("</tr>\n");
+        }
+        
+        htmlString.append("</table>\n");
+        
+        return htmlString.toString();
+    }
+    
+    private void createIdTableOutsideRef(StringBuffer htmlString, ResourceRef[] refs) 
+    throws OpenEJBException {
+        //this will create the html for outside references
     }
     
     /*------------------------------------------------------*/

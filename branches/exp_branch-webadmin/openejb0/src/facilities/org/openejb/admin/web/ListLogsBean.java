@@ -162,12 +162,15 @@ public class ListLogsBean extends WebAdminBean {
 
             //read the file line by line
             String expMatch = colorArray[0];
+            String temp;
             while(true) {
-                try {
-                    lineOfText = new StringBuffer(fileReader.readLine());
-                } catch (NullPointerException ne) {
-                    break; //if null then break
+                //check for null and break
+                temp = fileReader.readLine();
+                if (temp == null) {
+                    break;
                 }
+                
+                lineOfText = new StringBuffer(temp);
                 
                 //check for and replace special characters
                 for(int i=0; i<specialChars.length; i++) {

@@ -63,21 +63,27 @@ import org.openejb.admin.web.HttpResponse;
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public class HttpResponseImpl implements HttpResponse {
+    
     /** Response string */
     private String responseString = "OK";
 
     /** Code */
-    int code = 200;
+    private int code = 200;
+    
+    /** Response headers */
+    private HashMap headers;
+    
+    /** Response body */
+    private byte[] body = new byte[0];
+    
+    private transient PrintWriter writer;
+    private transient ByteArrayOutputStream baos;
+    
     public static final String HTTP_VERSION = "HTTP/1.1";
     public static final String CRLF = "\r\n";
     public static final String SP = " ";
     public static final String CSP = ": ";
     public static String server;
-
-    private HashMap headers;
-    private byte[] body = new byte[0];
-    private PrintWriter writer;
-    private ByteArrayOutputStream baos;
 
     public void setHeader(String name, String value){
         headers.put(name, value);
@@ -135,14 +141,6 @@ public class HttpResponseImpl implements HttpResponse {
     protected HttpResponseImpl(int code, String responseString, String contentType){
         this.code = code;
         this.responseString = responseString;
-        headers = new HashMap();
-
-        // Default headers
-        setHeader("Server", getServerName());
-        setHeader("Connection","close");
-        setHeader("Content-Type",contentType);
-        // create the body.
-        initBody();
     }
 
     /**
@@ -292,5 +290,39 @@ public class HttpResponseImpl implements HttpResponse {
         body.println("</html>");
 
         return res;
+    }
+
+    private void writeObject(java.io.ObjectOutputStream out) throws IOException{
+        /** Response string */
+        out.writeObject( responseString );
+
+        /** Code */
+        out.writeInt( code );
+
+        /** Response headers */
+        out.writeObject( headers );
+
+        /** Response body */
+        writer.flush();
+        body = baos.toByteArray();
+        out.writeObject( body );
+    }
+    
+    private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException{
+        /** Response string */
+        this.responseString = (String)in.readObject();
+
+        /** Code */
+        this.code = in.readInt();
+
+        /** Response headers */
+        this.headers = (HashMap) in.readObject();
+
+        /** Response body */
+        body = (byte[]) in.readObject();
+        baos = new ByteArrayOutputStream();
+        baos.write( body );
+        writer = new PrintWriter( baos );
+
     }
 }

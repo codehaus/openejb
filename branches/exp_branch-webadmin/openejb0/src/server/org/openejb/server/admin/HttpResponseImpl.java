@@ -139,8 +139,17 @@ public class HttpResponseImpl implements HttpResponse {
     }
 
     protected HttpResponseImpl(int code, String responseString, String contentType){
-        this.code = code;
         this.responseString = responseString;
+        this.headers = new HashMap();
+        this.code = code;
+        
+        // Default headers
+        setHeader("Server", getServerName());
+        setHeader("Connection","close");
+        setHeader("Content-Type",contentType);
+        
+        // create the body.
+        initBody();
     }
 
     /**

@@ -127,7 +127,9 @@ public class DeployBean extends WebAdminBean {
                 getDeployerHandle();
                 setOptions();
                 deployer.startDeployment();
+                body.println("<form action=\"Deployment\" method=\"post\">");
                 body.print(deployer.createIdTable());
+                body.println("</form>");
                 //more information is needed from the user
             } else if (submitDeployment != null) {
                 deployPartTwo(body);
@@ -166,13 +168,15 @@ public class DeployBean extends WebAdminBean {
             tempEjbName = request.getFormParameter("ejbRefName" + i);
 
             //resolve the ejb references
+            ejbRef = null;
             if (tempEjbRef != null) {
-                resolveHtmlTokens(tempEjbRef, tempEjbName, ejbRef);
+                ejbRef = resolveHtmlTokens(tempEjbRef, tempEjbName);
             }
 
             //resolve the ejb references
+            resourceRef = null;
             if (tempResourceRef != null) {
-                resolveHtmlTokens(tempResourceRef, tempResourceName, resourceRef);
+                resourceRef = resolveHtmlTokens(tempResourceRef, tempResourceName);
             }
 
             //check for null
@@ -190,12 +194,9 @@ public class DeployBean extends WebAdminBean {
         printDeploymentHtml(body);
     }
 
-    private void resolveHtmlTokens(
-        String referenceId,
-        String referenceName,
-        String refString[][]) {
+    private String[][] resolveHtmlTokens(String referenceId, String referenceName) {
         StringTokenizer refToken = new StringTokenizer(referenceId, ",");
-        refString = new String[refToken.countTokens()][2];
+        String[][] refString = new String[refToken.countTokens()][2];
 
         int i = 0;
         while (refToken.hasMoreTokens()) {
@@ -208,14 +209,22 @@ public class DeployBean extends WebAdminBean {
         while (refToken.hasMoreTokens()) {
             refString[i++][1] = refToken.nextToken();
         }
+
+        return refString;
     }
 
     private void printDeploymentHtml(PrintWriter body) throws Exception {
         deployer.finishDeployment();
-        body.println("<table border=\"0\" cellspacing=\"2\" cellpadding=\"2\">");
+        body.println("<table cellspacing=\"1\" cellpadding=\"2\" border=\"1\">\n");
+        body.println("<tr align=\"left\">\n");
+        body.println("<th>Bean Name</th>\n");
+        body.println("<th>Deployment Id</th>\n");
+        body.println("<th>Container Id</th>\n");
+        body.println("<th>Resource References</th>\n");
+        body.println("</tr>\n");
         body.println(deployer.getDeploymentHTML());
         body.println("</table>");
-        //deployer.remove();
+        deployer.remove();
     }
 
     /** gets an object reference and handle */
@@ -241,7 +250,6 @@ public class DeployBean extends WebAdminBean {
             myHandleFile.createNewFile();
         }
 
-        //System.out.println("deployerHandle: " + deployerHandle);
         ObjectOutputStream objectOut = new ObjectOutputStream(new FileOutputStream(myHandleFile));
         objectOut.writeObject(deployerHandle); //writes the handle to the file
         objectOut.flush();
@@ -251,6 +259,7 @@ public class DeployBean extends WebAdminBean {
     /** this function gets the deployer handle */
     private void getDeployerHandle() throws Exception {
         File myHandleFile = new File(HANDLE_FILE);
+        
 
         //get the object
         ObjectInputStream objectIn = new ObjectInputStream(new FileInputStream(myHandleFile));

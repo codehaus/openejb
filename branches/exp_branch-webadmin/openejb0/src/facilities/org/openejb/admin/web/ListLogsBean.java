@@ -47,31 +47,34 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 
 import org.apache.regexp.RE;
 import org.apache.regexp.RESyntaxException;
+import org.openejb.util.OpenEJBLogFilter;
 
 /** This bean lists the openejb.log and transaction.log files
  *
  * @author  <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class ListLogsBean extends WebAdminBean {
-    /** the type of log we're using */    
+    /** the type of log we're using */
     private String logType;
-    
-    /** called with the bean is created */ 
+
+    /** called with the bean is created */
     public void ejbCreate() {
         this.section = "ListLogs";
     }
-    
+
     /** after the processing is completed
      * @param request the http request
      * @param response the http response
      * @throws IOException if an exception is thrown
      */
-    public void postProcess(HttpRequest request, HttpResponse response) throws IOException {
-    }
-    
+    public void postProcess(HttpRequest request, HttpResponse response) throws IOException {}
+
     /** before the processing is done
      * @param request the http request
      * @param response the http response
@@ -81,7 +84,7 @@ public class ListLogsBean extends WebAdminBean {
         //get the log type
         this.logType = request.getQueryParameter("log");
     }
-    
+
     /** Write the main content
      *
      * @param body the output to write to
@@ -89,37 +92,54 @@ public class ListLogsBean extends WebAdminBean {
      */
     public void writeBody(PrintWriter body) throws IOException {
         //get the openejb home property and openejb
-        String openejbHome = System.getProperty("openejb.home") + System.getProperty("file.separator");
-        //create the files
-        String transactionLogString = openejbHome + "transaction.log";
-        File transactionLog = new File(transactionLogString);
-        String openejbLogString = openejbHome + "openejb.log";
-        File openejbLog = new File(openejbLogString);
-        
-        //check the log type
-        if(this.logType != null) {
-            if(this.logType.equals("trans")) {
-                //print the links and the log
-                body.print("<a href=\"ListLogs?log=ejb\">openejb.log</a>");
-                body.print("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
-                body.println("transaction.log<br><br>");
-                this.printLogFile(body, transactionLog);
+        String openejbHome =
+            System.getProperty("openejb.home") + System.getProperty("file.separator");
+        File openejbHomeDir = new File(openejbHome);
+        OpenEJBLogFilter filter = new OpenEJBLogFilter();
+        File[] openejbLogs = openejbHomeDir.listFiles(filter);
+        Arrays.sort(openejbLogs);
+        int printIndex = 0;
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd yyyy HH:mm:ss");
+
+        for (int i = 0; i < openejbLogs.length; i++) {
+            if ((this.logType == null && i == 0)
+                || (this.logType != null && this.logType.equals(openejbLogs[i].getName()))) {
+                body.print(openejbLogs[i].getName());
+                printIndex = i;
             } else {
-                //print out the links for the log
-                body.print("openejb.log");
-                body.print("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
-                body.println("<a href=\"ListLogs?log=trans\">transaction.log</a><br><br>");
-                this.printLogFile(body, openejbLog);
+                body.print(
+                    "<a href=\"ListLogs?log="
+                        + openejbLogs[i].getName()
+                        + "\">"
+                        + openejbLogs[i].getName()
+                        + "</a>");
             }
-        } else {
-            //print out the links for the log
-            body.print("openejb.log");
-            body.print("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
-            body.println("<a href=\"ListLogs?log=trans\">transaction.log</a><br><br>");
-            this.printLogFile(body, openejbLog);
+
+            if (i < openejbLogs.length - 1) {
+                body.print("&nbsp;|&nbsp;");
+            }
         }
+        body.println("<br><br>");
+
+        String fileLength = "0 bytes";
+        long longFileLength = 0;
+        if(openejbLogs[printIndex].length() > 0) {
+            longFileLength = openejbLogs[printIndex].length() / 1000;
+            if(longFileLength > 0) {
+                fileLength = String.valueOf(longFileLength) + " kb";
+            } else {
+                fileLength = String.valueOf(openejbLogs[printIndex].length()) + " bytes";
+            }
+        }
+
+        body.println("----------------------------------------------------------<br>");
+        body.println("Last Modified: " + dateFormat.format(new Date(openejbLogs[printIndex].lastModified())) + "<br>");
+        body.println("Size: " + fileLength + "<br>");
+        body.println("----------------------------------------------------------<br>");
+        
+        this.printLogFile(body, openejbLogs[printIndex]);
     }
-    
+
     /** gets the openejb.log file
      * @param body the output to send the data to
      * @param logFile the logfile that we're printing
@@ -128,7 +148,7 @@ public class ListLogsBean extends WebAdminBean {
     private void printLogFile(PrintWriter body, File logFile) throws IOException {
         BufferedReader fileReader = new BufferedReader(new FileReader(logFile));
         StringBuffer lineOfText;
-        
+
         //create a list of special characters
         String[][] specialChars = new String[3][2];
         specialChars[0][0] = "&";
@@ -137,7 +157,7 @@ public class ListLogsBean extends WebAdminBean {
         specialChars[1][1] = "&lt;";
         specialChars[2][0] = ">";
         specialChars[2][1] = "&gt;";
-        
+
         try {
             //create an array of regular expressions
             RE[] expArray = new RE[5];
@@ -146,7 +166,7 @@ public class ListLogsBean extends WebAdminBean {
             expArray[2] = new RE("^WARN :");
             expArray[3] = new RE("^ERROR:");
             expArray[4] = new RE("^FATAL:");
-            
+
             //create an array of colors
             String[] colorArray = new String[5];
             colorArray[0] = "<span class=\"log4j-info\">";
@@ -158,32 +178,32 @@ public class ListLogsBean extends WebAdminBean {
             //read the file line by line
             String expMatch = colorArray[0];
             String temp;
-            while(true) {
+            while (true) {
                 //check for null and break
                 temp = fileReader.readLine();
                 if (temp == null) {
                     break;
                 }
-                
+
                 lineOfText = new StringBuffer(temp);
-                
+
                 //check for and replace special characters
                 String charToCheck;
-                for(int i=0; i<lineOfText.length(); i++) {
+                for (int i = 0; i < lineOfText.length(); i++) {
                     //pick out the current character
                     charToCheck = String.valueOf(lineOfText.charAt(i));
-                    for(int j=0; j<specialChars.length; j++) {
+                    for (int j = 0; j < specialChars.length; j++) {
                         //do the check for equals
-                        if(charToCheck.equals(specialChars[j][0])) {
-                            lineOfText.replace(i, i+1, specialChars[j][1]);
+                        if (charToCheck.equals(specialChars[j][0])) {
+                            lineOfText.replace(i, i + 1, specialChars[j][1]);
                             break;
                         }
                     }
                 }
-                
+
                 //loop through the array of expressions to find a match
-                for(int i=0; i<expArray.length; i++) {
-                    if(expArray[i].match(lineOfText.toString())) {
+                for (int i = 0; i < expArray.length; i++) {
+                    if (expArray[i].match(lineOfText.toString())) {
                         expMatch = colorArray[i];
                     }
                 }
@@ -195,11 +215,11 @@ public class ListLogsBean extends WebAdminBean {
         } catch (RESyntaxException se) {
             throw new IOException(se.getMessage());
         }
-        
+
         //close the file
         fileReader.close();
     }
- 
+
     /** Write the TITLE of the HTML document.  This is the part
      * that goes into the <HEAD><TITLE></TITLE></HEAD> tags
      *
@@ -209,7 +229,7 @@ public class ListLogsBean extends WebAdminBean {
     public void writeHtmlTitle(PrintWriter body) throws IOException {
         body.println(HTML_TITLE);
     }
-    
+
     /** Write the title of the page.  This is displayed right
      * above the main block of content.
      *
@@ -219,7 +239,7 @@ public class ListLogsBean extends WebAdminBean {
     public void writePageTitle(PrintWriter body) throws IOException {
         body.println("System Log Files");
     }
-    
+
     /** Write the sub items for this bean in the left navigation bar of
      * the page.  This should look somthing like the one below:
      *
@@ -237,7 +257,6 @@ public class ListLogsBean extends WebAdminBean {
      * @param body the output to write to
      * @exception IOException if an exception is thrown
      */
-    public void writeSubMenuItems(PrintWriter body) throws IOException {
-    }
-    
+    public void writeSubMenuItems(PrintWriter body) throws IOException {}
+
 }

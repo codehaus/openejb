@@ -172,43 +172,60 @@ public class DeployerBean implements javax.ejb.SessionBean {
         String[][] ejbRef,
         int i)
         throws RemoteException {
+
         //local variables
         EjbDeployment deployment = new EjbDeployment();
         ResourceLink link;
 
         //set the deployment info
         deployment.setEjbName(deployerBeans[i].getEjbName());
+        deploymentHTML.append("<tr>\n<td>").append(deployerBeans[i].getEjbName()).append("</td>\n");
         deployment.setDeploymentId(deploymentId);
+        deploymentHTML.append("<td>").append(deploymentId).append("</td>\n");
         deployment.setContainerId(containerId);
+        deploymentHTML.append("<td>").append(containerId).append("</td>\n");
 
-        //set the resource references
-        for (int j=0; j<ejbRef.length; j++) {
-            link = new ResourceLink();
-            link.setResId(ejbRef[j][0]);
-            link.setResRefName(ejbRef[j][1]);
-            deployment.addResourceLink(link);
+        //check for string lengths
+        if (ejbRef == null && resourceRef == null) {
+            deploymentHTML.append("<td>N/A</td>\n");
+        } else {
+            deploymentHTML.append("<td>\n");
+            deploymentHTML.append(
+                "<table cellspacing=\"0\" cellpadding=\"2\" border=\"0\" width=\"100%\">\n");
+            deploymentHTML.append("<tr align=\"left\">\n");
+            deploymentHTML.append("<th>Id</th>\n");
+            deploymentHTML.append("<th>Name</th>\n");
+            deploymentHTML.append("</tr>\n");
+
+            //set the resource references
+            if (ejbRef != null) {
+                for (int j = 0; j < ejbRef.length; j++) {
+                    link = new ResourceLink();
+                    link.setResId(ejbRef[j][0]);
+                    deploymentHTML.append("<tr>\n<td>").append(ejbRef[j][0]).append("</td>\n");
+                    link.setResRefName(ejbRef[j][1]);
+                    deploymentHTML.append("<td>").append(ejbRef[j][1]).append("</td>\n</tr>\n");
+                    deployment.addResourceLink(link);
+                }
+            }
+
+            //set the ejb references
+            if (resourceRef != null) {
+                for (int j = 0; j < resourceRef.length; j++) {
+                    link = new ResourceLink();
+                    link.setResId(resourceRef[j][0]);
+                    deploymentHTML.append("<tr>\n<td>").append(resourceRef[j][0]).append("</td>\n");
+                    link.setResRefName(resourceRef[j][1]);
+                    deploymentHTML.append("<td>").append(resourceRef[j][1]).append(
+                        "</td>\n</tr>\n");
+                    deployment.addResourceLink(link);
+                }
+            }
+            deploymentHTML.append("</table>\n</td>\n");
         }
 
-        //set the ejb references
-        for (int j=0; j<resourceRef.length; j++) {
-            link = new ResourceLink();
-            link.setResId(resourceRef[j][0]);
-            link.setResRefName(resourceRef[j][1]);
-            deployment.addResourceLink(link);
-        }
-        
-        try {
-            openejbJar.addEjbDeployment(deployment);
-        } catch (IndexOutOfBoundsException e) {
-            throw new RemoteException(e.getMessage());
-        }
-
-        deploymentHTML.append("<tr><td colspan=\"2\">Your bean: <b>").append(
-            deployerBeans[i].getEjbName());
-        deploymentHTML.append("</b> is has been given the id: <b>").append(deploymentId);
-        deploymentHTML.append("</b> and has been assigned to the container: <b>").append(
-            containerId);
-        deploymentHTML.append("</b></td></tr>");
+        deploymentHTML.append("</tr>\n");
+        openejbJar.addEjbDeployment(deployment);
     }
 
     public void finishDeployment() throws RemoteException {
@@ -234,19 +251,19 @@ public class DeployerBean implements javax.ejb.SessionBean {
     public int getDeployerBeanLength() {
         return deployerBeans.length;
     }
-    
+
     private String autoAssignDeploymentId(Bean bean) {
         return bean.getEjbName();
     }
 
     private String autoAssignContainerId(Bean bean) throws OpenEJBException {
         Container[] cs = getUsableContainers(bean);
-        
+
         if (cs.length == 0) {
             //we'll fix this later
             throw new OpenEJBException("There are no useable containers for this bean.");
         }
-      
+
         return cs[0].getId();
     }
 
@@ -257,10 +274,6 @@ public class DeployerBean implements javax.ejb.SessionBean {
         if (configChanged) {
             ConfigUtils.writeConfig(configFile, config);
         }
-
-        deploymentHTML.append("<tr><td colspan=\"2\">Your bean has been deployed! ");
-        deploymentHTML.append("You must restart the OpenEJB server in order for your");
-        deploymentHTML.append("bean to be recognized.</td></tr>");
     }
 
     public String createIdTable() throws OpenEJBException {
@@ -322,7 +335,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
 
             if ((refs.length > 0) || (ejbRefs.length > 0)) {
                 htmlString.append("<td>");
-                createIdTableOutsideRef(htmlString, refs, ejbRefs, i);
+                createIdTableOutsideRef(htmlString, refs, ejbRefs, deployerBeans[i].getEjbName(), i);
                 htmlString.append("</td>");
             } else {
                 htmlString.append("<td>N/A</td>\n");
@@ -342,6 +355,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
         StringBuffer htmlString,
         ResourceRef[] refs,
         EjbRef[] ejbRefs,
+        String deploymentName,
         int index)
         throws OpenEJBException {
 
@@ -369,7 +383,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
                 }
 
                 htmlString.append("</select>\n");
-                htmlString.append("<input type=\"hidden\" name=\"resourceRefName").append(i);
+                htmlString.append("<input type=\"hidden\" name=\"resourceRefName").append(index);
                 htmlString.append("\" value=\"").append(refs[i].getResRefName()).append("\">");
                 htmlString.append("</td>\n</tr>\n");
             }
@@ -388,7 +402,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
                     htmlString.append("<td>\n<select name=\"ejbRefId").append(index).append("\">");
                     //loop through the available beans in the jar
                     for (int j = 0; j < deployerBeans.length; j++) {
-                        if (!deployerBeans[j].getEjbName().equals(ejbRefs[i].getEjbRefName())) {
+                        if (!deployerBeans[j].getEjbName().equals(deploymentName)) {
                             htmlString.append("<option value=\"").append(
                                 deployerBeans[j].getEjbName());
                             htmlString.append("\">").append(deployerBeans[j].getEjbName()).append(
@@ -399,10 +413,11 @@ public class DeployerBean implements javax.ejb.SessionBean {
                     htmlString.append("</select>\n");
                 } else {
                     htmlString.append("<td><input type=\"hidden\" name=\"ejbRefId").append(index);
-                    htmlString.append("\" value=\"").append(ejbLink).append("\">\n").append(ejbLink);
+                    htmlString.append("\" value=\"").append(ejbLink).append("\">\n").append(
+                        ejbLink);
                 }
 
-                htmlString.append("<input type=\"hidden\" name=\"ejbRefName").append(i);
+                htmlString.append("<input type=\"hidden\" name=\"ejbRefName").append(index);
                 htmlString.append("\" value=\"").append(ejbRefs[i].getEjbRefName()).append("\">");
                 htmlString.append("</td>\n</tr>\n");
             }

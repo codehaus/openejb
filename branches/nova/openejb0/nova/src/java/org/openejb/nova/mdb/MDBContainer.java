@@ -81,6 +81,7 @@ import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.VirtualOperation;
+import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
@@ -107,16 +108,19 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
     private final boolean setPolicyContextHandlerDataEJB;
     private final boolean setIdentity;
 
+    private final TransactionManager transactionManager;
     private final ActivationSpec activationSpec;
 
-    protected final ClassLoader classLoader;
-    protected final Class beanClass;
+    private final ClassLoader classLoader;
+    private final Class beanClass;
 
     private final VirtualOperation[] vtable;
+    private final MethodSignature[] signatures;
     private final Class messageEndpointInterface;
     private final MDBLocalClientContainer messageClientContainer;
     private final InstancePool pool;
-    private final TransactionPolicyManager transactionPolicyManager;
+
+    private final Interceptor interceptor;
 
     public MDBContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator, ActivationSpec activationSpec) throws Exception {
         ejbName = config.ejbName;
@@ -131,8 +135,8 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
         setPolicyContextHandlerDataEJB = config.setPolicyContextHandlerDataEJB;
         setIdentity = config.setIdentity;
 
+        this.transactionManager = transactionManager;
         this.activationSpec = activationSpec;
-
 
         classLoader = Thread.currentThread().getContextClassLoader();
         beanClass = classLoader.loadClass(config.beanClassName);
@@ -145,8 +149,7 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
 
         MDBOperationFactory vopFactory = MDBOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
-
-        transactionPolicyManager = new TransactionPolicyManager(transactionPolicySource, vopFactory.getSignatures());
+        signatures = vopFactory.getSignatures();
 
         pool = new SoftLimitedInstancePool(new MDBInstanceFactory(this), 1);
 
@@ -156,12 +159,13 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
         if (trackedConnectionAssociator != null) {
             firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
         }
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicyManager);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, new TransactionPolicyManager(transactionPolicySource, signatures));
         if (setIdentity) {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }
         if (setSecurityInterceptor) {
-            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, new PermissionManager(ejbName, vopFactory.getSignatures()));
+            // todo check if we need to do security checks on MDBs
+            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, new PermissionManager(ejbName, signatures));
         }
         if (runAs != null) {
             firstInterceptor = new EJBRunAsInterceptor(firstInterceptor, runAs);
@@ -172,11 +176,10 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
         firstInterceptor = new MDBInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
-        firstInterceptor = new MDBClassLoaderInterceptor(firstInterceptor, classLoader, -1, -1);
+        interceptor = firstInterceptor;
 
         // set up client containers
-        MDBClientContainerFactory clientFactory = new MDBClientContainerFactory(vopFactory, firstInterceptor, messageEndpointInterface);
-        messageClientContainer = clientFactory.getMessageClientContainer();
+        messageClientContainer = new MDBLocalClientContainer(this, vopFactory.getSignatures(), messageEndpointInterface);
     }
 
     public Class getMessageEndpointInterface() {
@@ -208,11 +211,19 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
     }
 
     public InvocationResult invoke(Invocation invocation) throws Throwable {
-        throw new UnsupportedOperationException();
+        return interceptor.invoke(invocation);
     }
 
     public String getEJBName() {
         return ejbName;
+    }
+
+    public TransactionManager getTransactionManager() {
+        return transactionManager;
+    }
+
+    public ClassLoader getClassLoader() {
+        return classLoader;
     }
 
     public ReadOnlyContext getComponentContext() {
@@ -230,10 +241,6 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
     public boolean isDeliveryTransacted(Method method) throws NoSuchMethodException {
         // TODO: need to see if the method is Supports or Required.
         return MDBContainer.this.transactionDemarcation == TransactionDemarcation.CONTAINER;
-    }
-
-    public TransactionDemarcation getDemarcation() {
-        return transactionDemarcation;
     }
 
     private ResourceAdapter getAdapter() {

@@ -76,11 +76,9 @@ public final class EJBInvocationType implements Serializable {
     public static final EJBInvocationType LOCALHOME = new EJBInvocationType("LocalHome", true, 1);
     public static final EJBInvocationType WEB_SERVICE = new EJBInvocationType("Web-Service", false, 2);
     public static final EJBInvocationType TIMEOUT = new EJBInvocationType("ejbTimeout", true, 3);
-    //MESSAGE_ENDPOINT is only for beforeDelivery/afterDelivery.  The actual bean methods use LOCAL
-    public static final EJBInvocationType MESSAGE_ENDPOINT = new EJBInvocationType("Message-Endpoint-Delivery", true, 4);
 
     private static final EJBInvocationType[] VALUES = {
-        REMOTE, HOME, LOCAL, LOCALHOME, WEB_SERVICE, TIMEOUT, MESSAGE_ENDPOINT
+        REMOTE, HOME, LOCAL, LOCALHOME, WEB_SERVICE, TIMEOUT
     };
 
     public static int MAX_ORDINAL = VALUES.length;

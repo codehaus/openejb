@@ -50,10 +50,10 @@ package org.openejb.nova.mdb;
 import javax.ejb.EnterpriseBean;
 import javax.ejb.MessageDrivenBean;
 
-import org.openejb.nova.EJBContainer;
+import org.apache.geronimo.connector.outbound.connectiontracking.defaultimpl.DefaultComponentContext;
+
 import org.openejb.nova.EJBInstanceContext;
 import org.openejb.nova.EJBOperation;
-import org.apache.geronimo.connector.outbound.connectiontracking.defaultimpl.DefaultComponentContext;
 
 /**
  * Wrapper for a MDB.
@@ -61,14 +61,14 @@ import org.apache.geronimo.connector.outbound.connectiontracking.defaultimpl.Def
  * @version $Revision$ $Date$
  */
 public final class MDBInstanceContext extends DefaultComponentContext implements EJBInstanceContext {
-    private final EJBContainer container;
+    private final MDBContainer container;
     private final MessageDrivenBean instance;
-    private final MDBContext sessionContext;
+    private final MDBContext mdbContext;
 
-    public MDBInstanceContext(EJBContainer container, MessageDrivenBean instance) {
+    public MDBInstanceContext(MDBContainer container, MessageDrivenBean instance) {
         this.container = container;
         this.instance = instance;
-        this.sessionContext = new MDBContext(this);
+        this.mdbContext = new MDBContext(this);
     }
 
     public EnterpriseBean getInstance() {
@@ -92,12 +92,11 @@ public final class MDBInstanceContext extends DefaultComponentContext implements
     }
 
     public MDBContext getMessageDrivenContext() {
-        return sessionContext;
+        return mdbContext;
     }
 
     public void setOperation(EJBOperation operation) {
-        sessionContext.setState(operation);
-        // todo enable UserTransaction
+        mdbContext.setState(operation);
     }
 
     public void associate() {

@@ -129,19 +129,19 @@ public class MDBLocalClientContainer implements ClientContainer {
         public void beforeDelivery(Method method) throws NoSuchMethodException, ResourceException {
             //translate the method into an index.
             //construct invocation and call.
-            MDBLocalClientContainer container = (MDBLocalClientContainer)handler.getContainer();
-            int methodIndex = container.fastClass.getIndex(method.getName(), method.getParameterTypes());
-            int vopIndex = container.operationMap[methodIndex];
-            Object[] args = new Object[]{new Integer(vopIndex)};
-            try {
-                MDBInvocation invocation = new MDBInvocationImpl(EJBInvocationType.MESSAGE_ENDPOINT, BEFORE_DELIVERY, args, (XAResource)handler.getId());
-                container.invoke(invocation);
-            } catch (Throwable throwable) {
-                if (throwable instanceof ResourceException) {
-                    throw (ResourceException) throwable;
-                }
-                throw new ResourceException(throwable);
-            }
+//            MDBLocalClientContainer container = (MDBLocalClientContainer)handler.getContainer();
+//            int methodIndex = container.fastClass.getIndex(method.getName(), method.getParameterTypes());
+//            int vopIndex = container.operationMap[methodIndex];
+//            Object[] args = new Object[]{new Integer(vopIndex)};
+//            try {
+//                MDBInvocation invocation = new MDBInvocationImpl(EJBInvocationType.MESSAGE_ENDPOINT, BEFORE_DELIVERY, args, (XAResource)handler.getId());
+//                container.invoke(invocation);
+//            } catch (Throwable throwable) {
+//                if (throwable instanceof ResourceException) {
+//                    throw (ResourceException) throwable;
+//                }
+//                throw new ResourceException(throwable);
+//            }
 
         }
 
@@ -149,17 +149,17 @@ public class MDBLocalClientContainer implements ClientContainer {
          * @see javax.resource.spi.endpoint.MessageEndpoint#afterDelivery()
          */
         public void afterDelivery() throws ResourceException {
-            Object[] args = new Object[]{};
-            try {
-                MDBLocalClientContainer container = (MDBLocalClientContainer)handler.getContainer();
-                MDBInvocation invocation = new MDBInvocationImpl(EJBInvocationType.MESSAGE_ENDPOINT, AFTER_DELIVERY, args, (XAResource)handler.getId());
-                container.invoke(invocation);
-            } catch (Throwable throwable) {
-                if (throwable instanceof ResourceException) {
-                    throw (ResourceException) throwable;
-                }
-                throw new ResourceException(throwable);
-            }
+//            Object[] args = new Object[]{};
+//            try {
+//                MDBLocalClientContainer container = (MDBLocalClientContainer)handler.getContainer();
+//                MDBInvocation invocation = new MDBInvocationImpl(EJBInvocationType.MESSAGE_ENDPOINT, AFTER_DELIVERY, args, (XAResource)handler.getId());
+//                container.invoke(invocation);
+//            } catch (Throwable throwable) {
+//                if (throwable instanceof ResourceException) {
+//                    throw (ResourceException) throwable;
+//                }
+//                throw new ResourceException(throwable);
+//            }
 
         }
 

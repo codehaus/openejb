@@ -48,17 +48,15 @@
 package org.openejb.nova.mdb;
 
 import java.lang.reflect.InvocationTargetException;
-
 import javax.ejb.MessageDrivenBean;
-
-import net.sf.cglib.reflect.FastClass;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.geronimo.cache.InstanceFactory;
 import org.apache.geronimo.naming.java.ReadOnlyContext;
 import org.apache.geronimo.naming.java.RootContext;
-import org.openejb.nova.EJBContainer;
+
+import net.sf.cglib.reflect.FastClass;
 import org.openejb.nova.EJBInstanceFactoryImpl;
 import org.openejb.nova.EJBOperation;
 
@@ -71,13 +69,13 @@ import org.openejb.nova.EJBOperation;
 public class MDBInstanceFactory implements InstanceFactory {
     private static final Log log = LogFactory.getLog(MDBInstanceFactory.class);
 
-    private final EJBContainer container;
+    private final MDBContainer container;
     private final ReadOnlyContext componentContext;
     private final int createIndex;
     private final EJBInstanceFactoryImpl factory;
     private final FastClass implClass;
 
-    public MDBInstanceFactory(EJBContainer container) {
+    public MDBInstanceFactory(MDBContainer container) {
         this.container = container;
         componentContext = container.getComponentContext();
 

@@ -48,64 +48,105 @@
 package org.openejb.nova.mdb;
 
 import java.lang.reflect.Method;
-import java.util.Map;
+import java.util.Set;
 import javax.resource.spi.ActivationSpec;
 import javax.resource.spi.ResourceAdapter;
 import javax.resource.spi.UnavailableException;
 import javax.resource.spi.endpoint.MessageEndpoint;
 import javax.resource.spi.endpoint.MessageEndpointFactory;
-import javax.transaction.xa.XAResource;
+import javax.security.auth.Subject;
 import javax.transaction.TransactionManager;
+import javax.transaction.xa.XAResource;
 
+import org.apache.geronimo.cache.InstancePool;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 import org.apache.geronimo.core.service.Interceptor;
+import org.apache.geronimo.core.service.Invocation;
+import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.GAttributeInfo;
+import org.apache.geronimo.gbean.GBeanContext;
 import org.apache.geronimo.gbean.GBeanInfo;
 import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.GConstructorInfo;
+import org.apache.geronimo.gbean.GReferenceInfo;
 import org.apache.geronimo.gbean.WaitingException;
+import org.apache.geronimo.gbean.GBean;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
-import org.apache.geronimo.cache.InstancePool;
-import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
+import org.apache.geronimo.naming.java.ReadOnlyContext;
 
-import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
 import org.openejb.nova.EJBContainerConfiguration;
-import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.SystemExceptionInterceptor;
+import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
-import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
-import org.openejb.nova.transaction.ContainerPolicy;
+import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
-import org.openejb.nova.transaction.TxnPolicy;
+import org.openejb.nova.transaction.TransactionPolicyManager;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
  * @version $Revision$ $Date$
  */
-public class MDBContainer extends AbstractEJBContainer implements MessageEndpointFactory {
-    private final VirtualOperation[] vtable;
+public class MDBContainer implements MessageEndpointFactory, GBean {
+    private final String ejbName;
+    private final TransactionDemarcation transactionDemarcation;
+    private final ReadOnlyContext componentContext;
+    private final EJBUserTransaction userTransaction;
+    private final Set unshareableResources;
+    private final TransactionPolicySource transactionPolicySource;
+    private final String contextId;
+    private final Subject runAs;
+    private final boolean setSecurityInterceptor;
+    private final boolean setPolicyContextHandlerDataEJB;
+    private final boolean setIdentity;
+
     private final ActivationSpec activationSpec;
+
+    protected final ClassLoader classLoader;
+    protected final Class beanClass;
+
+    private final VirtualOperation[] vtable;
     private final Class messageEndpointInterface;
     private final MDBLocalClientContainer messageClientContainer;
     private final InstancePool pool;
+    private final TransactionPolicyManager transactionPolicyManager;
 
     public MDBContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator, ActivationSpec activationSpec) throws Exception {
-        super(config, transactionManager, trackedConnectionAssociator);
+        ejbName = config.ejbName;
+        transactionDemarcation = config.txnDemarcation;
+        userTransaction = config.userTransaction;
+        componentContext = config.componentContext;
+        unshareableResources = config.unshareableResources;
+        transactionPolicySource = config.transactionPolicySource;
+        contextId = config.contextId;
+        runAs = config.runAs;
+        setSecurityInterceptor = config.setSecurityInterceptor;
+        setPolicyContextHandlerDataEJB = config.setPolicyContextHandlerDataEJB;
+        setIdentity = config.setIdentity;
+
         this.activationSpec = activationSpec;
 
-        messageEndpointInterface = Thread.currentThread().getContextClassLoader().loadClass(config.messageEndpointInterfaceName);
 
+        classLoader = Thread.currentThread().getContextClassLoader();
+        beanClass = classLoader.loadClass(config.beanClassName);
+        messageEndpointInterface = classLoader.loadClass(config.messageEndpointInterfaceName);
+
+        // initialize the user transaction
+        if (userTransaction != null) {
+            userTransaction.setUp(transactionManager, trackedConnectionAssociator);
+        }
 
         MDBOperationFactory vopFactory = MDBOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
-        buildMDBTransactionPolicyMap(vopFactory.getSignatures());
+
+        transactionPolicyManager = new TransactionPolicyManager(transactionPolicySource, vopFactory.getSignatures());
 
         pool = new SoftLimitedInstancePool(new MDBInstanceFactory(this), 1);
 
@@ -115,7 +156,7 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         if (trackedConnectionAssociator != null) {
             firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
         }
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicyManager);
         if (setIdentity) {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }
@@ -142,14 +183,44 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         return messageEndpointInterface;
     }
 
+    public void setGBeanContext(GBeanContext context) {
+    }
+
     public void doStart() throws WaitingException, Exception {
-        super.doStart();
+        if (userTransaction != null) {
+            userTransaction.setOnline(true);
+        }
         getAdapter().endpointActivation(this, activationSpec);
     }
 
     public void doStop() throws WaitingException, Exception {
+        if (userTransaction != null) {
+            userTransaction.setOnline(false);
+        }
         getAdapter().endpointDeactivation(this, activationSpec);
-        super.doStop();
+    }
+
+    public void doFail() {
+        if (userTransaction != null) {
+            userTransaction.setOnline(false);
+        }
+        getAdapter().endpointDeactivation(this, activationSpec);
+    }
+
+    public InvocationResult invoke(Invocation invocation) throws Throwable {
+        throw new UnsupportedOperationException();
+    }
+
+    public String getEJBName() {
+        return ejbName;
+    }
+
+    public ReadOnlyContext getComponentContext() {
+        return componentContext;
+    }
+
+    public Class getBeanClass() {
+        return beanClass;
     }
 
     public MessageEndpoint createEndpoint(XAResource adapterXAResource) throws UnavailableException {
@@ -158,17 +229,11 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
 
     public boolean isDeliveryTransacted(Method method) throws NoSuchMethodException {
         // TODO: need to see if the method is Supports or Required.
-        return MDBContainer.this.txnDemarcation == TransactionDemarcation.CONTAINER;
-
+        return MDBContainer.this.transactionDemarcation == TransactionDemarcation.CONTAINER;
     }
 
-    private void buildMDBTransactionPolicyMap(MethodSignature[] signatures) {
-        TxnPolicy[] localPolicies = new TxnPolicy[signatures.length];
-        Map localMethodMap = MethodHelper.getObjectMethodMap(signatures, messageEndpointInterface);
-        mapPolicies("Local", localMethodMap, localPolicies);
-        transactionPolicy[EJBInvocationType.LOCAL.getTransactionPolicyKey()] = localPolicies;
-        transactionPolicy[EJBInvocationType.MESSAGE_ENDPOINT.getTransactionPolicyKey()] =
-                new TxnPolicy[]{ContainerPolicy.BeforeDelivery, ContainerPolicy.AfterDelivery};
+    public TransactionDemarcation getDemarcation() {
+        return transactionDemarcation;
     }
 
     private ResourceAdapter getAdapter() {
@@ -181,13 +246,18 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
     public static final GBeanInfo GBEAN_INFO;
 
     static {
-        GBeanInfoFactory infoFactory = new GBeanInfoFactory(MDBContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
+        GBeanInfoFactory infoFactory = new GBeanInfoFactory(MDBContainer.class.getName());
 
         infoFactory.setConstructor(new GConstructorInfo(
                 new String[]{"EJBContainerConfiguration", "TransactionManager", "TrackedConnectionAssociator", "ActivationSpec"},
                 new Class[]{EJBContainerConfiguration.class, TransactionManager.class, TrackedConnectionAssociator.class, ActivationSpec.class}));
 
         infoFactory.addAttribute(new GAttributeInfo("ActivationSpec", true));
+        infoFactory.addAttribute(new GAttributeInfo("EJBContainerConfiguration", true));
+
+        infoFactory.addReference(new GReferenceInfo("TransactionManager", TransactionManager.class.getName()));
+        infoFactory.addReference(new GReferenceInfo("TrackedConnectionAssociator", TrackedConnectionAssociator.class.getName()));
+
         GBEAN_INFO = infoFactory.getBeanInfo();
     }
 

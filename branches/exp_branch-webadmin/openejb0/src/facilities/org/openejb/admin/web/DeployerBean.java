@@ -44,10 +44,13 @@
 package org.openejb.admin.web;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Vector;
 
 import javax.ejb.SessionContext;
 
+import org.openejb.DeploymentInfo;
+import org.openejb.OpenEJB;
 import org.openejb.OpenEJBException;
 import org.openejb.alt.config.Bean;
 import org.openejb.alt.config.ConfigUtils;
@@ -103,6 +106,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
     private OpenejbJar openejbJar;
     private Vector beanList = new Vector();
     private boolean idsWritten = false;
+    private ArrayList usedBeanNames = new ArrayList();
 
     /** Creates a new instance of DeployerBean */
     public void ejbCreate() {
@@ -126,6 +130,12 @@ public class DeployerBean implements javax.ejb.SessionBean {
         } catch (Exception e) {
             // TODO: Better exception handling.
             e.printStackTrace();
+        }
+        
+        //put all the used deployments into the array
+        DeploymentInfo[] deployments = OpenEJB.deployments();
+        for(int i=0; i<deployments.length; i++) {
+            this.usedBeanNames.add(deployments[i].getDeploymentID());
         }
     }
 
@@ -191,8 +201,8 @@ public class DeployerBean implements javax.ejb.SessionBean {
             deploymentHTML.append(
                 "<table cellspacing=\"0\" cellpadding=\"2\" border=\"0\" width=\"100%\">\n");
             deploymentHTML.append("<tr align=\"left\">\n");
-            deploymentHTML.append("<th>Id</th>\n");
             deploymentHTML.append("<th>Name</th>\n");
+            deploymentHTML.append("<th>Id</th>\n");
             deploymentHTML.append("</tr>\n");
 
             //set the resource references
@@ -200,10 +210,10 @@ public class DeployerBean implements javax.ejb.SessionBean {
                 for (int j = 0; j < resourceRef.length; j++) {
                     link = new ResourceLink();
                     link.setResId(resourceRef[j][0]);
-                    deploymentHTML.append("<tr>\n<td>").append(resourceRef[j][0]).append("</td>\n");
                     link.setResRefName(resourceRef[j][1]);
-                    deploymentHTML.append("<td>").append(resourceRef[j][1]).append(
-                        "</td>\n</tr>\n");
+                    deploymentHTML.append("<tr>\n<td>").append(resourceRef[j][1]).append(
+                        "</td>\n");
+                    deploymentHTML.append("<td>").append(resourceRef[j][0]).append("</td>\n</tr>\n");
                     deployment.addResourceLink(link);
                 }
             }
@@ -213,9 +223,9 @@ public class DeployerBean implements javax.ejb.SessionBean {
                 for (int j = 0; j < ejbRef.length; j++) {
                     link = new ResourceLink();
                     link.setResId(ejbRef[j][0]);
-                    deploymentHTML.append("<tr>\n<td>").append(ejbRef[j][0]).append("</td>\n");
                     link.setResRefName(ejbRef[j][1]);
-                    deploymentHTML.append("<td>").append(ejbRef[j][1]).append("</td>\n</tr>\n");
+                    deploymentHTML.append("<tr>\n<td>").append(ejbRef[j][1]).append("</td>\n");
+                    deploymentHTML.append("<td>").append(ejbRef[j][0]).append("</td>\n</tr>\n");
                     deployment.addResourceLink(link);
                 }
             }
@@ -252,7 +262,23 @@ public class DeployerBean implements javax.ejb.SessionBean {
     }
 
     private String autoAssignDeploymentId(Bean bean) {
-        return bean.getEjbName();
+        String ejbName = bean.getEjbName();
+        String newEjbName;
+
+        //first check for the deployment id in the list
+        //and make sure that all the bean names are unique
+        if (this.usedBeanNames.contains(ejbName)) {
+            while(true) {
+                newEjbName = ejbName + (Long.MAX_VALUE * Math.random());
+                if (!this.usedBeanNames.contains(newEjbName)) {
+                    this.usedBeanNames.add(newEjbName);
+                    return newEjbName;
+                }
+            }
+        }
+
+        this.usedBeanNames.add(ejbName);
+        return ejbName;
     }
 
     private String autoAssignContainerId(Bean bean) throws OpenEJBException {

@@ -82,16 +82,17 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class CMPEntityContainer extends AbstractEJBContainer {
-    private final String pkClassName;
+    private final Class primaryKeyClass;
     private final CMPCommandFactory persistenceFactory;
     private final CMPQuery[] queries;
     private InstanceOperation[] itable;
     private final String[] cmpFieldNames;
     private final CMRelation[] relations;
 
-    public CMPEntityContainer(EntityContainerConfiguration config, CMPConfiguration cmpConfig) {
+    public CMPEntityContainer(EntityContainerConfiguration config, CMPConfiguration cmpConfig) throws Exception {
         super(config);
-        pkClassName = config.pkClassName;
+
+        primaryKeyClass = classLoader.loadClass(config.pkClassName);
 
         // now that we can reference our actual container object, set it in the command factory
         cmpConfig.persistenceFactory.defineContainer(cmpConfig.schema, this);
@@ -102,15 +103,12 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         this.relations = cmpConfig.relations;
     }
 
+    public Class getPrimaryKeyClass() {
+        return primaryKeyClass;
+    }
+
     public void doStart() throws WaitingException, Exception {
         super.doStart();
-
-        Class pkClass = null;
-        try {
-            pkClass = classLoader.loadClass(pkClassName);
-        } catch (ClassNotFoundException e) {
-            throw new AssertionError(e);
-        }
 
         CMPOperationFactory vopFactory = CMPOperationFactory.newInstance(this, queries, persistenceFactory, cmpFieldNames, relations);
         vtable = vopFactory.getVTable();
@@ -142,10 +140,10 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         firstInterceptor = new EntityInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
         firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
-        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getBeanClassName());
+        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
 
         URI target;
-        if (homeClassName != null) {
+        if (homeInterface != null) {
             // set up server side remoting endpoint
             target = startServerRemoting(firstInterceptor);
         } else {
@@ -153,7 +151,7 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         }
 
         // set up client containers
-        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(pkClass, vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
+        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(primaryKeyClass, vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
         remoteClientContainer = clientFactory.getRemoteClient();
         localClientContainer = clientFactory.getLocalClient();
 
@@ -188,11 +186,6 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         data.store(values);
         ejbStoreCommand.executeUpdate(values);
     }
-
-    public String getPrimaryKeyClassName() {
-        return pkClassName;
-    }
-
 
     public static final GBeanInfo GBEAN_INFO;
 

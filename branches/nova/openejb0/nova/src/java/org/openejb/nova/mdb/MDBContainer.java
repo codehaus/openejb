@@ -48,6 +48,7 @@
 package org.openejb.nova.mdb;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 import javax.resource.ResourceException;
 import javax.resource.spi.ActivationSpec;
 import javax.resource.spi.ResourceAdapter;
@@ -69,36 +70,40 @@ import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.SystemExceptionInterceptor;
+import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.dispatch.DispatchInterceptor;
 import org.openejb.nova.dispatch.MethodHelper;
+import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
+import org.openejb.nova.transaction.TxnPolicy;
+import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
  * @version $Revision$ $Date$
  */
 public class MDBContainer extends AbstractEJBContainer implements MessageEndpointFactory {
-    private ActivationSpec activationSpec;
-    private Class mdbInterface;
+    private final ActivationSpec activationSpec;
+    private final Class messageEndpointInterface;
     private MDBLocalClientContainer messageClientContainer;
 
-    public MDBContainer(EJBContainerConfiguration config, ActivationSpec activationSpec) {
+    public MDBContainer(EJBContainerConfiguration config, ActivationSpec activationSpec) throws Exception {
         super(config);
         this.activationSpec = activationSpec;
+
+        messageEndpointInterface = Thread.currentThread().getContextClassLoader().loadClass(config.messageEndpointInterfaceName);
+    }
+
+    public Class getMessageEndpointInterface() {
+        return messageEndpointInterface;
     }
 
     public void doStart() throws WaitingException, Exception {
         super.doStart();
-
-        try {
-            mdbInterface = Thread.currentThread().getContextClassLoader().loadClass(messageEndpointClassName);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Could not load MDB interface class: " + messageEndpointClassName, e);
-        }
 
         MDBOperationFactory vopFactory = MDBOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
@@ -127,11 +132,11 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         }
         firstInterceptor = new MDBInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
-        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getBeanClassName());
+        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
         firstInterceptor = new MDBClassLoaderInterceptor(firstInterceptor, classLoader, -1, -1);
 
         // set up client containers
-        MDBClientContainerFactory clientFactory = new MDBClientContainerFactory(vopFactory, firstInterceptor, mdbInterface);
+        MDBClientContainerFactory clientFactory = new MDBClientContainerFactory(vopFactory, firstInterceptor, messageEndpointInterface);
         messageClientContainer = clientFactory.getMessageClientContainer();
         //buildMDBMethodMap(vopFactory.getSignatures());
 
@@ -166,6 +171,15 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         // TODO: need to see if the method is Supports or Required.
         return MDBContainer.this.txnDemarcation == TransactionDemarcation.CONTAINER;
 
+    }
+
+    private void buildMDBTransactionPolicyMap(MethodSignature[] signatures) {
+        TxnPolicy[] localPolicies = new TxnPolicy[signatures.length];
+        Map localMethodMap = MethodHelper.getObjectMethodMap(signatures, messageEndpointInterface);
+        mapPolicies("Local", localMethodMap, localPolicies);
+        transactionPolicy[EJBInvocationType.LOCAL.getTransactionPolicyKey()] = localPolicies;
+        transactionPolicy[EJBInvocationType.MESSAGE_ENDPOINT.getTransactionPolicyKey()] =
+                new TxnPolicy[]{ContainerPolicy.BeforeDelivery, ContainerPolicy.AfterDelivery};
     }
 
     private ResourceAdapter getAdapter() {

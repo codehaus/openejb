@@ -77,22 +77,20 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class BMPEntityContainer extends AbstractEJBContainer {
-    private final String pkClassName;
+    private final Class primaryKeyClass;
 
-    public BMPEntityContainer(EntityContainerConfiguration config) {
+    public BMPEntityContainer(EntityContainerConfiguration config) throws Exception {
         super(config);
-        pkClassName = config.pkClassName;
+        primaryKeyClass = classLoader.loadClass(config.pkClassName);
+    }
+
+    public Class getPrimaryKeyClass() {
+        return primaryKeyClass;
     }
 
     public void doStart() throws Exception {
         super.doStart();
 
-        Class pkClass = null;
-        try {
-            pkClass = classLoader.loadClass(pkClassName);
-        } catch (ClassNotFoundException e) {
-            throw new AssertionError(e);
-        }
 
         VirtualOperationFactory vopFactory = BMPOperationFactory.newInstance(beanClass);
         vtable = vopFactory.getVTable();
@@ -120,10 +118,10 @@ public class BMPEntityContainer extends AbstractEJBContainer {
         firstInterceptor = new EntityInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
         firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
-        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getBeanClassName());
+        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
 
         URI target;
-        if (homeClassName != null) {
+        if (homeInterface != null) {
             // set up server side remoting endpoint
             target = startServerRemoting(firstInterceptor);
         } else {
@@ -131,7 +129,7 @@ public class BMPEntityContainer extends AbstractEJBContainer {
         }
 
         // set up client containers
-        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(pkClass, vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
+        EntityClientContainerFactory clientFactory = new EntityClientContainerFactory(primaryKeyClass, vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
         remoteClientContainer = clientFactory.getRemoteClient();
         localClientContainer = clientFactory.getLocalClient();
 
@@ -144,11 +142,6 @@ public class BMPEntityContainer extends AbstractEJBContainer {
         pool = null;
         super.doStop();
     }
-
-    public String getPrimaryKeyClassName() {
-        return pkClassName;
-    }
-
 
     public static final GBeanInfo GBEAN_INFO;
 

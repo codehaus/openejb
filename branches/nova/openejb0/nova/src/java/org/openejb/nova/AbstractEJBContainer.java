@@ -81,7 +81,6 @@ import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.SubjectIdExtractInterceptor;
-import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TxnPolicy;
 
@@ -92,12 +91,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     protected final URI uri;
     protected final String ejbName;
-    protected final String ejbClassName;
-    protected final String homeClassName;
-    protected final String localHomeClassName;
-    protected final String remoteClassName;
-    protected final String localClassName;
-    protected final String messageEndpointClassName;
+
     protected final TransactionDemarcation txnDemarcation;
     protected TransactionManager txnManager;         //not final until Endpoints can be Constructor args.
     protected TrackedConnectionAssociator trackedConnectionAssociator; //not final until Endpoints can be Constructor args.
@@ -112,33 +106,25 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
     protected final boolean setIdentity;
 
 
-    protected ClassLoader classLoader;
-    protected Class beanClass;
+    protected final ClassLoader classLoader;
+    protected final Class beanClass;
     protected VirtualOperation[] vtable;
 
     protected EJBRemoteClientContainer remoteClientContainer;
-    protected Class homeInterface;
-    protected Class remoteInterface;
+    protected final Class homeInterface;
+    protected final Class remoteInterface;
 
     protected EJBLocalClientContainer localClientContainer;
-    protected Class localHomeInterface;
-    protected Class localInterface;
-
-    protected Class messageEndpointInterface;
+    protected final Class localHomeInterface;
+    protected final Class localInterface;
 
     protected InstancePool pool;
     private Long remoteId;
     protected TxnPolicy[][] transactionPolicy = new TxnPolicy[EJBInvocationType.getMaxTransactionPolicyKey() + 1][];
 
-    public AbstractEJBContainer(EJBContainerConfiguration config) {
+    public AbstractEJBContainer(EJBContainerConfiguration config) throws Exception {
         uri = config.uri;
         ejbName = config.ejbName;
-        ejbClassName = config.beanClassName;
-        homeClassName = config.homeInterfaceName;
-        remoteClassName = config.remoteInterfaceName;
-        localHomeClassName = config.localHomeInterfaceName;
-        localClassName = config.localInterfaceName;
-        messageEndpointClassName = config.messageEndpointInterfaceName;
         txnDemarcation = config.txnDemarcation;
         userTransaction = config.userTransaction;
         componentContext = config.componentContext;
@@ -150,6 +136,27 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
         setSecurityInterceptor = config.setSecurityInterceptor;
         setPolicyContextHandlerDataEJB = config.setPolicyContextHandlerDataEJB;
         setIdentity = config.setIdentity;
+
+        classLoader = Thread.currentThread().getContextClassLoader();
+        if (userTransaction != null) {
+            userTransaction.setUp(txnManager, trackedConnectionAssociator);
+        }
+        beanClass = classLoader.loadClass(config.beanClassName);
+
+        if (config.homeInterfaceName != null) {
+            homeInterface = classLoader.loadClass(config.homeInterfaceName);
+            remoteInterface = classLoader.loadClass(config.remoteInterfaceName);
+        } else {
+            homeInterface = null;
+            remoteInterface = null;
+        }
+        if (config.localHomeInterfaceName != null) {
+            localHomeInterface = classLoader.loadClass(config.localHomeInterfaceName);
+            localInterface = classLoader.loadClass(config.localInterfaceName);
+        } else {
+            localHomeInterface = null;
+            localInterface = null;
+        }
     }
 
     public void setTransactionManager(TransactionManager txnManager) {
@@ -164,43 +171,12 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
     }
 
     public void doStart() throws WaitingException, Exception {
-        classLoader = Thread.currentThread().getContextClassLoader();
-        System.out.println("classloader=" + classLoader);
-        try {
-            if (userTransaction != null) {
-                userTransaction.setUp(txnManager, trackedConnectionAssociator);
-            }
-            beanClass = classLoader.loadClass(ejbClassName);
-
-            if (homeClassName != null) {
-                homeInterface = classLoader.loadClass(homeClassName);
-                remoteInterface = classLoader.loadClass(remoteClassName);
-            } else {
-                homeInterface = null;
-                remoteInterface = null;
-            }
-            if (localHomeClassName != null) {
-                localHomeInterface = classLoader.loadClass(localHomeClassName);
-                localInterface = classLoader.loadClass(localClassName);
-            } else {
-                localHomeInterface = null;
-                localInterface = null;
-            }
-            if (messageEndpointClassName != null) {
-                messageEndpointInterface = classLoader.loadClass(messageEndpointClassName);
-            }
-        } catch (ClassNotFoundException e) {
-            throw new AssertionError(e);
+        if (userTransaction != null) {
+            userTransaction.setUp(txnManager, trackedConnectionAssociator);
         }
     }
 
     public void doStop() throws WaitingException, Exception {
-        homeInterface = null;
-        remoteInterface = null;
-        localHomeInterface = null;
-        localInterface = null;
-        messageEndpointInterface = null;
-        beanClass = null;
         if (userTransaction != null) {
             userTransaction.setUp(null, trackedConnectionAssociator);
         }
@@ -261,55 +237,6 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
         return componentContext;
     }
 
-    /**
-     * Return the name of this EJB's implementation class
-     *
-     * @return the name of this EJB's implementation class
-     */
-    public String getBeanClassName() {
-        return ejbClassName;
-    }
-
-    /**
-     * Return the name of this EJB's home interface class
-     *
-     * @return the name of this EJB's home interface class
-     */
-    public String getHomeClassName() {
-        return homeClassName;
-    }
-
-    /**
-     * Return the name of this EJB's remote component interface class
-     *
-     * @return the name of this EJB's remote component interface class
-     */
-    public String getRemoteClassName() {
-        return remoteClassName;
-    }
-
-    /**
-     * Return the name of this EJB's local home class
-     *
-     * @return the name of this EJB's local home class
-     */
-    public String getLocalHomeClassName() {
-        return localHomeClassName;
-    }
-
-    /**
-     * Return the name of this EJB's local component interface class
-     *
-     * @return the name of this EJB's local component interface class
-     */
-    public String getLocalClassName() {
-        return localClassName;
-    }
-
-    public String getMessageEndpointClassName() {
-        return messageEndpointClassName;
-    }
-
     protected URI startServerRemoting(Interceptor firstInterceptor) {
         // set up server side remoting endpoint
         if (setSecurityInterceptor) {
@@ -343,17 +270,8 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
         }
     }
 
-    protected void buildMDBTransactionPolicyMap(MethodSignature[] signatures) {
-        TxnPolicy[] localPolicies = new TxnPolicy[signatures.length];
-        Map localMethodMap = MethodHelper.getObjectMethodMap(signatures, messageEndpointInterface);
-        mapPolicies("Local", localMethodMap, localPolicies);
-        transactionPolicy[EJBInvocationType.LOCAL.getTransactionPolicyKey()] = localPolicies;
-        transactionPolicy[EJBInvocationType.MESSAGE_ENDPOINT.getTransactionPolicyKey()] =
-                new TxnPolicy[]{ContainerPolicy.BeforeDelivery, ContainerPolicy.AfterDelivery};
-    }
-
     //TODO can the method map start out with MethodSignatures instead of methods?
-    private void mapPolicies(String intfName, Map methodMap, TxnPolicy[] policies) {
+    public void mapPolicies(String intfName, Map methodMap, TxnPolicy[] policies) {
         for (Iterator iterator = methodMap.entrySet().iterator(); iterator.hasNext();) {
             Map.Entry entry = (Map.Entry) iterator.next();
             MethodSignature signature = new MethodSignature((Method) entry.getKey());
@@ -386,7 +304,6 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
          *	TODO: Dain informs me at some point we'll make these attributes, but currently JNDI Referencer can't support it in the way we want.
          */
 
-        infoFactory.addOperation(new GOperationInfo("getBeanClass"));
         infoFactory.addOperation(new GOperationInfo("getComponentContext"));
         infoFactory.addOperation(new GOperationInfo("getDemarcation"));
         infoFactory.addOperation(new GOperationInfo("getEJBHome"));

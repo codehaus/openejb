@@ -72,7 +72,7 @@ import org.openejb.nova.util.SoftLimitedInstancePool;
  * @version $Revision$ $Date$
  */
 public class StatelessContainer extends AbstractEJBContainer {
-    public StatelessContainer(EJBContainerConfiguration config) {
+    public StatelessContainer(EJBContainerConfiguration config) throws Exception {
         super(config);
     }
 
@@ -106,10 +106,10 @@ public class StatelessContainer extends AbstractEJBContainer {
         }
         firstInterceptor = new StatelessInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
-        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getBeanClassName());
+        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
 
         URI target;
-        if (homeClassName != null) {
+        if (homeInterface != null) {
             // set up server side remoting endpoint
             target = startServerRemoting(firstInterceptor);
         } else {

@@ -76,7 +76,7 @@ public class StatefulContainer extends AbstractEJBContainer {
     private StatefulInstanceFactory instanceFactory;
     private InstanceCache instanceCache;
 
-    public StatefulContainer(EJBContainerConfiguration config) {
+    public StatefulContainer(EJBContainerConfiguration config) throws Exception {
         super(config);
     }
 
@@ -113,10 +113,10 @@ public class StatefulContainer extends AbstractEJBContainer {
         firstInterceptor = new StatefulInstanceInterceptor(firstInterceptor, this, instanceFactory, instanceCache);
         firstInterceptor = new TransactionContextInterceptor(firstInterceptor, txnManager, transactionPolicy);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
-        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getBeanClassName());
+        firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
 
         URI target;
-        if (homeClassName != null) {
+        if (homeInterface != null) {
             // set up server side remoting endpoint
             target = startServerRemoting(firstInterceptor);
         } else {

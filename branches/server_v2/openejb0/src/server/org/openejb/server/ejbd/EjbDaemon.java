@@ -224,19 +224,6 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         return deploymentIndex.getDeployment(req);
     }
 
-    private void replyWithFatalError(ObjectOutputStream out,Throwable error,String message) {
-        logger.fatal(message, error);
-        RemoteException re = new RemoteException
-                             ("The server has encountered a fatal error: "+message+" "+error);
-        EJBResponse res = new EJBResponse();
-        res.setResponse(EJB_ERROR, re);
-        try {
-            res.writeExternal(out);
-        } catch (java.io.IOException ie) {
-            logger.error("Failed to write to EJBResponse", ie);
-        }
-    }
-
     public void processEjbRequest (ObjectInputStream in, ObjectOutputStream out) {
         ejbHandler.processRequest(in,out);
     }
@@ -302,30 +289,13 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
 
             res.writeExternal( out );
         } catch (Throwable t) {
-            replyWithFatalError
-            (out, t, "Error caught during request processing");
+            //replyWithFatalError
+            //(out, t, "Error caught during request processing");
             return;
         }
     }
 
 
-    protected void checkMethodAuthorization( EJBRequest req, EJBResponse res ) throws Exception {
-        // Nothing to do here other than check to see if the client
-        // is authorized to call this method
-        // TODO:3: Keep a cache in the client-side handler of methods it can't access
-
-        SecurityService sec = OpenEJB.getSecurityService();
-        CallContext caller  = CallContext.getCallContext();
-        DeploymentInfo di   = caller.getDeploymentInfo();
-        String[] authRoles  = di.getAuthorizedRoles( req.getMethodInstance() );
-
-        if (sec.isCallerAuthorized( req.getClientIdentity(), authRoles )) {
-            res.setResponse( EJB_OK, null );
-        } else {
-            logger.info(req + "Unauthorized Access by Principal Denied");
-            res.setResponse( EJB_APP_EXCEPTION , new RemoteException("Unauthorized Access by Principal Denied") );
-        }
-    }
 
     //=============================================================
     //  ApplicationServer interface methods
@@ -657,7 +627,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                 return;
             }
 
-            logger.info( "EJB REQUEST : "+req );
+            //logger.info( "EJB REQUEST : "+req );
 
             try {
                 switch (req.getRequestMethod()) {
@@ -939,6 +909,37 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                                       req.getClientIdentity());
 
             res.setResponse( EJB_OK, null);
+        }
+
+        protected void checkMethodAuthorization( EJBRequest req, EJBResponse res ) throws Exception {
+            // Nothing to do here other than check to see if the client
+            // is authorized to call this method
+            // TODO:3: Keep a cache in the client-side handler of methods it can't access
+
+            SecurityService sec = OpenEJB.getSecurityService();
+            CallContext caller  = CallContext.getCallContext();
+            DeploymentInfo di   = caller.getDeploymentInfo();
+            String[] authRoles  = di.getAuthorizedRoles( req.getMethodInstance() );
+
+            if (sec.isCallerAuthorized( req.getClientIdentity(), authRoles )) {
+                res.setResponse( EJB_OK, null );
+            } else {
+                logger.info(req + "Unauthorized Access by Principal Denied");
+                res.setResponse( EJB_APP_EXCEPTION , new RemoteException("Unauthorized Access by Principal Denied") );
+            }
+        }
+
+        private void replyWithFatalError(ObjectOutputStream out,Throwable error,String message) {
+            logger.fatal(message, error);
+            RemoteException re = new RemoteException
+                                 ("The server has encountered a fatal error: "+message+" "+error);
+            EJBResponse res = new EJBResponse();
+            res.setResponse(EJB_ERROR, re);
+            try {
+                res.writeExternal(out);
+            } catch (java.io.IOException ie) {
+                logger.error("Failed to write to EJBResponse", ie);
+            }
         }
     }
 }

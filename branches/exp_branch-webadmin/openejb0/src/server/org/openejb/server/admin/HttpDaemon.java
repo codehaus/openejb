@@ -286,11 +286,17 @@ public class HttpDaemon implements Runnable{
             throw new IOException(e.getMessage());
         }
 
-        HttpHome ejbHome = (HttpHome)PortableRemoteObject.narrow(obj, HttpHome.class);
+        HttpHome ejbHome = (HttpHome)obj;
         HttpObject httpObject = null;
         
         try {
             httpObject = ejbHome.create();
+            
+            // 
+            obj = org.openejb.util.proxy.ProxyManager.getInvocationHandler(httpObject);
+            org.openejb.core.ivm.BaseEjbProxyHandler handler = null;
+            handler = (org.openejb.core.ivm.BaseEjbProxyHandler)obj;
+            handler.setIntraVmCopyMode(false);
         } catch (javax.ejb.CreateException cre) {
             throw new IOException(cre.getMessage());
         }

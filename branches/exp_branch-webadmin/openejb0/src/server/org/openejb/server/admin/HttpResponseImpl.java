@@ -42,17 +42,9 @@
  *
  * $Id$
  */
+
 package org.openejb.server.admin;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.*;
 import java.net.URL;
 import java.util.HashMap;
@@ -70,84 +62,56 @@ import javax.naming.*;
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  * @since 11/25/2001
  */
-public class HttpResponse {
-    
-    
+
+public class HttpResponseImpl implements org.openejb.admin.web.HttpResponse {
     /** Response string */
-    String responseString = "OK";
+    private String responseString = "OK";
 
     /** Code */
     int code = 200;
-         
     public static final String HTTP_VERSION = "HTTP/1.1";
     public static final String CRLF = "\r\n";
     public static final String SP = " ";
     public static final String CSP = ": ";
     public static String server;
 
-    HashMap headers;
-        
+    private HashMap headers;
     private byte[] body = new byte[0];
-    PrintWriter writer;
-    ByteArrayOutputStream baos;
+    private PrintWriter writer;
+    private ByteArrayOutputStream baos;
 
-    public HttpResponse(){
-        this(200, "OK", "text/html");
-        
-    }
-    
-    public HttpResponse(int code, String responseString, String contentType){
-        this.code = code;
-        this.responseString = responseString;
-        
-        headers = new HashMap();
-        
-        // Default headers
-        setHeader("Server", getServerName());
-        setHeader("Connection","close");
-        setHeader("Content-Type",contentType);
-        // create the body.
-        initBody();
-
-    }
-    
-    private void initBody(){
-        baos = new ByteArrayOutputStream();
-        writer = new PrintWriter( baos );
-    }
-    
     public void setHeader(String name, String value){
         headers.put(name, value);
     }
-    
+
     public String getHeader(String name){
         return (String) headers.get(name);
     }
-    
+
     public PrintWriter getPrintWriter(){
         return writer;
     }
-    
+
     public OutputStream getOutputStream(){
         return baos;
     }
-    
+
     public void setCode(int code){
         this.code = code;
     }
-    
+
     public int getCode(){
         return code;
     }
-    
+
     public void setContentType(String type){
         setHeader("Content-Type", type);
     }
-    
+
     public String getContentType(){
         return getHeader("Content-Type");
     }
-    
+
     public void setResponseString(String responseString){
        this.responseString = responseString;
     }
@@ -155,19 +119,33 @@ public class HttpResponse {
     public void reset(){
         initBody();
     }
-    
+
     public void reset(int code, String responseString){
         setCode(code);
         setResponseString(responseString);
         initBody();
     }
 
-    /**
-     */
-    public void readExternal(InputStream in) throws IOException{
+    /*------------------------------------------------------------*/
+    /*  Methods for writing out a response                        */
+    /*------------------------------------------------------------*/
+    protected HttpResponse(){
+        this(200, "OK", "text/html");
     }
-    
-    
+
+    protected HttpResponse(int code, String responseString, String contentType){
+        this.code = code;
+        this.responseString = responseString;
+        headers = new HashMap();
+
+        // Default headers
+        setHeader("Server", getServerName());
+        setHeader("Connection","close");
+        setHeader("Content-Type",contentType);
+        // create the body.
+        initBody();
+    }
+
     /**
      *  HTTP/1.1 200 OK
      *  Server: Netscape-Enterprise/3.6 SP3
@@ -176,24 +154,27 @@ public class HttpResponse {
      *  Connection: close
      *
      */
-    public void writeExternal(OutputStream output) throws IOException{
+    protected void writeMessage(OutputStream output) throws IOException{
         DataOutput out = new DataOutputStream(output);
         DataOutput log = new DataOutputStream(System.out);
         closeMessage();
         writeResponseLine(log);
         writeHeaders(log);
         writeBody(log);
-        
         writeResponseLine(out);
         writeHeaders(out);
         writeBody(out);
-        
+    }
+
+    private void initBody(){
+        baos = new ByteArrayOutputStream();
+        writer = new PrintWriter( baos );
     }
 
     public String toString(){
         StringBuffer buf = new StringBuffer(40);
 
-        buf.append( HTTP_VERSION );
+        buf.append(HTTP_VERSION);
         buf.append(SP);
         buf.append(code+"");
         buf.append(SP);
@@ -201,18 +182,18 @@ public class HttpResponse {
 
         return buf.toString();
     }
+
     private void closeMessage() throws IOException{
         writer.flush();
         writer.close();
         body = baos.toByteArray();
         setHeader("Content-length", body.length+"");
     }
-    
-    
+
     /**
      *  HTTP/1.1 200 OK
      */
-    public void writeResponseLine(DataOutput out) throws IOException{
+    private void writeResponseLine(DataOutput out) throws IOException{
         out.writeBytes(HTTP_VERSION);
         out.writeBytes(SP);
         out.writeBytes(code+"");
@@ -220,8 +201,8 @@ public class HttpResponse {
         out.writeBytes(responseString);
         out.writeBytes(CRLF);
     }
-    
-    public void writeHeaders(DataOutput out) throws IOException{
+
+    private void writeHeaders(DataOutput out) throws IOException{
         Iterator it =  headers.entrySet().iterator();
 
         while (it.hasNext()){
@@ -232,17 +213,17 @@ public class HttpResponse {
             out.writeBytes(CRLF);
         }
     }
-    
-    public void writeBody(DataOutput out) throws IOException{
+
+    private void writeBody(DataOutput out) throws IOException{
         out.writeBytes(CRLF);
         out.write(body);
     }
 
-
-    public static String getServerName(){
+    private static String getServerName(){
         if (server == null) {
             String version = "???";
             String os = "(unknown os)";
+            
             try {
                 Properties versionInfo = new Properties();
                 JarUtils.setHandlerSystemProperty();
@@ -251,11 +232,11 @@ public class HttpResponse {
                 os = System.getProperty("os.name")+"/"+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")";
             } catch (java.io.IOException e) {
             }
+            
             server = "OpenEJB/" +version+ " "+os;
         }
         return server;
-    }    
-
+    }
     
     /**
      * This could be improved at some day in the future 
@@ -264,12 +245,12 @@ public class HttpResponse {
      * @param message
      * @return 
      */
-    public static HttpResponse createError(String message){
+    protected static HttpResponse createError(String message){
         return createError(message, null);
     }
 
-    public static HttpResponse createError(String message, Throwable t){
-        HttpResponse res = new HttpResponse(500, "Internal Server Error", "text/html");
+    protected static HttpResponse createError(String message, Throwable t){
+        HttpResponseImpl res = new HttpResponseImpl(500, "Internal Server Error", "text/html");
         java.io.PrintWriter body = res.getPrintWriter();
 
         body.println("<html>");
@@ -279,11 +260,13 @@ public class HttpResponse {
 
         if (message != null) {
             StringTokenizer msg = new StringTokenizer(message, "\n\r");
+
             while (msg.hasMoreTokens()) {
                 body.print( msg.nextToken() );
                 body.println("<br>");
             }
         }
+
         if (t != null) {
             try{
                 body.println("<br><br>");
@@ -295,6 +278,7 @@ public class HttpResponse {
                 writer.close();
                 message = new String(baos.toByteArray());
                 StringTokenizer msg = new StringTokenizer(message, "\n\r");
+                
                 while (msg.hasMoreTokens()) {
                     body.print( msg.nextToken() );
                     body.println("<br>");
@@ -302,6 +286,7 @@ public class HttpResponse {
             } catch (Exception e){
             }
         }
+
         body.println("</body>");
         body.println("</html>");
 

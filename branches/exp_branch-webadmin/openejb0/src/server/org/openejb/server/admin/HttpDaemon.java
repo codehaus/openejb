@@ -42,6 +42,7 @@
  *
  * $Id$
  */
+
 package org.openejb.server.admin;
 
 import java.util.Collection;
@@ -84,17 +85,18 @@ import org.openejb.util.SafeToolkit;
 import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
 import org.openejb.util.Logger;
+import org.openejb.admin.web.HttpObject;
+import org.openejb.admin.web.HttpHome;
+
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  * @since 11/25/2001
  */
 public class HttpDaemon implements Runnable{
-
     private SafeToolkit toolkit = SafeToolkit.getToolkit("OpenEJB EJB Server");
 
     Logger logger = new Logger( "OpenEJB" );
-
     Vector           clientSockets  = new Vector();
     ServerSocket     serverSocket   = null;
 
@@ -104,19 +106,23 @@ public class HttpDaemon implements Runnable{
     Properties props;
     EjbDaemon ejbd;
 
+    InitialContext jndiContext;
+
     public HttpDaemon(EjbDaemon ejbd) {
         this.ejbd = ejbd;
     }
 
     public void init(Properties props) throws Exception{
-
         props.putAll(System.getProperties());
 
+        Properties properties = new Properties();
+        properties.put(Context.INITIAL_CONTEXT_FACTORY, "org.openejb.core.ivm.naming.InitContextFactory");
+        jndiContext = new InitialContext(properties);
+        
         //SafeProperties safeProps = toolkit.getSafeProperties(props);
-
         //port = safeProps.getPropertyAsInt("openejb.server.port");
         //ip   = safeProps.getProperty("openejb.server.ip");
-        
+
         try{
             serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
         } catch (Exception e){
@@ -128,9 +134,7 @@ public class HttpDaemon implements Runnable{
     // jndi context of OpenEJB
     boolean stop = false;
 
-
     public void run( ) {
-
         Socket socket = null;
         /**
          * The ObjectInputStream used to receive incoming messages from the client.
@@ -140,14 +144,13 @@ public class HttpDaemon implements Runnable{
          * The ObjectOutputStream used to send outgoing response messages to the client.
          */
         OutputStream out = null;
-        
         InetAddress clientIP = null;
+        
         while ( !stop ) {
             try {
                 socket = serverSocket.accept();
                 clientIP = socket.getInetAddress();
                 Thread.currentThread().setName(clientIP.getHostAddress());
-
                 in  = socket.getInputStream();
                 out = socket.getOutputStream();
 
@@ -173,26 +176,25 @@ public class HttpDaemon implements Runnable{
             }
         }
     }
-    
+
     public void processRequest(InputStream in, OutputStream out) {
-
-        HttpRequest req = new HttpRequest();
-        HttpResponse res = new HttpResponse();
-
+        HttpRequestImpl req = new HttpRequestImpl();
+        HttpResponseImpl res = new HttpResponseImpl();
         System.out.println("[] reading request");
+
         try {
-            req.readExternal( in );
+            req.readMessage( in );
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponse.createError("Could read the request.\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            res = HttpResponseImpl.createError("Could read the request.\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
             try {
-                res.writeExternal( out );
+                res.writeMessage( out );
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
             return;
         }
-        
+
         System.out.println("[] read");
         URL uri = null;
         String file = null;
@@ -207,42 +209,45 @@ public class HttpDaemon implements Runnable{
             System.out.println("[] file="+file);
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponse.createError("Could not determine the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage());
+            res = HttpResponseImpl.createError("Could not determine the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage());
             try {
-                res.writeExternal( out );
+                res.writeMessage( out );
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
             return;
         }
-        HttpBean httpbean = null;
+
+        HttpObject httpObject = null;
+
         try{
-            httpbean = getHttpBean(file);
-            System.out.println("[] module="+httpbean);
+            httpObject = getHttpObject(file);
+            System.out.println("[] module="+httpObject);
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponse.createError("Could not load the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            res = HttpResponseImpl.createError("Could not load the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
             System.out.println("[] res="+res);
             try {
-                res.writeExternal( out );
+                res.writeMessage( out );
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
             return;
         }
-        
+
         try{
-            httpbean.onMessage(req, res);
+            httpObject.onMessage(req, res);
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponse.createError("Error occurred while executing the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            res = HttpResponseImpl.createError("Error occurred while executing the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
             try {
-                res.writeExternal( out );
+                res.writeMessage( out );
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
             return;
         }
+
 //      java.io.PrintWriter body = res.getPrintWriter();
 //
 //      body.println("<html>");
@@ -251,57 +256,26 @@ public class HttpDaemon implements Runnable{
 //      body.println("<h1>"+file+"</h1>");
 //      body.println("</body>");
 //      body.println("</html>");
-        
+
         try {
-            res.writeExternal( out );
+            res.writeMessage( out );
         } catch (Throwable t) {
             t.printStackTrace();
             return;
         }
     }
 
-    private void writeResponse(HttpResponse res){
-    }
-    
-    protected HashMap httpbeans = new HashMap();
-
-    protected HttpBean defaultBean = getDefaultBean();
-    
-    private HttpBean getDefaultBean(){
-        HttpBean bean = new DefaultHttpBean();
-        bean.ejbActivate();
-        return bean;
-    }
-
-    protected HttpBean getHttpBean(String beanName) throws IOException{
-        HttpBean httpBean = (HttpBean)httpbeans.get(beanName);
-        if (httpBean == null) {
-            httpBean = loadHttpBean(beanName);
-        }
-
-        if (httpBean == null) httpBean = defaultBean;
-
-        return httpBean;
-    }
-
-    protected HttpBean loadHttpBean(String beanName) throws IOException{
-        Class beanClass = null;
+    protected HttpObject getHttpObject(String beanName) throws IOException{
+        Object obj = null;
         try{
-            beanName = "org.openejb.server.admin"+beanName.replace('/', '.');
-            System.out.println("[] loading "+beanName);
-            beanClass = Class.forName(beanName);
-        } catch(Exception e){
-            return null;
+            obj = jndiContext.lookup("webadmin/"+beanName);
+        } catch (javax.naming.NameNotFoundException e){
+            obj = jndiContext.lookup("webadmin/DefaultBean");
+        } catch (javax.naming.NamingException e){
+            throw new IOException(e.getMessage());
         }
-        
-        HttpBean bean = null;
-        try{
-            bean = (HttpBean)beanClass.newInstance();
-        } catch(Exception e){
-            throw new IOException("Cannot instantiate module "+beanClass+"\n"+e.getClass().getName()+":\n"+e.getMessage());
-        }
-        
-        bean.ejbActivate();
-        return bean;
+        HttpHome ejbHome = (HttpHome)PortableRemoteObject.narrow(obj, HttpHome.class);
+        HttpObject httpObject = ejbHome.create();
+        return httpObject;
     }
 }

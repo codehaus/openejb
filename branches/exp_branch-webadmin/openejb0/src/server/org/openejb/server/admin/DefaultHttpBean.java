@@ -51,13 +51,14 @@ import java.io.PrintWriter;
 import java.util.StringTokenizer;
 import java.net.URL;
 
+
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
-public class DefaultHttpBean implements HttpBean {
-    
+public class DefaultHttpBean implements javax.ejb.SessionBean {
     private static final URL BASE_URL = getBaseUrl();
-
+    private SessionContext context;
+    
     private static URL getBaseUrl(){
         URL url = null;
         try{
@@ -69,17 +70,21 @@ public class DefaultHttpBean implements HttpBean {
         return url;
     }
 
-    public void ejbActivate(){
+    /** Creates a new instance */
+    public void ejbCreate() {
     }
     
-    public void onMessage(HttpRequest request, HttpResponse response) throws IOException{
+    /** the main processing part of the this bean
+     * @param request the http request object
+     * @param response the http response object
+     * @throws RemoteException if an exception is thrown
+     */    
+    public void onMessage(HttpRequest request, HttpResponse response) throws java.rmi.RemoteException{
         // Internationalize this
-        
         try {
-
             String file = request.getURI().getFile();
             String ext = ( file.indexOf('.') == -1 )? null:file.substring(file.indexOf('.'));
-            
+
             if ( ext != null ) {
                 if ( ext.equalsIgnoreCase(".gif") ) {
                     response.setContentType("image/gif");
@@ -103,7 +108,6 @@ public class DefaultHttpBean implements HttpBean {
         } catch (java.io.IOException e) {
             do500(request, response, e.getMessage());
         }
-                        
     }
 
     public void do404(HttpRequest request, HttpResponse response){
@@ -119,18 +123,16 @@ public class DefaultHttpBean implements HttpBean {
         body.println("<HR>");
         body.println("<ADDRESS>"+response.getServerName()+"</ADDRESS>");
         body.println("</BODY></HTML>");
-
     }
-    
+
     public void do500(HttpRequest request, HttpResponse response, String message){
         response.reset(500, "Internal Server Error.");
         java.io.PrintWriter body = response.getPrintWriter();
-
         body.println("<html>");
         body.println("<body>");
         body.println("<h3>Internal Server Error</h3>");
         body.println("<br><br>");
-        
+
         if (message != null) {
             StringTokenizer msg = new StringTokenizer(message, "\n\r");
             while (msg.hasMoreTokens()) {
@@ -138,9 +140,22 @@ public class DefaultHttpBean implements HttpBean {
                 body.println("<br>");
             }
         }
+
         body.println("</body>");
         body.println("</html>");
-
     }
-
+    
+    public void ejbActivate() throws javax.ejb.EJBException, java.rmi.RemoteException {
+    }
+    
+    public void ejbPassivate() throws javax.ejb.EJBException, java.rmi.RemoteException {
+    }
+    
+    public void ejbRemove() throws javax.ejb.EJBException, java.rmi.RemoteException {
+    }
+    
+    public void setSessionContext(javax.ejb.SessionContext sessionContext) throws javax.ejb.EJBException, java.rmi.RemoteException {
+        this.context = sessionContext;
+    }
+    
 }

@@ -42,89 +42,65 @@
  *
  * $Id$
  */
+
 package org.openejb.server.admin;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.StringTokenizer;
 import javax.naming.*;
 
 /**
  * 
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
- * @since 11/25/2001
  */
-public class HttpRequest {
-    
+public class HttpRequestImpl implements org.openejb.admin.web.HttpRequest {
     
     /** 5.1   Request-Line */
-    String line;
-
-
+    private String line;
+    
     /** 5.1.1    Method */
-    int method;
-         
-    public static final int OPTIONS = 0; // Section 9.2
-    public static final int GET     = 1; // Section 9.3
-    public static final int HEAD    = 2; // Section 9.4
-    public static final int POST    = 3; // Section 9.5
-    public static final int PUT     = 4; // Section 9.6
-    public static final int DELETE  = 5; // Section 9.7
-    public static final int TRACE   = 6; // Section 9.8
-    public static final int CONNECT = 7; // Section 9.9
-    public static final int UNSUPPORTED = 8;
+    private int method;
 
     /** 5.1.2    Request-URI */
-    URL uri;
+    private URL uri;
+    private HashMap headers;
+    private HashMap formParams = new HashMap();
+    private HashMap queryParams = new HashMap();
+    private byte[] body;
 
-    HashMap headers;
-    HashMap formParams = new HashMap();
-    HashMap queryParams = new HashMap();
-    byte[] body;
-    
-    /**
-     */
-    public void readExternal(InputStream input) throws IOException{
+    public String getHeader(String name){
+        return (String)headers.get(name);
+    }
+
+    public String getFormParameter(String name){
+        return (String)formParams.get(name);
+    }
+
+    public String getQueryParameter(String name){
+        return (String)queryParams.get(name);
+    }
+
+    public int getMethod(){
+        return method;
+    }
+
+    public URL getURI(){
+        return uri;
+    }
+
+    /*------------------------------------------------------------*/
+    /*  Methods for reading in and parsing a request              */
+    /*------------------------------------------------------------*/
+    protected void readMessage(InputStream input) throws IOException{
         DataInput in = new DataInputStream(input);
         readRequestLine(in);
         readHeaders(in);
         readBody(in);
     }
-    
-    /**
-     */
-    public void writeExternal(OutputStream out) throws IOException{
 
-    }
-
-    public String getHeader(String name){
-        return (String)headers.get(name);
-    }
-    
-    public String getFormParameter(String name){
-        return (String)formParams.get(name);
-    }
-    
-    public String getQueryParameter(String name){
-        return (String)queryParams.get(name);
-    }
-    
-    public int getMethod(){
-        return method;
-    }
-    
-    public URL getURI(){
-        return uri;
-    }
-    
     private void readRequestLine(DataInput in) throws IOException{
         try{
             line = in.readLine();
@@ -132,14 +108,12 @@ public class HttpRequest {
         } catch (Exception e){
             throw new IOException("Could not read the HTTP Request Line :"+ e.getClass().getName()+" : "+e.getMessage());
         }
-
+        
         StringTokenizer lineParts = new StringTokenizer(line, " ");
         /* [1] Parse the method */
         parseMethod(lineParts);
-
         /* [2] Parse the URI */
         parseURI(lineParts);
-
     }
 
     private void parseMethod(StringTokenizer lineParts) throws IOException{
@@ -149,7 +123,7 @@ public class HttpRequest {
         } catch (Exception e){
             throw new IOException("Could not parse the HTTP Request Method :"+ e.getClass().getName()+" : "+e.getMessage());
         }
-        
+
         if ( token.equalsIgnoreCase("GET") ) {
             method = GET;
         } else if ( token.equalsIgnoreCase("POST") ) {
@@ -159,7 +133,7 @@ public class HttpRequest {
             throw new IOException("Unsupported HTTP Request Method :"+ token);
         }
     }
-    
+
     private void parseURI(StringTokenizer lineParts) throws IOException{
         String token = null;
         try{
@@ -167,29 +141,28 @@ public class HttpRequest {
         } catch (Exception e){
             throw new IOException("Could not parse the HTTP Request Method :"+ e.getClass().getName()+" : "+e.getMessage());
         }
-        
+
         try {
             uri = new URL("http","localhost", token );
         } catch (java.net.MalformedURLException e){
             throw new IOException("Malformed URL :"+ token +" Exception: "+e.getMessage());
         }
-        parseQueryParams( uri.getQuery() );
 
-
+        parseQueryParams(uri.getQuery());
     }
-    
+
     private void parseQueryParams(String query) throws IOException{
         if (query == null) return;
         StringTokenizer parameters = new StringTokenizer(query, "&");
 
         while (parameters.hasMoreTokens()) {
             StringTokenizer param = new StringTokenizer(parameters.nextToken(), "=");    
-            
+
             /* [1] Parse the Name */
             if (!param.hasMoreTokens()) continue;
             String name = param.nextToken();
             if (name == null) continue;
-            
+
             /* [2] Parse the Value */
             if (!param.hasMoreTokens()) continue;
             String value = param.nextToken();
@@ -205,6 +178,7 @@ public class HttpRequest {
         while (true) {
             // Header Field
             String hf = null;
+
             try{
                 hf = in.readLine();
                 System.out.println(hf);
@@ -220,26 +194,24 @@ public class HttpRequest {
             /* [1] Parse the Name */
             String name = field.nextToken();
             if (name == null) break;
-            
+
             /* [2] Parse the Value */
             String value = field.nextToken();
             if (value == null) break;
             value = value.trim();
-
             headers.put(name, value);
         }
     }
 
     private void readBody(DataInput in) throws IOException{
         readRequestBody(in);
-        
         // Content-type: application/x-www-form-urlencoded
         String type = getHeader("Content-type");
         if (type != null && type.equals("application/x-www-form-urlencoded")) {
             parseFormParams();
         }
     }
-        
+
     private void readRequestBody(DataInput in) throws IOException{
         // Content-length: 384
         String len  = getHeader("Content-length");
@@ -274,11 +246,10 @@ public class HttpRequest {
             /* [1] Parse the Name */
             String name = parameters.nextToken();
             if (name == null) break;
-            
+
             /* [2] Parse the Value */
             String value = parameters.nextToken();
             if (value == null) value = "";
-
             formParams.put(name, value);
         }
     }

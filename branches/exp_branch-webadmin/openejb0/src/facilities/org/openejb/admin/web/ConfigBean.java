@@ -44,7 +44,10 @@
  */
 package org.openejb.admin.web; 
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 /** This bean lists the OpenEJB configuration file
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>

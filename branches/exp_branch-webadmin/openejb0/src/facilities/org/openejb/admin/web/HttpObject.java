@@ -44,7 +44,6 @@
  */
 package org.openejb.admin.web;
 
-import java.io.IOException;
 
 /** The standard EJB Object interface for the webadmin
  * @author <a href="mailto:tim_urberg@yahoo.com">Tim Uberg</a>

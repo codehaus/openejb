@@ -42,16 +42,12 @@
  */
 package org.openejb.admin.web;
 
-import javax.ejb.EJBException;
-import java.rmi.RemoteException;
-import javax.ejb.SessionContext;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.BufferedReader;
-import java.io.FileReader;
+
 import org.apache.regexp.RE;
 import org.apache.regexp.RESyntaxException;
 
@@ -131,17 +127,16 @@ public class ListLogsBean extends WebAdminBean {
      */
     private void printLogFile(PrintWriter body, File logFile) throws IOException {
         BufferedReader fileReader = new BufferedReader(new FileReader(logFile));
-        StringBuffer lineOfText = null;
+        StringBuffer lineOfText;
         
         //create a list of special characters
         String[][] specialChars = new String[3][2];
-        specialChars[0][0] = "<";
-        specialChars[0][1] = "&lt;";
-        specialChars[1][0] = ">";
+        specialChars[0][0] = "&";
+        specialChars[0][1] = "&amp;";
+        specialChars[1][0] = "<";
         specialChars[1][1] = "&lt;";
-        specialChars[2][0] = "&";
-        specialChars[2][1] = "&amp;";
-        int specialCharIndex = 0;
+        specialChars[2][0] = ">";
+        specialChars[2][1] = "&gt;";
         
         try {
             //create an array of regular expressions
@@ -173,10 +168,16 @@ public class ListLogsBean extends WebAdminBean {
                 lineOfText = new StringBuffer(temp);
                 
                 //check for and replace special characters
-                for(int i=0; i<specialChars.length; i++) {
-                    specialCharIndex = lineOfText.indexOf(specialChars[i][0]);
-                    if(specialCharIndex != -1) {
-                        lineOfText.replace(specialCharIndex, specialCharIndex+1, specialChars[i][1]);
+                String charToCheck;
+                for(int i=0; i<lineOfText.length(); i++) {
+                    //pick out the current character
+                    charToCheck = String.valueOf(lineOfText.charAt(i));
+                    for(int j=0; j<specialChars.length; j++) {
+                        //do the check for equals
+                        if(charToCheck.equals(specialChars[j][0])) {
+                            lineOfText.replace(i, i+1, specialChars[j][1]);
+                            break;
+                        }
                     }
                 }
                 

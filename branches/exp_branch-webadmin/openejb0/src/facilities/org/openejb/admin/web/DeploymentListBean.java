@@ -45,20 +45,18 @@ package org.openejb.admin.web;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Arrays;
 import java.net.URLEncoder;
-import java.net.URLDecoder;
-import org.openejb.OpenEJB;
+import java.util.Arrays;
+import java.util.HashMap;
+
 import org.openejb.DeploymentInfo;
-import org.openejb.alt.assembler.classic.EnterpriseBeanInfo;
+import org.openejb.OpenEJB;
 import org.openejb.alt.assembler.classic.ContainerInfo;
-import org.openejb.alt.assembler.classic.JndiEncInfo;
-import org.openejb.alt.assembler.classic.EnvEntryInfo;
 import org.openejb.alt.assembler.classic.EjbReferenceInfo;
+import org.openejb.alt.assembler.classic.EnterpriseBeanInfo;
+import org.openejb.alt.assembler.classic.EnvEntryInfo;
+import org.openejb.alt.assembler.classic.JndiEncInfo;
 import org.openejb.alt.assembler.classic.ResourceReferenceInfo;
-import org.openejb.alt.config.ejb11.EjbDeployment;
-import org.openejb.alt.config.sys.Deployments;
 import org.openejb.alt.config.ConfigurationFactory;
 
 /**

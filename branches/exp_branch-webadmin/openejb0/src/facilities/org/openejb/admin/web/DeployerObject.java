@@ -56,11 +56,14 @@ public interface DeployerObject extends javax.ejb.EJBObject {
     public void setJarFile(String jarFile) throws RemoteException;
     public String getJarFile() throws RemoteException;
     public void startDeployment() throws RemoteException;
-    public String promptForDeploymentAndContainerIds() throws RemoteException;
-    public void automateDeployment() throws RemoteException;
     public void finishDeployment() throws RemoteException;
     public String getDeploymentHTML() throws RemoteException;
     public int getDeployerBeanLength() throws RemoteException;
-    public void setDeployAndContainerIds(String deploymentId, String containerId, int index) 
-    throws RemoteException;
+    public String createIdTable() throws RemoteException;
+    public void setDeployAndContainerIds(
+        String deploymentId,
+        String containerId,
+        String[][] resourceRef,
+        String[][] ejbRef,
+        int i);
 }

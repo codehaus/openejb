@@ -44,13 +44,12 @@
  */
 package org.openejb.admin.web;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.util.StringTokenizer;
 import java.net.URL;
-import javax.ejb.*;
+import java.util.StringTokenizer;
+
+import javax.ejb.SessionContext;
 
 /** This is a webadmin bean which has default functionality such as genderating
  * error pages and setting page content.

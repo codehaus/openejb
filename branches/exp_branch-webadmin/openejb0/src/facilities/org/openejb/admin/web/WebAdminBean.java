@@ -46,18 +46,14 @@ package org.openejb.admin.web;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.util.StringTokenizer;
-import java.util.HashMap;
-import java.util.Properties;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.net.URLDecoder;
-import org.openejb.OpenEJB;
+import java.util.Properties;
+
+import javax.ejb.SessionContext;
 import javax.naming.Context;
-import javax.ejb.*;
-import javax.naming.*;
+import javax.naming.NameClassPair;
+import javax.naming.NamingEnumeration;
 
 /** This is the template web admin bean to extend from.  It contains all the functionality for the webadministration.  To use
  *  this class, simply sub-class it:<br><br>

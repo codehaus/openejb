@@ -46,7 +46,6 @@ package org.openejb.admin.web;
 
 import java.rmi.RemoteException;
 import javax.ejb.CreateException;
-import javax.ejb.FinderException;
 
 /** This is the standard EJB Home interface for the webadmin.  It contains the
  * create method.

@@ -947,7 +947,13 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
+        Object securityIdentity = null;
+        try{
+            securityIdentity = call.getEJBRequest().getClientIdentity();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),
@@ -966,7 +972,13 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
+        Object securityIdentity = null;
+        try{
+            securityIdentity = call.getEJBRequest().getClientIdentity();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),
@@ -984,7 +996,13 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
+        Object securityIdentity = null;
+        try{
+            securityIdentity = call.getEJBRequest().getClientIdentity();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),
@@ -1003,7 +1021,13 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
         Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
 
-        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
+        Object securityIdentity = null;
+        try{
+            securityIdentity = call.getEJBRequest().getClientIdentity();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        ClientMetaData  cMetaData = new ClientMetaData(securityIdentity);
         EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                         deployment.getRemoteInterface(),
                                                         deployment.getPrimaryKeyClass(),

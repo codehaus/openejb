@@ -106,14 +106,13 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
     Vector           clientSockets  = new Vector();
     ServerSocket     serverSocket   = null;
     ServerMetaData   sMetaData      = null;
-    DeploymentInfo[] deployments    = null;
-    HashMap          deploymentsMap = null;
 
     // The EJB Server Port
     int    port = 4201;
     String ip   = "127.0.0.1";
     Properties props;
     ClientObjectFactory clientObjectFactory;
+    DeploymentIndex deploymentIndex;
 
     static InetAddress[] admins;
     boolean stop = false;
@@ -144,18 +143,20 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
 
         clientJndi = (javax.naming.Context)OpenEJB.getJNDIContext().lookup("openejb/ejb");
 
-        DeploymentInfo[] ds = OpenEJB.deployments();
+        deploymentIndex = new DeploymentIndex();
 
-        // This intentionally has the 0 index as null. The 0 index is the
-        // default value of an unset deploymentCode.
-        deployments = new DeploymentInfo[ ds.length +1 ];
+//        DeploymentInfo[] ds = OpenEJB.deployments();
 
-        System.arraycopy( ds, 0, deployments, 1, ds.length);
-
-        deploymentsMap = new HashMap( deployments.length );
-        for (int i=1; i < deployments.length; i++){
-            deploymentsMap.put( deployments[i].getDeploymentID(), new Integer(i));
-        }
+//      // This intentionally has the 0 index as null. The 0 index is the
+//      // default value of an unset deploymentCode.
+//      deployments = new DeploymentInfo[ ds.length +1 ];
+//
+//      System.arraycopy( ds, 0, deployments, 1, ds.length);
+//
+//      deploymentsMap = new HashMap( deployments.length );
+//      for (int i=1; i < deployments.length; i++){
+//          deploymentsMap.put( deployments[i].getDeploymentID(), new Integer(i));
+//      }
 
         sMetaData = new ServerMetaData("127.0.0.1", 4201);
         //clientObjectFactory = new ClientObjectFactory(sMetaData,deploymentsMap);
@@ -196,7 +197,6 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                     case AUTH_REQUEST: processAuthRequest(ois, oos);break;
                     default: logger.error("Unknown request type "+requestType);
                 }
-            //}
             try {
                 if ( oos != null ) {
                     oos.flush();
@@ -204,6 +204,8 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
             } catch ( Throwable t ){
                 logger.error("Encountered problem while communicating with client: "+t.getMessage());
             }
+            //}
+            
             // Exceptions should not be thrown from these methods
             // They should handle their own exceptions and clean
             // things up with the client accordingly.
@@ -228,40 +230,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
     }
 
     private DeploymentInfo getDeployment(EJBRequest req) throws RemoteException {
-        // This logic could probably be cleaned up quite a bit.
-
-        DeploymentInfo info = null;
-
-        if (req.getDeploymentCode() > 0 && req.getDeploymentCode() < deployments.length) {
-            info = deployments[ req.getDeploymentCode() ];
-            if ( info == null ) {
-                throw new RemoteException("The deployement with this ID is null");
-            }
-            req.setDeploymentId((String) info.getDeploymentID() );
-            return info;
-        }
-
-        if ( req.getDeploymentId() == null ) {
-            throw new RemoteException("Invalid deployment id and code: id="+req.getDeploymentId()+": code="+req.getDeploymentCode());
-        }
-
-        Integer idCode = (Integer)deploymentsMap.get( req.getDeploymentId() );
-
-        if ( idCode == null ) {
-            throw new RemoteException("No such deployment id and code: id="+req.getDeploymentId()+": code="+req.getDeploymentCode());
-        }
-
-        req.setDeploymentCode( idCode.intValue() );
-
-        if (req.getDeploymentCode() < 0 || req.getDeploymentCode() >= deployments.length){
-            throw new RemoteException("Invalid deployment id and code: id="+req.getDeploymentId()+": code="+req.getDeploymentCode());
-        }
-
-        info = deployments[ req.getDeploymentCode() ];
-        if ( info == null ) {
-            throw new RemoteException("The deployement with this ID is null");
-        }
-        return info;
+        return deploymentIndex.getDeployment(req);
     }
 
     private void replyWithFatalError
@@ -446,23 +415,14 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         // We are assuming that the request method is JNDI_LOOKUP
         // TODO: Implement the JNDI_LIST and JNDI_LIST_BINDINGS methods
 
-        //Object result = clientJndi.lookup( req.getRequestString() );
         String name = req.getRequestString();
         if ( name.startsWith("/") ) name = name.substring(1);
 
-        ///DeploymentInfo deployment = OpenEJB.getDeploymentInfo( name );
-        Integer idNum = (Integer)deploymentsMap.get( name );
-
-        DeploymentInfo deployment = null;
-        Object obj = null;
-
-        if ( idNum != null ) {
-            deployment = deployments[idNum.intValue()];
-        }
+        DeploymentInfo deployment = deploymentIndex.getDeployment(name);
 
         if (deployment == null) {
             try {
-                obj = clientJndi.lookup(name);
+                Object obj = clientJndi.lookup(name);
 
                 if ( obj instanceof Context ) {
                     res.setResponseCode( JNDI_CONTEXT );
@@ -481,7 +441,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                                                            deployment.getPrimaryKeyClass(),
                                                            deployment.getComponentType(),
                                                            deployment.getDeploymentID().toString(),
-                                                           idNum.intValue());
+                                                           deploymentIndex.getDeploymentIndex(name));
             res.setResult( metaData );
         }
 
@@ -840,14 +800,14 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         protected javax.ejb.EJBMetaData _getEJBMetaData(CallContext call, ProxyInfo info){
     
             DeploymentInfo deployment = info.getDeploymentInfo();
-            Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
+            int idCode = deploymentIndex.getDeploymentIndex(deployment);
     
             EJBMetaDataImpl metaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
                                                            deployment.getRemoteInterface(),
                                                            deployment.getPrimaryKeyClass(),
                                                            deployment.getComponentType(),
                                                            deployment.getDeploymentID().toString(),
-                                                           idCode.intValue());
+                                                           idCode);
             return metaData;
         }
     
@@ -864,7 +824,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         protected javax.ejb.Handle _getHandle(CallContext call, ProxyInfo info){
             DeploymentInfo deployment = info.getDeploymentInfo();
     
-            Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
+            int idCode = deploymentIndex.getDeploymentIndex(deployment);
     
             Object securityIdentity = null;
             try{
@@ -878,7 +838,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                                                             deployment.getPrimaryKeyClass(),
                                                             deployment.getComponentType(),
                                                             deployment.getDeploymentID().toString(),
-                                                            idCode.intValue());
+                                                            idCode);
             Object primKey = info.getPrimaryKey();
     
             EJBObjectHandler hanlder = EJBObjectHandler.createEJBObjectHandler(eMetaData,sMetaData,cMetaData,primKey);
@@ -899,7 +859,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         protected javax.ejb.HomeHandle _getHomeHandle(CallContext call, ProxyInfo info){
             DeploymentInfo deployment = info.getDeploymentInfo();
     
-            Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
+            int idCode = deploymentIndex.getDeploymentIndex(deployment);
     
             Object securityIdentity = null;
             try{
@@ -913,7 +873,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                                                             deployment.getPrimaryKeyClass(),
                                                             deployment.getComponentType(),
                                                             deployment.getDeploymentID().toString(),
-                                                            idCode.intValue());
+                                                            idCode);
     
             EJBHomeHandler hanlder = EJBHomeHandler.createEJBHomeHandler(eMetaData,sMetaData,cMetaData);
     
@@ -933,7 +893,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         protected javax.ejb.EJBObject _getEJBObject(CallContext call, ProxyInfo info){
             DeploymentInfo deployment = info.getDeploymentInfo();
     
-            Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
+            int idCode = deploymentIndex.getDeploymentIndex(deployment);
     
             Object securityIdentity = null;
             try{
@@ -947,7 +907,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                                                             deployment.getPrimaryKeyClass(),
                                                             deployment.getComponentType(),
                                                             deployment.getDeploymentID().toString(),
-                                                            idCode.intValue());
+                                                            idCode);
             Object primKey = info.getPrimaryKey();
     
             EJBObjectHandler hanlder = EJBObjectHandler.createEJBObjectHandler(eMetaData,sMetaData,cMetaData,primKey);
@@ -968,7 +928,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         protected javax.ejb.EJBHome _getEJBHome(CallContext call, ProxyInfo info){
             DeploymentInfo deployment = info.getDeploymentInfo();
     
-            Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
+            int idCode = deploymentIndex.getDeploymentIndex(deployment);
     
             Object securityIdentity = null;
             try{
@@ -982,7 +942,7 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
                                                             deployment.getPrimaryKeyClass(),
                                                             deployment.getComponentType(),
                                                             deployment.getDeploymentID().toString(),
-                                                            idCode.intValue());
+                                                            idCode);
     
             EJBHomeHandler hanlder = EJBHomeHandler.createEJBHomeHandler(eMetaData,sMetaData,cMetaData);
     

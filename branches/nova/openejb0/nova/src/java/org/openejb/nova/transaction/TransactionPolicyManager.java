@@ -66,7 +66,7 @@ public final class TransactionPolicyManager {
     }
 
     public TxnPolicy getTransactionPolicy(EJBInvocationType invocationType, int operationIndex) {
-        return transactionPolicy[invocationType.getTransactionPolicyKey()][operationIndex];
+        return transactionPolicy[invocationType.getOrdinal()][operationIndex];
     }
 
     private static TxnPolicy[] mapPolicies(String intfName, MethodSignature[] signatures, TransactionPolicySource transactionPolicySource) {

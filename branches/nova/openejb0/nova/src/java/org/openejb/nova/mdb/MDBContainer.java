@@ -65,13 +65,13 @@ import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.GAttributeInfo;
+import org.apache.geronimo.gbean.GBean;
 import org.apache.geronimo.gbean.GBeanContext;
 import org.apache.geronimo.gbean.GBeanInfo;
 import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.GReferenceInfo;
 import org.apache.geronimo.gbean.WaitingException;
-import org.apache.geronimo.gbean.GBean;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 import org.apache.geronimo.naming.java.ReadOnlyContext;
 
@@ -80,11 +80,11 @@ import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.DispatchInterceptor;
-import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
+import org.openejb.nova.security.PermissionManager;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
@@ -161,7 +161,7 @@ public class MDBContainer implements MessageEndpointFactory, GBean {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }
         if (setSecurityInterceptor) {
-            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, MethodHelper.generatePermissions(ejbName, vopFactory.getSignatures()));
+            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, new PermissionManager(ejbName, vopFactory.getSignatures()));
         }
         if (runAs != null) {
             firstInterceptor = new EJBRunAsInterceptor(firstInterceptor, runAs);

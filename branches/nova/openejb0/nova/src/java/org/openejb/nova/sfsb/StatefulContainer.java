@@ -64,12 +64,12 @@ import org.openejb.nova.ConnectionTrackingInterceptor;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
-import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
+import org.openejb.nova.security.PermissionManager;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.transaction.TransactionPolicyManager;
@@ -108,7 +108,7 @@ public class StatefulContainer extends AbstractEJBContainer {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }
         if (setSecurityInterceptor) {
-            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, MethodHelper.generatePermissions(ejbName, vopFactory.getSignatures()));
+            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, new PermissionManager(ejbName, vopFactory.getSignatures()));
         }
         if (runAs != null) {
             firstInterceptor = new EJBRunAsInterceptor(firstInterceptor, runAs);

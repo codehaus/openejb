@@ -47,60 +47,36 @@
  */
 package org.openejb.nova.security;
 
-import java.rmi.AccessException;
-import java.security.AccessControlContext;
-import java.security.AccessControlException;
 import java.security.Permission;
-import javax.ejb.AccessLocalException;
-import javax.security.auth.Subject;
-import javax.security.jacc.PolicyContext;
+import javax.security.jacc.EJBMethodPermission;
 
-import org.apache.geronimo.core.service.Interceptor;
-import org.apache.geronimo.core.service.Invocation;
-import org.apache.geronimo.core.service.InvocationResult;
-import org.apache.geronimo.security.ContextManager;
-
-import org.openejb.nova.EJBInvocation;
-
+import org.openejb.nova.EJBInvocationType;
+import org.openejb.nova.dispatch.MethodSignature;
 
 /**
- * An interceptor that performs the JACC EJB security check before continuing
- * on w/ the interceptor stack call.
  * @version $Revision$ $Date$
  */
-public class EJBSecurityInterceptor implements Interceptor {
-    private final Interceptor next;
-    private final String contextId;
-    private final PermissionManager permissionManager;
+public final class PermissionManager {
+    private final Permission[][] permissions = new Permission[EJBInvocationType.MAX_ORDINAL][];
 
-    public EJBSecurityInterceptor(Interceptor next, String contextId, PermissionManager permissionManager) {
-        this.next = next;
-        this.contextId = contextId;
-        this.permissionManager = permissionManager;
+    public PermissionManager(String ejbName, MethodSignature[] signatures) {
+        permissions[EJBInvocationType.HOME.getOrdinal()] = mapPermissions(ejbName, "Home", signatures);
+        permissions[EJBInvocationType.REMOTE.getOrdinal()] = mapPermissions(ejbName, "Remote", signatures);
+        permissions[EJBInvocationType.LOCALHOME.getOrdinal()] = mapPermissions(ejbName, "LocalHome", signatures);
+        permissions[EJBInvocationType.LOCAL.getOrdinal()] = mapPermissions(ejbName, "Local", signatures);
+        permissions[EJBInvocationType.WEB_SERVICE.getOrdinal()] = mapPermissions(ejbName, "ServiceEndpoint", signatures);
     }
 
-    public InvocationResult invoke(Invocation invocation) throws Throwable {
-        EJBInvocation ejbInvocation = ((EJBInvocation) invocation);
+    public Permission getPermission(EJBInvocationType invocationType, int operationIndex) {
+        return permissions[invocationType.getOrdinal()][operationIndex];
+    }
 
-        Subject subject = ContextManager.getCurrentCaller();
-        try {
-            ContextManager.setCurrentCaller(ContextManager.getNextCaller());
-            PolicyContext.setContextID(contextId);
-            AccessControlContext accessContext = ContextManager.getCurrentContext();
-            if (accessContext != null) {
-                Permission permission = permissionManager.getPermission(ejbInvocation.getType(), ejbInvocation.getMethodIndex());
-                accessContext.checkPermission(permission);
-            }
-
-            return next.invoke(invocation);
-        } catch (AccessControlException e) {
-            if (ejbInvocation.getType().isLocal()) {
-                throw new AccessLocalException(e.getMessage());
-            } else {
-                throw new AccessException(e.getMessage());
-            }
-        } finally {
-            ContextManager.setCurrentCaller(subject);
+    private static Permission[] mapPermissions(String ejbName, String intfName, MethodSignature[] signatures) {
+        Permission[] permissions = new Permission[signatures.length];
+        for (int index = 0; index < signatures.length; index++) {
+            MethodSignature signature = signatures[index];
+            permissions[index] = new EJBMethodPermission(ejbName, signature.getMethodName(), intfName, signature.getParameterTypes());
         }
+        return permissions;
     }
 }

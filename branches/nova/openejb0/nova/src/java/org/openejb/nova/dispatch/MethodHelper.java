@@ -48,10 +48,8 @@
 package org.openejb.nova.dispatch;
 
 import java.lang.reflect.Method;
-import java.security.Permission;
 import java.util.HashMap;
 import java.util.Map;
-import javax.security.jacc.EJBMethodPermission;
 
 import net.sf.cglib.core.Signature;
 import net.sf.cglib.proxy.MethodProxy;
@@ -156,33 +154,5 @@ public final class MethodHelper {
             }
         }
         return translated;
-    }
-
-    public static Permission[] generatePermissions(String ejbName, MethodSignature[] signatures) {
-        Permission[] result = new Permission[5 * signatures.length];
-        MethodSignature signature;
-
-        for (int i = 0; i < signatures.length; i++) {
-            signature = signatures[i];
-            result[i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Remote", signature.getParameterTypes());
-        }
-        for (int i = 0; i < signatures.length; i++) {
-            signature = signatures[i];
-            result[signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Home", signature.getParameterTypes());
-        }
-        for (int i = 0; i < signatures.length; i++) {
-            signature = signatures[i];
-            result[2 * signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "Local", signature.getParameterTypes());
-        }
-        for (int i = 0; i < signatures.length; i++) {
-            signature = signatures[i];
-            result[3 * signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "LocalHome", signature.getParameterTypes());
-        }
-        for (int i = 0; i < signatures.length; i++) {
-            signature = signatures[i];
-            result[4 * signatures.length + i] = new EJBMethodPermission(ejbName, signature.getMethodName(), "ServiceEndpoint", signature.getParameterTypes());
-        }
-
-        return result;
     }
 }

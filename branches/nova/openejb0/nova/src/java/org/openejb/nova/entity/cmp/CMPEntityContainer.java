@@ -49,9 +49,10 @@ package org.openejb.nova.entity.cmp;
 
 import java.net.URI;
 import java.util.List;
-
 import javax.transaction.TransactionManager;
 
+import org.apache.geronimo.cache.InstancePool;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.gbean.GAttributeInfo;
 import org.apache.geronimo.gbean.GBeanInfo;
@@ -59,14 +60,11 @@ import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
-import org.apache.geronimo.cache.InstancePool;
-import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;
 import org.openejb.nova.SystemExceptionInterceptor;
 import org.openejb.nova.dispatch.DispatchInterceptor;
-import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.entity.EntityClientContainerFactory;
@@ -79,6 +77,7 @@ import org.openejb.nova.persistence.UpdateCommand;
 import org.openejb.nova.security.EJBIdentityInterceptor;
 import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
+import org.openejb.nova.security.PermissionManager;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.transaction.TransactionPolicyManager;
@@ -134,7 +133,7 @@ public class CMPEntityContainer extends AbstractEJBContainer {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }
         if (setSecurityInterceptor) {
-            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, MethodHelper.generatePermissions(ejbName, vopFactory.getSignatures()));
+            firstInterceptor = new EJBSecurityInterceptor(firstInterceptor, contextId, new PermissionManager(ejbName, vopFactory.getSignatures()));
         }
         if (runAs != null) {
             firstInterceptor = new EJBRunAsInterceptor(firstInterceptor, runAs);

@@ -63,9 +63,9 @@ public class TestRunner extends junit.textui.TestRunner
     {
         try
         {
-            org.openejb.util.ClasspathUtils.addJarsToPath("lib");
-            org.openejb.util.ClasspathUtils.addJarsToPath("dist");
-            org.openejb.util.ClasspathUtils.addJarsToPath("beans");
+            //org.openejb.util.ClasspathUtils.addJarsToPath("lib");
+            //org.openejb.util.ClasspathUtils.addJarsToPath("dist");
+            //org.openejb.util.ClasspathUtils.addJarsToPath("beans");
 
             TestManager.init(null);
             TestManager.start();
@@ -74,7 +74,8 @@ public class TestRunner extends junit.textui.TestRunner
         {
             System.out.println("Cannot initialize the test environment: " + e.getClass().getName() + " " + e.getMessage());
             e.printStackTrace();
-            System.exit(-1);
+            //System.exit(-1);
+            return;
         }
 
         TestRunner aTestRunner = new TestRunner();
@@ -96,6 +97,6 @@ public class TestRunner extends junit.textui.TestRunner
                 ;   // ignore it
             }
         }
-        System.exit(0);
+        //System.exit(0);
     }
 }

@@ -292,6 +292,27 @@ public class ThreadContext implements Cloneable {
     public java.lang.Object clone() throws java.lang.CloneNotSupportedException {
         return super.clone();
     }
+
 }
+
+/**
+ * NOTES: DMB 4/4/2003
+ * 
+ * This class should possibly be stack-based
+ * 
+ * DeploymentInfos and CurrentOpperations
+ * could be pushed on and poped off the stack
+ * as we go.
+ * 
+ * This would make it possible to do a logical 
+ * stack trace of what beans were called and
+ * what was called.
+ * 
+ * There could also be a listening interface
+ * for this class so that transaction managers
+ * and others can be aware of what is going on
+ * with the container's thread state.
+ * 
+ */
 
 

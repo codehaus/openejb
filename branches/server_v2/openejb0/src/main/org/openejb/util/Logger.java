@@ -69,7 +69,7 @@ public class Logger {
 	// Set log4j's configuration (Note the URL's form)
 	// It assumes that the OpenEJB URL handler has already been registered
 	if( System.getProperty( "log4j.configuration" ) == null ) {
-	    System.setProperty( "log4j.configuration", "resource:/default.logging.conf" );
+	    System.setProperty( "log4j.configuration", "conf/logging.conf" );
 	}
     }
 

@@ -152,7 +152,6 @@ public class EJBResponse implements Response {
      * @exception IOException Includes any I/O exceptions that may occur
      */
     public void writeExternal(ObjectOutput out) throws IOException {
-        //out.writeByte((byte)responseCode);
         out.writeByte(responseCode);
         out.writeObject(result);
     }

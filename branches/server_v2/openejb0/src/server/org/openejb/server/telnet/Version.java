@@ -77,8 +77,5 @@ public class Version extends Command {
         out.println(versionInfo.getProperty( "time" ));
         out.println(versionInfo.getProperty( "url" ));
     }
-
-
-
 }
 

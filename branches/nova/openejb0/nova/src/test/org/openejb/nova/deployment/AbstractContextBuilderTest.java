@@ -69,7 +69,7 @@ import junit.framework.TestCase;
 import org.apache.geronimo.deployment.DeploymentException;
 import org.apache.geronimo.kernel.jmx.JMXKernel;
 import org.apache.geronimo.naming.deployment.ComponentContextBuilder;
-import org.apache.geronimo.naming.java.ProxyFactory;
+import org.apache.geronimo.naming.proxy.ProxyFactory;
 import org.apache.geronimo.xbeans.geronimo.GerEjbLocalRefType;
 import org.apache.geronimo.xbeans.geronimo.GerEjbRefType;
 import org.apache.geronimo.xbeans.geronimo.GerMessageDestinationRefType;

@@ -13,4 +13,8 @@
         ejb-name="webadmin/ConfigBean" 
         deployment-id="webadmin/Configuration"
         container-id="Default Stateless Container"/>
+    <ejb-deployment 
+        ejb-name="webadmin/Properties" 
+        deployment-id="webadmin/Properties"
+        container-id="Default Stateless Container"/>
 </openejb-jar>

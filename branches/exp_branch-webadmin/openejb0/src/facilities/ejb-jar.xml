@@ -29,5 +29,14 @@
     <transaction-type>Bean</transaction-type>
   </session>
 
+  <session>
+    <ejb-name>webadmin/Properties</ejb-name>
+    <home>org.openejb.admin.web.HttpHome</home>
+    <remote>org.openejb.admin.web.HttpObject</remote>
+    <ejb-class>org.openejb.admin.web.PropertiesBean</ejb-class>
+    <session-type>Stateless</session-type>
+    <transaction-type>Bean</transaction-type>
+  </session>
+
 </enterprise-beans>
 </ejb-jar>

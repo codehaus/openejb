@@ -60,6 +60,7 @@ import org.openejb.util.Messages;
 import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
 import java.util.Vector;
+import java.rmi.RemoteException;
 
 /**
  * This is a stateless session bean which handles the action of deployment for the
@@ -101,6 +102,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
     private String containerDeployIdsHTML = "";
     private OpenejbJar openejbJar;
     private Vector beanList = new Vector();
+    private boolean idsWritten = false;
     
     /** Creates a new instance of DeployerBean */
     public void ejbCreate() {
@@ -148,8 +150,14 @@ public class DeployerBean implements javax.ejb.SessionBean {
     }
     
     /** method which starts the deployment process */
-    public void startDeployment() throws OpenEJBException {
-        EjbJar jar = EjbJarUtils.readEjbJar(this.jarFile);
+    public void startDeployment() throws RemoteException {
+        EjbJar jar = null;
+        try { //test for invalid file
+            jar = EjbJarUtils.readEjbJar(this.jarFile);
+        } catch (OpenEJBException oe) {
+            throw new RemoteException(this.jarFile + " is not a valid jar file. ");
+        }
+        
         openejbJar = new OpenejbJar();
         deployerBeans = getBeans(jar);
             
@@ -158,62 +166,83 @@ public class DeployerBean implements javax.ejb.SessionBean {
     }
 
     /** this will automate the deployment process */
-    public void automateDeployment() throws OpenEJBException {
+    public void automateDeployment() throws RemoteException {
         ResourceRef[] refList = null;
         boolean hasReferences = false;
         EjbDeployment deployment = new EjbDeployment();
         
         deploymentHTML += "<tr><td colspan=\"2\">Adding beans to the deployment...</td></tr>";
 
-        //loop through the deployerBeans
-        for(int i=0; i<deployerBeans.length; i++) {
-            //add all the variables to the deployment
-            deployment.setEjbName(deployerBeans[i].getEjbName());
-            deployment.setDeploymentId(autoAssignDeploymentId(deployerBeans[i]));
-            deployment.setContainerId(autoAssignContainerId(deployerBeans[i]));
-            refList = deployerBeans[i].getResourceRef();
-            if(refList.length > 0) {
-                //here we need to print out a list of references
-                hasReferences = true;
+        try {
+            //loop through the deployerBeans
+            for(int i=0; i<deployerBeans.length; i++) {
+                //add all the variables to the deployment
+                deployment.setEjbName(deployerBeans[i].getEjbName());
+                deployment.setDeploymentId(autoAssignDeploymentId(deployerBeans[i]));
+                deployment.setContainerId(autoAssignContainerId(deployerBeans[i]));
+                refList = deployerBeans[i].getResourceRef();
+                if(refList.length > 0) {
+                    //here we need to print out a list of references
+                    hasReferences = true;
+                }
+                openejbJar.addEjbDeployment(deployment);
             }
-            openejbJar.addEjbDeployment(deployment);
+        } catch (OpenEJBException e) {
+            throw new RemoteException(e.getMessage());
         }
     }
     
     /** sets the deployment and container ids */
     public void setDeployAndContainerIds(String deploymentId, String containerId, int index) 
-    throws IndexOutOfBoundsException {
+    throws RemoteException {
         EjbDeployment deployment = new EjbDeployment();
         
         deployment.setEjbName(deployerBeans[index].getEjbName());
         deployment.setDeploymentId(deploymentId);
         deployment.setContainerId(containerId);
-        openejbJar.addEjbDeployment(deployment);
         
-        deploymentHTML += "<tr><td colspan=\"2\">Your bean: " + deployerBeans[index].getEjbName() + " is has been given the id: " +
-                       deploymentId + " and has been assigned to the container: " + containerId + "</td></tr>";
+        try {
+            openejbJar.addEjbDeployment(deployment);
+        } catch (IndexOutOfBoundsException e) {
+            throw new RemoteException(e.getMessage());
+        }
+        
+        deploymentHTML += "<tr><td colspan=\"2\">Your bean: <b>" + deployerBeans[index].getEjbName() + "</b> is has been given the id: <b>" +
+                       deploymentId + "</b> and has been assigned to the container: <b>" + containerId + "</b></td></tr>";
     }
     
-    public void finishDeployment() throws OpenEJBException {
-        if (options[1]) {
-            jarFile = moveJar(jarFile);
-        } else if (options[3]) {
-            jarFile = copyJar(jarFile);
-        }
+    public void finishDeployment() throws RemoteException {
+        try {        
+            if (options[1]) {
+                jarFile = moveJar(jarFile);
+            } else if (options[3]) {
+                jarFile = copyJar(jarFile);
+            }
 
-        /* TODO: Automatically updating the users
-        config file might not be desireable for
-        some people.  We could make this a 
-        configurable option. 
-        */
-        addDeploymentEntryToConfig(jarFile);
-        saveChanges(jarFile, openejbJar);
+            /* TODO: Automatically updating the users
+            config file might not be desireable for
+            some people.  We could make this a 
+            configurable option. 
+            */
+            addDeploymentEntryToConfig(jarFile);
+            saveChanges(jarFile, openejbJar);
+        } catch (OpenEJBException e) {
+            throw new RemoteException(e.getMessage());
+        }
     }
     
     /** this will return the deployment and contianer html */
-    public String promptForDeploymentAndContainerIds() throws OpenEJBException {
-        writeDeploymentId();
-        writeContainerIds();
+    public String promptForDeploymentAndContainerIds() throws RemoteException {
+        try {
+            //put a check here to make sure we don't keeping appending onto the string
+            if(! idsWritten) {
+                writeDeploymentId();
+                writeContainerIds();
+                idsWritten = true;
+            }
+        } catch (OpenEJBException e) {
+            throw new RemoteException(e.getMessage());
+        }
 
         return containerDeployIdsHTML;
     }
@@ -224,7 +253,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
     
     private void listBeanNames() {
         for (int i=0; i<deployerBeans.length; i++) {
-            deploymentHTML += "<tr><td colspan=\"2\">Now deploying..." + deployerBeans[i].getEjbName() + "</td></tr>\n";
+            deploymentHTML += "<tr><td colspan=\"2\">Now deploying...<b>" + deployerBeans[i].getEjbName() + "</b></td></tr>\n";
         }
     }
     
@@ -286,7 +315,8 @@ public class DeployerBean implements javax.ejb.SessionBean {
             ConfigUtils.writeConfig(configFile,config);
         }
         
-        deploymentHTML += "<tr><td colspan=\"2\">Your bean has been deployed!</td></tr>"; 
+        deploymentHTML += "<tr><td colspan=\"2\">Your bean has been deployed! You must restart the OpenEJB server " +
+        "in order for your bean to be recognized.</td></tr>"; 
     }
     
     /*------------------------------------------------------*/

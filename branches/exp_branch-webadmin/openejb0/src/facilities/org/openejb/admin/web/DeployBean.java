@@ -68,14 +68,15 @@ import org.openejb.util.JarUtils;
  * 2. Use multiple file names for handle file (ie deploy23049.obj, deploy503930.obj) 
  *    and then delete them when finished
  * 3. Make sure we are removing the deployer object when finished to free resources
+ *    as well as deleting the handle file
  * 4. Finish implementing the writeForm function
  * 5. Add documentation
  *
  * @author  <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class DeployBean extends WebAdminBean {
-    private String handleFile = System.getProperty("openejb.home") + 
-    System.getProperty("file.separator") + "deploy.obj";
+    private static final String HANDLE_FILE = System.getProperty("openejb.home") + 
+    System.getProperty("file.separator") + "handle.obj";
     private DeployerObject deployer = null;
     
     /*  key for boolean values:
@@ -122,35 +123,21 @@ public class DeployBean extends WebAdminBean {
     public void writeBody(PrintWriter body) throws IOException {
         String deploy = request.getFormParameter("deploy");
         String submitDeployment = request.getFormParameter("submitDeploymentAndContainerIds");
-        //the user has deployed the bean
-        if(deploy != null) {
-            try {
+        
+        try {
+            //the user has deployed the bean
+            if(deploy != null) { 
                 getDeployerHandle();
                 setOptions();
-            } catch (Exception e) {
-                response.setContentType("text/plain");
-                e.printStackTrace(body);
-            }
-            try {
                 deployer.startDeployment();
-            } catch (Exception e) {
-                response.setContentType("text/plain");
-                e.printStackTrace(body);
-            }
-            
-            //here we need to check for user action
-            if(options[0] && options[5]) {
-                //here we automate the deployment - this may return info needed for resources
-                try {
+
+                //here we need to check for user action
+                if(options[0] && options[5]) {
+                    //here we automate the deployment - this may return info needed for resources
                     deployer.automateDeployment();
                     //here we'll need to check for outside resources
                     printDeploymentHtml(body);
-                } catch (Exception e) {
-                    response.setContentType("text/plain");
-                    e.printStackTrace(body);
-                }
-            } else {
-                try {
+                } else {
                     //here we get user reaction
                     body.println("<form action=\"Deployment\" method=\"post\">");
                     body.println("<table border=\"0\" cellspacing=\"2\" cellpadding=\"2\">");
@@ -158,24 +145,19 @@ public class DeployBean extends WebAdminBean {
                     body.println("<tr><td colspan=\"2\"><input type=\"submit\" name=\"submitDeploymentAndContainerIds\" value=\"Continue &gt;&gt;\"></td></tr>");
                     body.println("</table>");
                     body.println("</form>");
-                } catch (Exception e) {
-                    response.setContentType("text/plain");
-                    e.printStackTrace(body);
                 }
-            }
-        //more information is needed from the user
-        } else if (submitDeployment != null) {
-            String deploymentId = null;
-            String containerId = null;
-                
-            //here we need to continue the deployment
-            try {
+            //more information is needed from the user
+            } else if (submitDeployment != null) {
+                String deploymentId = null;
+                String containerId = null;
+
+                //here we need to continue the deployment
                 getDeployerHandle(); //gets the deployment handle
                 //loop through all the beans and set the ids
                 for(int i=0; i<deployer.getDeployerBeanLength(); i++) {
                     deploymentId = request.getFormParameter("deploymentId" + i);
                     containerId = request.getFormParameter("containerId" + i);
-                    
+
                     //check for null
                     if(deploymentId == null) {
                         throw new IOException("Please enter a deployment id");
@@ -184,24 +166,17 @@ public class DeployBean extends WebAdminBean {
                     if(containerId == null) {
                         throw new IOException("Please enter a container id");
                     }
-                    
+
                     deployer.setDeployAndContainerIds(deploymentId, containerId, i); 
                 }
-                
+
                 printDeploymentHtml(body);
-            } catch (Exception e) {
-                response.setContentType("text/plain");
-                e.printStackTrace(body);
-            }
-        } else {
-            try {
+            } else {
                 createDeployerHandle();
-            } catch (Exception e) {
-                response.setContentType("text/plain");
-                e.printStackTrace(body);
+                writeForm(body);
             }
-            
-            writeForm(body);
+        } catch (Exception e) {
+            body.println(e.getMessage());
         }
     }
   
@@ -230,9 +205,9 @@ public class DeployBean extends WebAdminBean {
             
         //get the handle for that instance
         Handle deployerHandle = deployer.getHandle();
-            
+                   
         //write the handle out to a file
-        File myHandleFile = new File(this.handleFile);
+        File myHandleFile = new File(HANDLE_FILE);
         if(! myHandleFile.exists()) {
             myHandleFile.createNewFile();
         }
@@ -246,7 +221,7 @@ public class DeployBean extends WebAdminBean {
     
     /** this function gets the deployer handle */
     private void getDeployerHandle() throws Exception {
-        File myHandleFile = new File(this.handleFile);
+        File myHandleFile = new File(HANDLE_FILE);
 
         //get the object
         ObjectInputStream objectIn = new ObjectInputStream(new FileInputStream(myHandleFile));
@@ -309,7 +284,7 @@ public class DeployBean extends WebAdminBean {
         //info about step 1
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
-        //body.println("<strong>Step 1:</strong> Browse your file system for jar files and then click the \"Add Jar\"");
+        //body.println("<strong>Step 1:</strong> Copy the full path to your bean into the form field below and then click the \"Add Jar\"");
         //body.println("button to add them to the list of jar files to be deployed (if you want to deploy only one");
         //body.println("jar, you don't need to add it to the jar list).");
         body.println("<strong>Step 1:</strong> Copy the full path to your bean into the form field below.");
@@ -377,19 +352,19 @@ public class DeployBean extends WebAdminBean {
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"automate\" value=\"-a\" checked>");
-        body.println("Automate deployment as much as possible.  Applies all automation related flags.");
+        body.println("Automate deployment as much as possible. (the equilivilant of checking the next two check boxes)");
         body.println("</td>");
         body.println("</tr>");
-        
-        /*assign the bean to the first containter - implment later
+               
+        /*assign the bean to the first containter - implment later */
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"assignC\" value=\"-C\">");
         body.println("Automatically assign each bean in the jar to the first container of the appropriate bean type.");
         body.println("</td>");
-        body.println("</tr>"); */
+        body.println("</tr>"); 
         
-        /*assigns a deployment id - implement later 
+        /*assigns a deployment id - implement later */
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"assignD\" value=\"-D\">");
@@ -400,46 +375,54 @@ public class DeployBean extends WebAdminBean {
         body.println("by most servers as the client-side JNDI name.  No");
         body.println("two beans can share the same deployment ID.");
         body.println("</td>");
-        body.println("</tr>"); */
+        body.println("</tr>");
+        
+        //force over write
+        body.println("<tr>");
+        body.println("<td colspan=\"2\">");
+        body.println("<input type=\"checkbox\" name=\"force\" value=\"-f\">");
+        body.println("Forces a move or a copy, overwriting any previously existing jar with the same name.");
+        body.println("</td>");
+        body.println("</tr>");
         body.println("<tr>");
         body.println("<td colspan=\"2\">&nbsp;</td>");
         body.println("</tr>");
         
-        /* sets the openejb home env variable (not yet implemented)
+        /* sets the openejb home env variable (not yet implemented) */
         body.println("<tr>");
         body.println("<td colspan=\"2\">Set the OPENEJB_HOME to the specified directory. (leave blank for non-use)</td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td><nobr>Directory</nobr></td>");
-        body.println("<td><input type=\"file\" name=\"homeDir\" size=\"35\"></td>");
+        body.println("<td><input type=\"text\" name=\"homeDir\" size=\"35\" maxlength=\"75\"></td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td colspan=\"2\">&nbsp;</td>");
-        body.println("</tr>"); */
+        body.println("</tr>"); 
         
-        /* sets the log4j configuration file (not yet implemented)
+        /* sets the log4j configuration file (not yet implemented) */
         body.println("<tr>");
         body.println("<td colspan=\"2\">Set the log4j configuration to the specified file. (leave blank for non-use)</td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td><nobr>Log4J File</nobr></td>");
-        body.println("<td><input type=\"file\" name=\"log4JFile\" size=\"35\"></td>");
+        body.println("<td><input type=\"text\" name=\"log4JFile\" size=\"35\" maxlength=\"75\"></td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td colspan=\"2\">&nbsp;</td>");
-        body.println("</tr>"); */
+        body.println("</tr>"); 
         
-        /* sets the OpenEJB configuration file (not yet implemented)
+        /* sets the OpenEJB configuration file (not yet implemented) */
         body.println("<tr>");
         body.println("<td colspan=\"2\">Sets the OpenEJB configuration to the specified file. (leave blank for non-use)</td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td><nobr>Config File</nobr></td>");
-        body.println("<td><input type=\"file\" name=\"configFile\" size=\"35\"></td>");
+        body.println("<td><input type=\"text\" name=\"configFile\" size=\"35\" maxlength=\"75\"></td>");
         body.println("</tr>");
         body.println("<tr>");
         body.println("<td colspan=\"2\">&nbsp;</td>");
-        body.println("</tr>"); */
+        body.println("</tr>"); 
         
         //deploy the bean
         body.println("<tr>");
@@ -487,7 +470,7 @@ public class DeployBean extends WebAdminBean {
      *
      */
     public void writePageTitle(PrintWriter body) throws IOException {
-        body.println("Deploy a Bean");
+        body.println("EJB Deployment");
     }
     
     /** Write the sub items for this bean in the left navigation bar of

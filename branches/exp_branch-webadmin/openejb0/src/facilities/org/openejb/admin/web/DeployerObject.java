@@ -44,7 +44,6 @@
 package org.openejb.admin.web;
 
 import java.rmi.RemoteException;
-import org.openejb.OpenEJBException;
 
 /**
  *
@@ -56,12 +55,12 @@ public interface DeployerObject extends javax.ejb.EJBObject {
     public boolean[] getBooleanValues() throws RemoteException;
     public void setJarFile(String jarFile) throws RemoteException;
     public String getJarFile() throws RemoteException;
-    public void startDeployment() throws RemoteException, OpenEJBException;
-    public String promptForDeploymentAndContainerIds() throws RemoteException, OpenEJBException;
-    public void automateDeployment() throws RemoteException, OpenEJBException;
-    public void finishDeployment() throws RemoteException, OpenEJBException;
+    public void startDeployment() throws RemoteException;
+    public String promptForDeploymentAndContainerIds() throws RemoteException;
+    public void automateDeployment() throws RemoteException;
+    public void finishDeployment() throws RemoteException;
     public String getDeploymentHTML() throws RemoteException;
     public int getDeployerBeanLength() throws RemoteException;
     public void setDeployAndContainerIds(String deploymentId, String containerId, int index) 
-    throws RemoteException, IndexOutOfBoundsException;
+    throws RemoteException;
 }

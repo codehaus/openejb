@@ -185,9 +185,10 @@ public class DeployBean extends WebAdminBean {
                         throw new IOException("Please enter a container id");
                     }
                     
-                    deployer.setDeployAndContainerIds(deploymentId, containerId, i);
-                    printDeploymentHtml(body);
+                    deployer.setDeployAndContainerIds(deploymentId, containerId, i); 
                 }
+                
+                printDeploymentHtml(body);
             } catch (Exception e) {
                 response.setContentType("text/plain");
                 e.printStackTrace(body);
@@ -475,7 +476,7 @@ public class DeployBean extends WebAdminBean {
      *
      */
     public void writeHtmlTitle(PrintWriter body) throws IOException {
-        body.println("Web Administration Home");
+        body.println(HTML_TITLE);
     }
     
     /** Write the title of the page.  This is displayed right

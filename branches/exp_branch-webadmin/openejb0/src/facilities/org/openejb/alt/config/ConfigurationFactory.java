@@ -1036,7 +1036,7 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
             }
 
             try {
-                EjbJar ejbJar = ConfigUtils.readEjbJar(jarLocation);
+                EjbJar ejbJar = EjbJarUtils.readEjbJar(jarLocation);
                 /* If there is no openejb-jar.xml an exception
                  * will be thrown.
                  * TODO: This shouldn't cause such a problem.  If

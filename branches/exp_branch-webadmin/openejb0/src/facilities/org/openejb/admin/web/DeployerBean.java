@@ -67,7 +67,7 @@ import java.rmi.RemoteException;
  * web administration.
  *
  * TODO:
- * 1. Finish implementing the rest of the feature of the command line tool
+ * 1. Finish implementing the rest of the features of the command line tool
  * 2. Add better error handling
  * 3. Add documentation
  *
@@ -236,8 +236,18 @@ public class DeployerBean implements javax.ejb.SessionBean {
         try {
             //put a check here to make sure we don't keeping appending onto the string
             if(! idsWritten) {
-                writeDeploymentId();
-                writeContainerIds();
+                //here we want to check to see which options to set
+                if(options[5]) {
+                    writeDeploymentId(true);
+                } else {
+                    writeDeploymentId(false);
+                }
+                if(options[0]) {
+                    writeContainerIds(true);
+                } else {
+                    writeContainerIds(false);
+                }
+                    
                 idsWritten = true;
             }
         } catch (OpenEJBException e) {
@@ -258,31 +268,42 @@ public class DeployerBean implements javax.ejb.SessionBean {
     }
     
     /** gets a container id */
-    private void writeContainerIds() throws OpenEJBException {
+    private void writeContainerIds(boolean auto) throws OpenEJBException {
         if(deployerBeans == null) {
             throw new OpenEJBException("The deployerBeans variable is null, please start the deployment process first");
         }
         
+        
         //loop through the deployerBeans
         Container[] cs = null;
         for(int i=0; i<deployerBeans.length; i++) {
-            containerDeployIdsHTML += "<tr><td>" + deployerBeans[i].getEjbName() + "</td>\n";
-            containerDeployIdsHTML += "<td><select name=\"containerId" + i + "\">\n";
-            cs = getUsableContainers(deployerBeans[i]);
-            //loop through the continer
-            for(int j=0; j<cs.length; j++) {
-                containerDeployIdsHTML += "<option value=\"" + cs[j].getId() + "\">" + cs[j].getId() + "</option>\n";
+            if(auto) {
+                containerDeployIdsHTML += "<input type=\"hidden\" name=\"containerId" + i + "\" value=\"" + 
+                autoAssignContainerId(deployerBeans[i]) + "\">";
+            } else {
+                containerDeployIdsHTML += "<tr><td>" + deployerBeans[i].getEjbName() + "</td>\n";
+                containerDeployIdsHTML += "<td><select name=\"containerId" + i + "\">\n";
+                cs = getUsableContainers(deployerBeans[i]);
+                //loop through the continer
+                for(int j=0; j<cs.length; j++) {
+                    containerDeployIdsHTML += "<option value=\"" + cs[j].getId() + "\">" + cs[j].getId() + "</option>\n";
+                }
+                containerDeployIdsHTML += "</select></td></tr>\n";
             }
-            containerDeployIdsHTML += "</select></td></tr>\n";
         }
     }
     
     /** writes the html for deployment id */
-    private void writeDeploymentId() {
+    private void writeDeploymentId(boolean auto) {
         for(int i=0; i<deployerBeans.length; i++) {
-            containerDeployIdsHTML += "<tr><td colspan=\"2\">Please enter a deployment id for " + deployerBeans[i].getEjbName() + ":</td></tr>\n";
-            containerDeployIdsHTML += "<tr><td>Deployment Id:</td>\n";
-            containerDeployIdsHTML += "<td><input type=\"text\" name=\"deploymentId" + i + "\" size=\"25\" maxlength=\"50\"></td></tr>\n";
+            if(auto) {
+                containerDeployIdsHTML += "<input type=\"hidden\" name=\"deploymentId" + i + "\" value=\"" + 
+                autoAssignDeploymentId(deployerBeans[i]) + "\">";
+            } else {
+                containerDeployIdsHTML += "<tr><td colspan=\"2\">Please enter a deployment id for " + deployerBeans[i].getEjbName() + ":</td></tr>\n";
+                containerDeployIdsHTML += "<tr><td>Deployment Id:</td>\n";
+                containerDeployIdsHTML += "<td><input type=\"text\" name=\"deploymentId" + i + "\" size=\"25\" maxlength=\"50\"></td></tr>\n";
+            }
         }
     }
     

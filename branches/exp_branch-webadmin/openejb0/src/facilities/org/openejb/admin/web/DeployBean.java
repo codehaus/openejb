@@ -125,7 +125,7 @@ public class DeployBean extends WebAdminBean {
         String submitDeployment = request.getFormParameter("submitDeploymentAndContainerIds");
         
         try {
-            //the user has deployed the bean
+            //the user has hit the deploy button
             if(deploy != null) { 
                 getDeployerHandle();
                 setOptions();
@@ -179,7 +179,7 @@ public class DeployBean extends WebAdminBean {
             body.println(e.getMessage());
         }
     }
-  
+    
     private void printDeploymentHtml(PrintWriter body) throws Exception {
         deployer.finishDeployment();
         body.println("<table border=\"0\" cellspacing=\"2\" cellpadding=\"2\">");
@@ -244,18 +244,33 @@ public class DeployBean extends WebAdminBean {
         //get the options
         String moveType = request.getFormParameter("moveType");
         if(moveType.equals("-c")) {
-            this.options[3] = true;
+            options[3] = true;
         } else if (moveType.equals("-m")) {
-            this.options[1] = true;
+            options[1] = true;
+        }
+        //set container id
+        String containerId = request.getFormParameter("assignC");
+        if(containerId != null) {
+            options[0] = true;
+        }
+        //set deployment id
+        String deploymentId = request.getFormParameter("assignD");
+        if(deploymentId != null) {
+            options[5] = true;
         }
         //automate deployment
         String automate = request.getFormParameter("automate");
         if(automate != null) {
-            this.options[0] = true;
-            this.options[5] = true;
+            options[0] = true;
+            options[5] = true;
+        }
+        //force overwrite
+        String force = request.getFormParameter("force");
+        if(force != null) {
+            options[2] = true;
         }
         
-        this.deployer.setBooleanValues(this.options);
+        this.deployer.setBooleanValues(options);
     }
     
     /** writes the form for this page 
@@ -352,7 +367,7 @@ public class DeployBean extends WebAdminBean {
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"automate\" value=\"-a\" checked>");
-        body.println("Automate deployment as much as possible. (the equilivilant of checking the next two check boxes)");
+        body.println("Automate deployment as much as possible. (the equivalent of checking the next two check boxes)");
         body.println("</td>");
         body.println("</tr>");
                
@@ -448,6 +463,8 @@ public class DeployBean extends WebAdminBean {
         body.println("<td colspan=\"2\">Note: see the help section for examples on how to deploy beans.</td>");
         body.println("</tr>"); */
         body.println("</table>");
+        //the handle file name
+        body.println("<input type=\"hidden\" name=\"handleFile\" value=\"\">");
         body.println("</form>");
     }
     

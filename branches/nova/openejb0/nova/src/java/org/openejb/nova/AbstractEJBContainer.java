@@ -49,33 +49,33 @@ package org.openejb.nova;
 
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Iterator;
 
 import javax.ejb.EJBHome;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
 import javax.ejb.EJBObject;
-import javax.transaction.TransactionManager;
 import javax.security.auth.Subject;
+import javax.transaction.TransactionManager;
 
 import org.apache.geronimo.cache.InstancePool;
 import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
-import org.apache.geronimo.kernel.service.GeronimoMBeanContext;
-import org.apache.geronimo.kernel.service.GeronimoMBeanTarget;
+import org.apache.geronimo.gbean.GBean;
+import org.apache.geronimo.gbean.GBeanContext;
 import org.apache.geronimo.naming.java.ReadOnlyContext;
 import org.apache.geronimo.remoting.DeMarshalingInterceptor;
 import org.apache.geronimo.remoting.InterceptorRegistry;
+import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.dispatch.VirtualOperation;
+import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TxnPolicy;
-import org.openejb.nova.transaction.ContainerPolicy;
-import org.openejb.nova.deployment.TransactionPolicySource;
 
 /**
  *
@@ -83,7 +83,7 @@ import org.openejb.nova.deployment.TransactionPolicySource;
  * @version $Revision$ $Date$
  */
 public abstract class AbstractEJBContainer
-        implements EJBContainer, GeronimoMBeanTarget {
+        implements EJBContainer, GBean {
 
     protected final URI uri;
     protected final String ejbName;
@@ -156,11 +156,7 @@ public abstract class AbstractEJBContainer
         this.trackedConnectionAssociator = trackedConnectionAssociator;
     }
 
-    public void setMBeanContext(GeronimoMBeanContext context) {
-    }
-
-    public boolean canStart() {
-        return true;
+    public void setGBeanContext(GBeanContext context) {
     }
 
     /* Start the Component
@@ -198,10 +194,6 @@ public abstract class AbstractEJBContainer
         }
     }
 
-    public boolean canStop() {
-        return true;
-    }
-
     /* Stop the Component
      * @see org.apache.geronimo.core.service.AbstractManagedObject#doStop()
      */
@@ -224,7 +216,7 @@ public abstract class AbstractEJBContainer
     public String getEJBName() {
         return ejbName;
     }
-    
+
     public Class getBeanClass() {
         return beanClass;
     }

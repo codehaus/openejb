@@ -47,8 +47,8 @@
  */
 package org.openejb.nova.deployment;
 
-import org.openejb.nova.transaction.TxnPolicy;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.transaction.TxnPolicy;
 
 /**
  *

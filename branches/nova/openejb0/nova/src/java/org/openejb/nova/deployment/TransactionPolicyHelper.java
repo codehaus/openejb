@@ -57,7 +57,7 @@ import java.util.TreeSet;
 
 import org.apache.geronimo.deployment.model.ejb.ContainerTransaction;
 import org.apache.geronimo.deployment.model.ejb.Method;
-import org.apache.geronimo.kernel.deployment.DeploymentException;
+import org.apache.geronimo.deployment.DeploymentException;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.transaction.BeanPolicy;
 import org.openejb.nova.transaction.ContainerPolicy;

@@ -49,6 +49,7 @@ package org.openejb.nova.slsb;
 
 import java.net.URI;
 import java.rmi.RemoteException;
+import java.util.HashSet;
 import javax.ejb.EJBException;
 import javax.ejb.EJBHome;
 import javax.ejb.EJBMetaData;
@@ -57,15 +58,20 @@ import javax.ejb.Handle;
 import javax.ejb.RemoveException;
 import javax.rmi.PortableRemoteObject;
 
+import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.core.service.SimpleInvocationResult;
-import junit.framework.TestCase;
+import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 
-import org.openejb.nova.EJBLocalClientContainer;
-import org.openejb.nova.EJBRemoteClientContainer;
+import junit.framework.TestCase;
+import org.openejb.nova.EJBContainerConfiguration;
+import org.openejb.nova.MockTransactionManager;
+import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.transaction.ContainerPolicy;
+import org.openejb.nova.transaction.TxnPolicy;
 
 /**
  *
@@ -74,11 +80,10 @@ import org.openejb.nova.dispatch.MethodSignature;
  * @version $Revision$ $Date$
  */
 public class StatelessClientContainerTest extends TestCase {
-    private EJBRemoteClientContainer remoteContainer;
-    private EJBLocalClientContainer localContainer;
+    private StatelessContainer container;
 
     public void XtestMetadata() throws Exception {
-        EJBMetaData metaData = remoteContainer.getEJBHome().getEJBMetaData();
+        EJBMetaData metaData = container.getEJBHome().getEJBMetaData();
         assertTrue(metaData.isSession());
         assertTrue(metaData.isStatelessSession());
         assertEquals(MockHome.class, metaData.getHomeInterfaceClass());
@@ -101,7 +106,7 @@ public class StatelessClientContainerTest extends TestCase {
     }
 
     public void XtestHomeInterface() throws Exception {
-        MockHome home = (MockHome) remoteContainer.getEJBHome();
+        MockHome home = (MockHome) container.getEJBHome();
         assertTrue(home.create() instanceof MockRemote);
         try {
             home.remove(new Integer(1));
@@ -126,7 +131,7 @@ public class StatelessClientContainerTest extends TestCase {
     }
 
     public void testLocalHomeInterface() {
-        MockLocalHome localHome = (MockLocalHome) localContainer.getEJBLocalHome();
+        MockLocalHome localHome = (MockLocalHome) container.getEJBLocalHome();
         try {
             localHome.remove(new Integer(1));
             fail("Expected RemoveException");
@@ -138,7 +143,7 @@ public class StatelessClientContainerTest extends TestCase {
     }
 
     public void XtestObjectInterface() throws Exception {
-        MockHome home = (MockHome) remoteContainer.getEJBHome();
+        MockHome home = (MockHome) container.getEJBHome();
         MockRemote remote = home.create();
         assertTrue(home == remote.getEJBHome());
         assertTrue(remote.isIdentical(remote));
@@ -155,7 +160,7 @@ public class StatelessClientContainerTest extends TestCase {
     }
 
     public void testLocalInterface() throws Exception {
-        MockLocalHome localHome = (MockLocalHome) localContainer.getEJBLocalHome();
+        MockLocalHome localHome = (MockLocalHome) container.getEJBLocalHome();
         MockLocal local = localHome.create();
         assertTrue(localHome == local.getEJBLocalHome());
         assertTrue(local.isIdentical(local));
@@ -172,7 +177,7 @@ public class StatelessClientContainerTest extends TestCase {
     }
 
     public void XtestInvocation() throws Exception {
-        MockHome home = (MockHome) remoteContainer.getEJBHome();
+        MockHome home = (MockHome) container.getEJBHome();
         MockRemote remote = home.create();
         assertEquals(2, remote.intMethod(1));
         try {
@@ -217,9 +222,26 @@ public class StatelessClientContainerTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         URI uri = new URI("async://localhost:3434#1234");
-        StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(MockEJB.class);
-        StatelessClientContainerFactory clientFactory = new StatelessClientContainerFactory(vopFactory.getSignatures(), uri, MockHome.class, MockRemote.class, null, MockLocalHome.class, MockLocal.class);
-        remoteContainer = clientFactory.getRemoteClient();
-        localContainer = clientFactory.getLocalClient();
+
+        EJBContainerConfiguration config;
+        config = new EJBContainerConfiguration();
+        config.uri = uri;
+        config.ejbName = "MockSession";
+        config.beanClassName = MockEJB.class.getName();
+        config.homeInterfaceName = MockHome.class.getName();
+        config.localHomeInterfaceName = MockLocalHome.class.getName();
+        config.remoteInterfaceName = MockRemote.class.getName();
+        config.localInterfaceName = MockLocal.class.getName();
+        config.txnDemarcation = TransactionDemarcation.CONTAINER;
+        config.unshareableResources = new HashSet();
+        config.transactionPolicySource = new TransactionPolicySource() {
+            public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
+                return ContainerPolicy.Required;
+            }
+        };
+        config.contextId = "Mock Deployment Id";
+
+        container = new StatelessContainer(config, new MockTransactionManager(), new ConnectionTrackingCoordinator());
+        container.doStart();
     }
 }

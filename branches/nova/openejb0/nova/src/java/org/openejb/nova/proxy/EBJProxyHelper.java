@@ -45,7 +45,7 @@
  *
  * ====================================================================
  */
-package org.openejb.nova;
+package org.openejb.nova.proxy;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -53,67 +53,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.cglib.core.Signature;
-import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 import net.sf.cglib.reflect.FastClass;
 import org.objectweb.asm.Type;
+import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.dispatch.MethodSignature;
 
 /**
- *
- *
  * @version $Revision$ $Date$
  */
-public class EJBProxyInterceptor implements MethodInterceptor {
-    /**
-     * The client container that is invoked from intercepted methods.
-     */
-    private final ClientContainer container;
-
-    /**
-     * The type of the ejb invocation.  This is used during construction of the EJBInvocation object.
-     */
-    private final EJBInvocationType ejbInvocationType;
-
-    /**
-     * Id of the object being invoked.  This is used during construction of the EJBInvocation object.
-     * May be null for a home proxy.
-     */
-    private final Object id;
-
-    /**
-     * Map from interface method ids to vop ids.
-     */
-    private final int[] operationMap;
-
-    public EJBProxyInterceptor(ClientContainer container, EJBInvocationType ejbInvocationType, Class proxyType, MethodSignature[] signatures) {
-        this(container, ejbInvocationType, getOperationMap(ejbInvocationType, proxyType, signatures), null);
-    }
-
-    public EJBProxyInterceptor(ClientContainer container, EJBInvocationType ejbInvocationType, int[] operationMap, Object id) {
-        assert container != null;
-        assert operationMap != null;
-
-        this.container = container;
-        this.ejbInvocationType = ejbInvocationType;
-        this.operationMap = operationMap;
-        this.id = id;
-    }
-
-    /**
-     * Handles an invocation on a proxy
-     * @param object the proxy instance
-     * @param method java method that was invoked
-     * @param args arguments to the mentod
-     * @param methodProxy a CGLib method proxy of the method invoked
-     * @return the result of the invocation
-     * @throws java.lang.Throwable if any exceptions are thrown by the implementation method
-     */
-    public Object intercept(Object object, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
-        int vopIndex = operationMap[methodProxy.getSuperIndex()];
-        return container.invoke(ejbInvocationType, id, vopIndex, args);
-    }
-
+public class EBJProxyHelper {
     public static int[] getOperationMap(EJBInvocationType ejbInvocationType, Class proxyType, MethodSignature[] signatures) {
         // translate the method names
         MethodSignature[] translated = translate(ejbInvocationType, signatures);
@@ -188,7 +137,11 @@ public class EJBProxyInterceptor implements MethodInterceptor {
         for (int i = 0; i < methods.length; i++) {
             int shadowIndex = getSuperIndex(proxyType, methods[i]);
             if (shadowIndex >= 0) {
-                shadowMap.put(new MethodSignature(methods[i]), new Integer(shadowIndex));
+                if (methods[i].getName().equals("remove")) {
+                    shadowMap.put(new MethodSignature("remove"), new Integer(shadowIndex));
+                } else {
+                    shadowMap.put(new MethodSignature(methods[i]), new Integer(shadowIndex));
+                }
             }
         }
         return shadowMap;

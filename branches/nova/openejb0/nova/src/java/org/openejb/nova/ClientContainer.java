@@ -55,11 +55,11 @@
  */
 package org.openejb.nova;
 
+import org.apache.geronimo.core.service.InvocationResult;
+
 /**
- *
- *
  * @version $Revision$ $Date$
  */
 public interface ClientContainer {
-    Object invoke(EJBInvocationType ejbInvocationType, Object id, int methodIndex, Object[] args) throws Throwable;
+    InvocationResult invoke(EJBInvocation ejbInvocation) throws Throwable;
 }

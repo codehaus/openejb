@@ -58,12 +58,11 @@ import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.dispatch.VirtualOperation;
 
 /**
- *
- *
  * @version $Revision$ $Date$
  */
 public class StatelessOperationFactory extends AbstractOperationFactory {
-    public static StatelessOperationFactory newInstance(Class beanClass) {
+    public static StatelessOperationFactory newInstance(StatelessContainer container) {
+        Class beanClass = container.getBeanClass();
         FastClass fastClass = FastClass.create(beanClass);
 
         Method[] methods = beanClass.getMethods();
@@ -75,6 +74,9 @@ public class StatelessOperationFactory extends AbstractOperationFactory {
         }
         ArrayList sigList = new ArrayList(methods.length);
         ArrayList vopList = new ArrayList(methods.length);
+
+        sigList.add(new MethodSignature("ejbCreate"));
+        vopList.add(new CreateMethod(container));
         for (int i = 0; i < methods.length; i++) {
             Method method = methods[i];
             if (Object.class == method.getDeclaringClass()) {

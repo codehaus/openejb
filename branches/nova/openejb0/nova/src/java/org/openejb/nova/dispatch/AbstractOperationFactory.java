@@ -47,20 +47,7 @@
  */
 package org.openejb.nova.dispatch;
 
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import javax.ejb.EJBHome;
-import javax.ejb.EJBLocalHome;
-import javax.ejb.EJBLocalObject;
-import javax.ejb.EJBObject;
-
-import org.openejb.nova.method.EJBInterfaceMethods;
-
 /**
- *
- *
  * @version $Revision$ $Date$
  */
 public class AbstractOperationFactory implements VirtualOperationFactory {

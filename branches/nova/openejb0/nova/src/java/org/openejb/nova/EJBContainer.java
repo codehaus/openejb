@@ -47,12 +47,12 @@
  */
 package org.openejb.nova;
 
-import java.lang.reflect.Method;
 import javax.ejb.EJBHome;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
 import javax.ejb.EJBObject;
 
+import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.naming.java.ReadOnlyContext;
 
@@ -64,8 +64,7 @@ import org.openejb.nova.transaction.EJBUserTransaction;
  *
  * @version $Revision$ $Date$
  */
-public interface EJBContainer {
-
+public interface EJBContainer extends Interceptor {
     /**
      * Return the name of the EJB
      * @return the name of the EJB
@@ -128,6 +127,4 @@ public interface EJBContainer {
      * @return this EJB's JNDI ComponentContext
      */
     ReadOnlyContext getComponentContext();
-
-    //int getMethodIndex(Method method, EJBInvocationType type);
 }

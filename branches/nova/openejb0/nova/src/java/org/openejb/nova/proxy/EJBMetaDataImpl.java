@@ -48,13 +48,13 @@
 package org.openejb.nova.proxy;
 
 import java.io.Serializable;
-import javax.ejb.EJBMetaData;
-import javax.ejb.EJBHome;
 import javax.ejb.EJBException;
+import javax.ejb.EJBHome;
+import javax.ejb.EJBMetaData;
 
 /**
- * 
- * 
+ *
+ *
  * @version $Revision$ $Date$
  */
 public class EJBMetaDataImpl implements EJBMetaData, Serializable {
@@ -99,7 +99,7 @@ public class EJBMetaDataImpl implements EJBMetaData, Serializable {
     }
 
     public Class getPrimaryKeyClass() {
-        if(session) {
+        if (session) {
             throw new EJBException("Cannot use getPrimaryKey() on a session bean");
         }
         return primaryKeyClass;

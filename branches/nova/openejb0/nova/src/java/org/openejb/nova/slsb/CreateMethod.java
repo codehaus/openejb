@@ -45,74 +45,29 @@
  *
  * ====================================================================
  */
-package org.openejb.nova;
+package org.openejb.nova.slsb;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import org.apache.geronimo.core.service.InvocationResult;
+import org.apache.geronimo.core.service.SimpleInvocationResult;
 
-import net.sf.cglib.proxy.Callback;
-import net.sf.cglib.proxy.CallbackFilter;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.NoOp;
+import org.openejb.nova.EJBInvocation;
+import org.openejb.nova.dispatch.VirtualOperation;
 
 /**
  * @version $Revision$ $Date$
  */
-public class EJBProxyFactory {
-    private final Class type;
-    private final Enhancer enhancer;
+public class CreateMethod implements VirtualOperation {
+    private final StatelessContainer container;
 
-    public EJBProxyFactory(Class superClass, Class clientInterface) {
-        this(superClass, new Class[]{clientInterface});
+    public CreateMethod(StatelessContainer container) {
+        this.container = container;
     }
 
-    public EJBProxyFactory(Class superClass, Class[] clientInterfaces) {
-        assert superClass != null;
-        assert clientInterfaces != null;
-        enhancer = new Enhancer();
-        enhancer.setSuperclass(superClass);
-        enhancer.setInterfaces(clientInterfaces);
-        enhancer.setCallbackFilter(new NoOverrideCallbackFilter(superClass));
-        enhancer.setCallbackTypes(new Class[]{NoOp.class, MethodInterceptor.class});
-        enhancer.setUseFactory(false);
-        this.type = enhancer.createClass();
-    }
-
-    public Class getType() {
-        return type;
-    }
-
-    public Object create(MethodInterceptor methodInterceptor) {
-        return create(methodInterceptor, new Class[0], new Object[0]);
-    }
-
-    public synchronized Object create(MethodInterceptor methodInterceptor, Class[] types, Object[] arguments) {
-        assert methodInterceptor != null;
-        enhancer.setCallbacks(new Callback[]{NoOp.INSTANCE, methodInterceptor});
-        return enhancer.create(types, arguments);
-    }
-
-    private static class NoOverrideCallbackFilter implements CallbackFilter {
-        private Class superClass;
-
-        public NoOverrideCallbackFilter(Class superClass) {
-            this.superClass = superClass;
-        }
-
-        public int accept(Method method) {
-            // we don't intercept non-public methods like finalize
-            if(!Modifier.isPublic(method.getModifiers())) {
-                return 0;
-            }
-
-            try {
-                // if the super class defined this method don't intercept
-                superClass.getMethod(method.getName(), method.getParameterTypes());
-                return 0;
-            } catch (Throwable e) {
-                return 1;
-            }
+    public InvocationResult execute(EJBInvocation invocation) throws Throwable {
+        if (invocation.getType().isLocal()) {
+            return new SimpleInvocationResult(true, container.getEJBLocalObject(null));
+        } else {
+            return new SimpleInvocationResult(true, container.getEJBObject(null));
         }
     }
 }

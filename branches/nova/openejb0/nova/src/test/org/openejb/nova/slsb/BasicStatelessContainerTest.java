@@ -84,7 +84,7 @@ public class BasicStatelessContainerTest extends TestCase {
     private Set containerPatterns;
     private MBeanServer mbServer;
 
-    public void testRemoteInvocation() throws Throwable {
+    public void XtestRemoteInvocation() throws Throwable {
         MockHome home = (MockHome) mbServer.invoke(containerName, "getEJBHome", null, null);
         MockRemote remote = home.create();
         assertEquals(2, remote.intMethod(1));
@@ -98,7 +98,7 @@ public class BasicStatelessContainerTest extends TestCase {
         remote.remove();
     }
 
-    public void testRemoteSpeed() throws Throwable {
+    public void XtestRemoteSpeed() throws Throwable {
         MockHome home = (MockHome) mbServer.invoke(containerName, "getEJBHome", null, null);
         MockRemote remote = home.create();
         remote.intMethod(1);

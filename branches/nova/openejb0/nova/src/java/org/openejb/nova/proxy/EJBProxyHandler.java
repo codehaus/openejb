@@ -47,6 +47,7 @@
  */
 package org.openejb.nova.proxy;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import javax.ejb.EJBException;
 
@@ -63,11 +64,9 @@ import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.dispatch.MethodSignature;
 
 /**
- *
- *
  * @version $Revision$ $Date$
  */
-public class EJBProxyHandler implements MethodInterceptor {
+public class EJBProxyHandler implements MethodInterceptor, Serializable {
     /**
      * The client container that is invoked from intercepted methods.
      */
@@ -90,7 +89,7 @@ public class EJBProxyHandler implements MethodInterceptor {
     private final int[] operationMap;
 
     public EJBProxyHandler(ClientContainer container, EJBInvocationType ejbInvocationType, Class proxyType, MethodSignature[] signatures) {
-        this(container, ejbInvocationType, ProxyHelper.getOperationMap(ejbInvocationType, proxyType, signatures), null);
+        this(container, ejbInvocationType, EBJProxyHelper.getOperationMap(ejbInvocationType, proxyType, signatures), null);
     }
 
     public EJBProxyHandler(ClientContainer container, EJBInvocationType ejbInvocationType, int[] operationMap, Object id) {
@@ -130,8 +129,7 @@ public class EJBProxyHandler implements MethodInterceptor {
             } else {
                 invocation = new EJBInvocationImplRemote(ejbInvocationType, id, methodIndex, args, ContextManager.getCurrentCallerId());
             }
-            result = null;
-//            result = container.invoke(invocation);
+            result = container.invoke(invocation);
         } catch (Throwable t) {
             // System exception from interceptor chain - throw as is or wrapped in an EJBException
             if (t instanceof Exception && t instanceof RuntimeException == false) {

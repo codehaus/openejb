@@ -53,6 +53,8 @@ import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.core.service.Invocation;
 import org.apache.geronimo.core.service.SimpleInvocationResult;
 
+import org.openejb.nova.EJBInvocation;
+
 /**
  *
  *
@@ -74,44 +76,45 @@ public class MDBClassLoaderInterceptor implements Interceptor {
     }
 
     public InvocationResult invoke(Invocation invocation) throws Throwable {
-        MDBInvocation mdbInvocation = (MDBInvocation)invocation;
-        int methodIndex = mdbInvocation.getMethodIndex();
+//       MDBInvocation mdbInvocation = (MDBInvocation)invocation;
+       EJBInvocation ejbInvocation = (EJBInvocation)invocation;
+        int methodIndex = ejbInvocation.getMethodIndex();
         if (methodIndex == beforeDeliveryIndex) {
             //ignore out of order calls
-            if (mdbInvocation.getOldClassLoader() != null) {
-                return new SimpleInvocationResult(true, null);
-            }
-            Thread currentThread = Thread.currentThread();
-            ClassLoader oldClassLoader = currentThread.getContextClassLoader();
-            currentThread.setContextClassLoader(classLoader);
-            mdbInvocation.setOldClassLoader(oldClassLoader);
-            return next.invoke(mdbInvocation);
+//            if (mdbInvocation.getOldClassLoader() != null) {
+//                return new SimpleInvocationResult(true, null);
+//            }
+//            ClassLoader oldClassLoader = currentThread.getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(classLoader);
+//            mdbInvocation.setOldClassLoader(oldClassLoader);
+            return next.invoke(invocation);
         } else if (methodIndex == afterDeliveryIndex) {
-            //ignore out of order calls
-            if (mdbInvocation.getOldClassLoader() == null) {
-                return new SimpleInvocationResult(true, null);
-            }
-            Thread currentThread = Thread.currentThread();
-            ClassLoader oldClassLoader = mdbInvocation.getOldClassLoader();
-            currentThread.setContextClassLoader(oldClassLoader);
-            mdbInvocation.setOldClassLoader(null);
-            return next.invoke(mdbInvocation);
+//            //ignore out of order calls
+//            if (mdbInvocation.getOldClassLoader() == null) {
+//                return new SimpleInvocationResult(true, null);
+//            }
+//            Thread currentThread = Thread.currentThread();
+//            ClassLoader oldClassLoader = mdbInvocation.getOldClassLoader();
+//            currentThread.setContextClassLoader(oldClassLoader);
+//            mdbInvocation.setOldClassLoader(null);
+            Thread.currentThread().setContextClassLoader(classLoader);
+            return next.invoke(invocation);
         } else {
-            if (mdbInvocation.getOldClassLoader() != null) {
-                //beforeDelivery has already been called, and classloader set
-                return next.invoke(mdbInvocation);
-            } else {
-                //beforeDeliver will not be called, we need to set/unset classloader
-                Thread currentThread = Thread.currentThread();
-                ClassLoader oldClassLoader = currentThread.getContextClassLoader();
-                currentThread.setContextClassLoader(classLoader);
-                try {
-                    return next.invoke(mdbInvocation);
-                } finally {
-                    currentThread.setContextClassLoader(oldClassLoader);
-                }
-
-            }
+//            if (mdbInvocation.getOldClassLoader() != null) {
+//                //beforeDelivery has already been called, and classloader set
+//                return next.invoke(mdbInvocation);
+//            } else {
+//                //beforeDeliver will not be called, we need to set/unset classloader
+//                Thread currentThread = Thread.currentThread();
+//                ClassLoader oldClassLoader = currentThread.getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(classLoader);
+//                try {
+                    return next.invoke(invocation);
+//                } finally {
+//                    currentThread.setContextClassLoader(oldClassLoader);
+//                }
+//
+//            }
         }
 
     }

@@ -47,19 +47,77 @@
  */
 package org.openejb.nova.proxy;
 
-import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+
+import net.sf.cglib.proxy.Callback;
+import net.sf.cglib.proxy.CallbackFilter;
+import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.NoOp;
 
 /**
  * @version $Revision$ $Date$
  */
-public abstract class EJBProxy implements Serializable {
-    public static EJBProxyHandler getHandler(EJBProxy proxy) {
-        return proxy.handler;
+public class EJBProxyFactory {
+    private final Class type;
+    private final Enhancer enhancer;
+
+    public EJBProxyFactory(Class superClass, Class clientInterface) {
+        this(superClass, new Class[]{clientInterface});
     }
 
-    protected final EJBProxyHandler handler;
+    public EJBProxyFactory(Class superClass, Class[] clientInterfaces) {
+        assert superClass != null;
+        assert clientInterfaces != null;
+        enhancer = new Enhancer();
+        enhancer.setSuperclass(superClass);
+        enhancer.setInterfaces(clientInterfaces);
+        enhancer.setCallbackFilter(new NoOverrideCallbackFilter(superClass));
+        enhancer.setCallbackTypes(new Class[]{NoOp.class, MethodInterceptor.class});
+        enhancer.setUseFactory(false);
+        this.type = enhancer.createClass();
+    }
 
-    public EJBProxy(EJBProxyHandler handler) {
-        this.handler = handler;
+    public Class getType() {
+        return type;
+    }
+
+    public Object create(MethodInterceptor methodInterceptor) {
+        return create(methodInterceptor, new Class[0], new Object[0]);
+    }
+
+    public synchronized Object create(MethodInterceptor methodInterceptor, Class[] types, Object[] arguments) {
+        assert methodInterceptor != null;
+        enhancer.setCallbacks(new Callback[]{NoOp.INSTANCE, methodInterceptor});
+        return enhancer.create(types, arguments);
+    }
+
+    private static class NoOverrideCallbackFilter implements CallbackFilter {
+        private Class superClass;
+
+        public NoOverrideCallbackFilter(Class superClass) {
+            this.superClass = superClass;
+        }
+
+        public int accept(Method method) {
+            // we don't intercept non-public methods like finalize
+            if (!Modifier.isPublic(method.getModifiers())) {
+                return 0;
+            }
+
+            if (method.getName().equals("remove") && Modifier.isAbstract(method.getModifiers())) {
+                return 1;
+            }
+
+            try {
+                // if the super class defined this method don't intercept
+                superClass.getMethod(method.getName(), method.getParameterTypes());
+                return 0;
+            } catch (Throwable e) {
+                return 1;
+            }
+        }
     }
 }
+

@@ -47,7 +47,6 @@
  */
 package org.openejb.nova.slsb;
 
-import java.lang.reflect.Method;
 import java.rmi.RemoteException;
 import javax.ejb.EJBException;
 import javax.ejb.EJBHome;
@@ -59,26 +58,21 @@ import javax.ejb.RemoveException;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
-import org.apache.geronimo.security.ContextManager;
 
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
-import org.openejb.nova.EJBInvocationImplRemote;
+import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationType;
-import org.openejb.nova.EJBProxyFactory;
-import org.openejb.nova.EJBProxyInterceptor;
+import org.openejb.nova.proxy.EJBProxyFactory;
 import org.openejb.nova.EJBRemoteClientContainer;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.proxy.EJBMetaDataImpl;
+import org.openejb.nova.proxy.EJBProxy;
+import org.openejb.nova.proxy.EJBProxyHandler;
 
 /**
- *
- *
- *
  * @version $Revision$ $Date$
  */
 public class StatelessRemoteClientContainer implements EJBRemoteClientContainer {
     private Interceptor firstInterceptor;
-    private final int createIndex;
     private final EJBHome homeProxy;
     private final EJBObject objectProxy;
     private final EJBMetaData ejbMetadata;
@@ -89,23 +83,16 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
         this.firstInterceptor = firstInterceptor;
 
         // Create LocalHome proxy
-        EJBProxyFactory homeFactory = new EJBProxyFactory(StatelessHomeImpl.class, home);
-        homeProxy = (EJBHome) homeFactory.create(new StatelessHomeInterceptor(), new Class[]{StatelessRemoteClientContainer.class}, new Object[]{this});
-
-        // get the super index of the create method
-        try {
-            Class homeProxyClass = homeProxy.getClass();
-            createIndex = EJBProxyInterceptor.getSuperIndex(homeProxyClass, homeProxyClass.getMethod("create", null));
-        } catch (Exception e) {
-            throw new AssertionError("No create method found on home interface: " + home.getName());
-        }
+        EJBProxyFactory homeFactory = new EJBProxyFactory(StatelessHomeProxy.class, home);
+        EJBProxyHandler homeHandler = new EJBProxyHandler(this, EJBInvocationType.HOME, homeFactory.getType(), signatures);
+        homeProxy = (EJBHome) homeFactory.create(homeHandler, new Class[] {EJBProxyHandler.class}, new Object[] {homeHandler});
 
         // Create LocalObject Proxy
-        EJBProxyFactory objectFactory = new EJBProxyFactory(StatelessObjectImpl.class, remote);
-        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.REMOTE, objectFactory.getType(), signatures);
-        objectProxy = (EJBObject) objectFactory.create(methodInterceptor, new Class[]{StatelessRemoteClientContainer.class}, new Object[]{this});
+        EJBProxyFactory objectFactory = new EJBProxyFactory(StatelessObjectProxy.class, remote);
+        EJBProxyHandler objectHandler = new EJBProxyHandler(this, EJBInvocationType.REMOTE, objectFactory.getType(), signatures);
+        objectProxy = (EJBObject) objectFactory.create(objectHandler, new Class[] {EJBProxyHandler.class}, new Object[] {objectHandler});
 
-        this.ejbMetadata = new StatelessMetaData(homeProxy, home, remote);
+        this.ejbMetadata = EJBMetaDataImpl.createStatelessSession(homeProxy, home, remote);
         this.homeHandle = null;
         this.handle = null;
     }
@@ -118,46 +105,29 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
         return objectProxy;
     }
 
-    public Object invoke(EJBInvocationType ejbInvocationType, Object id, int methodIndex, Object[] args) throws Throwable {
-        InvocationResult result;
-        try {
-            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(ejbInvocationType, id, methodIndex, args, ContextManager.getCurrentCallerId());
-            result = firstInterceptor.invoke(invocation);
-        } catch (Throwable t) {
-            // System exception from interceptor chain - throw as is or wrapped in an EJBException
-            if (t instanceof Exception && t instanceof RuntimeException == false) {
-                t = new EJBException((Exception) t);
-            }
-            throw t;
-        }
-        if (result.isNormal()) {
-            return result.getResult();
-        } else {
-            throw result.getException();
-        }
+    public InvocationResult invoke(EJBInvocation ejbInvocation) throws Throwable {
+        return firstInterceptor.invoke(ejbInvocation);
     }
 
     /**
      * Base class for EJBLocalHome invocations. Handles operations which can
      * be performed directly by the proxy.
      */
-    public static abstract class StatelessHomeImpl implements EJBHome {
-        private final StatelessRemoteClientContainer container;
-
-        public StatelessHomeImpl(StatelessRemoteClientContainer container) {
-            this.container = container;
+    public static abstract class StatelessHomeProxy extends EJBProxy implements EJBHome {
+        public StatelessHomeProxy(EJBProxyHandler handler) {
+            super(handler);
         }
 
         public EJBMetaData getEJBMetaData() throws RemoteException {
-            return container.ejbMetadata;
+            return ((StatelessRemoteClientContainer)handler.getContainer()).ejbMetadata;
         }
 
         public HomeHandle getHomeHandle() throws RemoteException {
-            return container.homeHandle;
+            return ((StatelessRemoteClientContainer)handler.getContainer()).homeHandle;
         }
 
-        public void remove(Handle handle) throws RemoteException, RemoveException {
-            throw new RemoteException("Cannot use remove(Handle) on a Stateless SessionBean");
+        public void remove(Handle handle) throws RemoteException {
+            // do nothing
         }
 
         public void remove(Object primaryKey) throws RemoveException {
@@ -166,31 +136,16 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
     }
 
     /**
-     * Handler for EJBHome invocations that cannot be handled
-     * directly by the proxy.
-     */
-    private class StatelessHomeInterceptor implements MethodInterceptor {
-        public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
-            if (methodProxy.getSuperIndex() == createIndex) {
-                return objectProxy;
-            }
-            throw new IllegalStateException("Cannot use home method on a Stateless SessionBean");
-        }
-    }
-
-    /**
      * Base class for EJBLocal invocations. Handles operations which can
      * be performed directly by the proxy.
      */
-    public static abstract class StatelessObjectImpl implements EJBObject {
-        private StatelessRemoteClientContainer container;
-
-        public StatelessObjectImpl(StatelessRemoteClientContainer container) {
-            this.container = container;
+    public static abstract class StatelessObjectProxy extends EJBProxy implements EJBObject {
+        public StatelessObjectProxy(EJBProxyHandler handler) {
+            super(handler);
         }
 
         public EJBHome getEJBHome() {
-            return container.homeProxy;
+            return ((StatelessRemoteClientContainer)handler.getContainer()).homeProxy;
         }
 
         public boolean isIdentical(EJBObject obj) {
@@ -201,47 +156,12 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
             throw new EJBException("Cannot use getPrimaryKey() on a Stateless SessionBean");
         }
 
-        public Handle getHandle() throws RemoteException {
-            return container.handle;
+        public Handle getHandle() {
+            return ((StatelessRemoteClientContainer)handler.getContainer()).handle;
         }
 
-        public void remove() throws RemoveException {
-        }
-    }
-
-    private static class StatelessMetaData implements EJBMetaData {
-        private final EJBHome homeProxy;
-        private final Class home;
-        private final Class remote;
-
-        public StatelessMetaData(EJBHome homeProxy, Class home, Class remote) {
-            this.homeProxy = homeProxy;
-            this.home = home;
-            this.remote = remote;
-        }
-
-        public EJBHome getEJBHome() {
-            return homeProxy;
-        }
-
-        public Class getHomeInterfaceClass() {
-            return home;
-        }
-
-        public Class getRemoteInterfaceClass() {
-            return remote;
-        }
-
-        public Class getPrimaryKeyClass() {
-            throw new IllegalStateException("getPrimaryKeyClass is not supported for SessionBean");
-        }
-
-        public boolean isSession() {
-            return true;
-        }
-
-        public boolean isStatelessSession() {
-            return true;
+        public void remove() {
+            // do nothing
         }
     }
 }

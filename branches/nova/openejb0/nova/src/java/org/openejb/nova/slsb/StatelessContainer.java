@@ -86,7 +86,7 @@ public class StatelessContainer extends AbstractEJBContainer {
     public StatelessContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
         super(config, transactionManager, trackedConnectionAssociator);
 
-        StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(beanClass);
+        StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(this);
         vtable = vopFactory.getVTable();
         signatures = vopFactory.getSignatures();
         buildTransactionPolicyMap(vopFactory.getSignatures());

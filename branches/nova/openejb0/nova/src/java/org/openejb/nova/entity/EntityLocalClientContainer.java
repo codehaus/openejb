@@ -47,22 +47,21 @@
  */
 package org.openejb.nova.entity;
 
-import java.lang.reflect.UndeclaredThrowableException;
 import javax.ejb.EJBException;
 import javax.ejb.EJBLocalHome;
 import javax.ejb.EJBLocalObject;
-import javax.ejb.RemoveException;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
 
 import org.openejb.nova.EJBInvocation;
-import org.openejb.nova.EJBInvocationImpl;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBLocalClientContainer;
-import org.openejb.nova.EJBProxyFactory;
-import org.openejb.nova.EJBProxyInterceptor;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.proxy.EBJProxyHelper;
+import org.openejb.nova.proxy.EJBProxy;
+import org.openejb.nova.proxy.EJBProxyFactory;
+import org.openejb.nova.proxy.EJBProxyHandler;
 
 /**
  * Container for the local interface to an EntityBean.
@@ -79,33 +78,20 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
 
     private final EJBLocalHome homeProxy;
 
-    private final EJBProxyFactory proxyFactory;
-    private final int removeIndex;
+    private final EJBProxyFactory objectFactory;
     private final int[] operationMap;
 
     public EntityLocalClientContainer(Interceptor firstInterceptor, MethodSignature[] signatures, Class localHome, Class local) throws Exception {
         this.firstInterceptor = firstInterceptor;
 
         // Create LocalHome proxy
-        EJBProxyFactory factory = new EJBProxyFactory(EntityLocalHomeImpl.class, localHome);
-        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.LOCALHOME, factory.getType(), signatures);
-        homeProxy = (EJBLocalHome) factory.create(methodInterceptor, new Class[]{EntityLocalClientContainer.class}, new Object[]{this});
+        EJBProxyFactory homeFactory = new EJBProxyFactory(EntityLocalHomeProxy.class, localHome);
+        EJBProxyHandler homeHandler = new EJBProxyHandler(this, EJBInvocationType.LOCALHOME, homeFactory.getType(), signatures);
+        homeProxy = (EJBLocalHome) homeFactory.create(homeHandler, new Class[]{EJBProxyHandler.class}, new Object[]{homeHandler});
 
         // Create LocalObject Proxy
-        proxyFactory = new EJBProxyFactory(EntityLocalObjectImpl.class, local);
-        operationMap = EJBProxyInterceptor.getOperationMap(EJBInvocationType.LOCAL, proxyFactory.getType(), signatures);
-
-        // Get VOP index for ejbRemove method
-        int index = -1;
-        for (int i = 0; i < signatures.length; i++) {
-            MethodSignature signature = signatures[i];
-            if ("ejbRemove".equals(signature.getMethodName())) {
-                index = i;
-                break;
-            }
-        }
-        assert (index != -1) : "No ejbRemove VOP defined";
-        removeIndex = index;
+        objectFactory = new EJBProxyFactory(EntityLocalObjectProxy.class, local);
+        operationMap = EBJProxyHelper.getOperationMap(EJBInvocationType.LOCAL, objectFactory.getType(), signatures);
     }
 
     public EJBLocalHome getEJBLocalHome() {
@@ -113,64 +99,21 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
     }
 
     public EJBLocalObject getEJBLocalObject(Object primaryKey) {
-        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.LOCAL, operationMap, primaryKey);
-        return (EJBLocalObject) proxyFactory.create(
-                methodInterceptor,
-                new Class[]{EntityLocalClientContainer.class, Object.class},
-                new Object[]{this, primaryKey});
+        EJBProxyHandler objectHandler = new EJBProxyHandler(this, EJBInvocationType.LOCAL, operationMap, primaryKey);
+        return (EJBLocalObject) objectFactory.create(objectHandler, new Class[]{EJBProxyHandler.class}, new Object[]{objectHandler});
     }
 
-    private void remove(Object id) throws RemoveException {
-        InvocationResult result;
-        try {
-            EJBInvocation invocation = new EJBInvocationImpl(EJBInvocationType.LOCAL, id, removeIndex, null);
-            result = firstInterceptor.invoke(invocation);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new EJBException(e);
-        } catch (Error e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new UndeclaredThrowableException(t);
-        }
-        if (result.isException()) {
-            throw (RemoveException) result.getException();
-        }
-    }
-
-    public Object invoke(EJBInvocationType ejbInvocationType, Object id, int methodIndex, Object[] args) throws Throwable {
-        InvocationResult result;
-        try {
-            EJBInvocation invocation = new EJBInvocationImpl(ejbInvocationType, id, methodIndex, args);
-            result = firstInterceptor.invoke(invocation);
-        } catch (Throwable t) {
-            // System exception from interceptor chain - throw as is or wrapped in an EJBException
-            if (t instanceof Exception && t instanceof RuntimeException == false) {
-                t = new EJBException((Exception) t);
-            }
-            throw t;
-        }
-        if (result.isNormal()) {
-            return result.getResult();
-        } else {
-            throw result.getException();
-        }
+    public InvocationResult invoke(EJBInvocation ejbInvocation) throws Throwable {
+        return firstInterceptor.invoke(ejbInvocation);
     }
 
     /**
      * Base class for EJBLocalHome proxies.
      * Owns a reference to the container.
      */
-    private abstract static class EntityLocalHomeImpl implements EJBLocalHome {
-        private final EntityLocalClientContainer container;
-
-        public EntityLocalHomeImpl(EntityLocalClientContainer container) {
-            this.container = container;
-        }
-
-        public void remove(Object primaryKey) throws RemoveException, EJBException {
-            container.remove(primaryKey);
+    private abstract static class EntityLocalHomeProxy extends EJBProxy implements EJBLocalHome {
+        public EntityLocalHomeProxy(EJBProxyHandler handler) {
+            super(handler);
         }
     }
 
@@ -180,33 +123,26 @@ public class EntityLocalClientContainer implements EJBLocalClientContainer {
      * Implements EJBLocalObject methods, such as getPrimaryKey(), that do
      * not require a trip to the server.
      */
-    private abstract static class EntityLocalObjectImpl implements EJBLocalObject {
-        private final EntityLocalClientContainer container;
-        private final Object id;
-
-        public EntityLocalObjectImpl(EntityLocalClientContainer container, Object id) {
-            this.container = container;
-            this.id = id;
+    private abstract static class EntityLocalObjectProxy extends EJBProxy implements EJBLocalObject {
+        public EntityLocalObjectProxy(EJBProxyHandler handler) {
+            super(handler);
         }
 
         public EJBLocalHome getEJBLocalHome() throws EJBException {
-            return container.getEJBLocalHome();
+            return ((EntityLocalClientContainer) handler.getContainer()).getEJBLocalHome();
         }
 
         public Object getPrimaryKey() throws EJBException {
-            return id;
+            return handler.getId();
         }
 
         public boolean isIdentical(EJBLocalObject obj) throws EJBException {
-            if (obj instanceof EntityLocalObjectImpl) {
-                EntityLocalObjectImpl other = (EntityLocalObjectImpl) obj;
-                return other.container == container && other.id.equals(id);
+            if (obj instanceof EntityLocalObjectProxy) {
+                EntityLocalObjectProxy other = (EntityLocalObjectProxy) obj;
+                return other.handler.getContainer() == handler.getContainer() &&
+                        other.handler.getId().equals(handler.getId());
             }
             return false;
-        }
-
-        public void remove() throws RemoveException, EJBException {
-            container.remove(id);
         }
     }
 }

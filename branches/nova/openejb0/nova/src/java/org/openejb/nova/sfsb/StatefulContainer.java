@@ -48,17 +48,16 @@
 package org.openejb.nova.sfsb;
 
 import java.net.URI;
-
 import javax.transaction.TransactionManager;
 
 import org.apache.geronimo.cache.InstanceCache;
 import org.apache.geronimo.cache.SimpleInstanceCache;
+import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.gbean.GBeanInfo;
 import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
-import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 
 import org.openejb.nova.AbstractEJBContainer;
 import org.openejb.nova.ConnectionTrackingInterceptor;

@@ -47,16 +47,14 @@
  */
 package org.openejb.nova;
 
+import java.io.Serializable;
 import javax.ejb.EJBHome;
 import javax.ejb.EJBObject;
 
 /**
- *
- *
- *
  * @version $Revision$ $Date$
  */
-public interface EJBRemoteClientContainer extends ClientContainer {
+public interface EJBRemoteClientContainer extends ClientContainer, Serializable {
     EJBHome getEJBHome();
 
     EJBObject getEJBObject(Object primaryKey);

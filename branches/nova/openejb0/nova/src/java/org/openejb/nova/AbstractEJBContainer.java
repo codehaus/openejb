@@ -61,6 +61,8 @@ import javax.transaction.TransactionManager;
 
 import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 import org.apache.geronimo.core.service.Interceptor;
+import org.apache.geronimo.core.service.Invocation;
+import org.apache.geronimo.core.service.InvocationResult;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.GAttributeInfo;
 import org.apache.geronimo.gbean.GBean;
@@ -86,7 +88,6 @@ import org.openejb.nova.transaction.TxnPolicy;
  * @version $Revision$ $Date$
  */
 public abstract class AbstractEJBContainer implements EJBContainer, GBean {
-
     protected final URI uri;
     protected final String ejbName;
 
@@ -180,6 +181,10 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
         if (userTransaction != null) {
             userTransaction.setOnline(false);
         }
+    }
+
+    public InvocationResult invoke(Invocation invocation) throws Throwable {
+        throw new UnsupportedOperationException();
     }
 
     public String getEJBName() {

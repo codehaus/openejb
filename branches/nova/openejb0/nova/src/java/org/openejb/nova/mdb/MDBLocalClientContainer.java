@@ -48,7 +48,6 @@
 package org.openejb.nova.mdb;
 
 import java.lang.reflect.Method;
-import javax.ejb.EJBException;
 import javax.resource.ResourceException;
 import javax.resource.spi.endpoint.MessageEndpoint;
 import javax.transaction.xa.XAResource;
@@ -58,10 +57,13 @@ import org.apache.geronimo.core.service.InvocationResult;
 
 import net.sf.cglib.reflect.FastClass;
 import org.openejb.nova.ClientContainer;
+import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationType;
-import org.openejb.nova.EJBProxyFactory;
-import org.openejb.nova.EJBProxyInterceptor;
+import org.openejb.nova.proxy.EJBProxyFactory;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.proxy.EJBProxy;
+import org.openejb.nova.proxy.EJBProxyHandler;
+import org.openejb.nova.proxy.EBJProxyHelper;
 
 /**
  * Container for the local interface of a Message Driven Bean.
@@ -79,7 +81,7 @@ public class MDBLocalClientContainer implements ClientContainer {
 
     private final Interceptor firstInterceptor;
     private final int[] operationMap;
-    private final EJBProxyFactory proxyFactory;
+    private final EJBProxyFactory objectFactory;
     private final FastClass fastClass;
 
     /**
@@ -90,59 +92,34 @@ public class MDBLocalClientContainer implements ClientContainer {
     public MDBLocalClientContainer(Interceptor firstInterceptor, MethodSignature[] signatures, Class mdbInterface) {
         this.firstInterceptor = firstInterceptor;
 
-        proxyFactory = new EJBProxyFactory(MDBMessageEndpointImpl.class, new Class[]{mdbInterface, MessageEndpoint.class});
-        operationMap = EJBProxyInterceptor.getOperationMap(EJBInvocationType.LOCAL, proxyFactory.getType(), signatures);
+        objectFactory = new EJBProxyFactory(MDBMessageEndpointProxy.class, new Class[]{mdbInterface, MessageEndpoint.class});
+        operationMap = EBJProxyHelper.getOperationMap(EJBInvocationType.LOCAL, objectFactory.getType(), signatures);
 
-        fastClass = FastClass.create(proxyFactory.getType());
+        fastClass = FastClass.create(objectFactory.getType());
     }
 
     public MessageEndpoint getMessageEndpoint(XAResource resource) {
         // @todo should this be EJBInvocationType.MESSAGE_ENDPOINT?
-        EJBProxyInterceptor methodInterceptor = new EJBProxyInterceptor(this, EJBInvocationType.LOCAL, operationMap, resource);
-        return (MessageEndpoint) proxyFactory.create(
-                methodInterceptor,
-                new Class[]{MDBLocalClientContainer.class, XAResource.class},
-                new Object[]{this, resource});
+        EJBProxyHandler objectHandler = new EJBProxyHandler(this, EJBInvocationType.LOCAL, operationMap, resource);
+        return (MessageEndpoint) objectFactory.create(objectHandler, new Class[]{EJBProxyHandler.class}, new Object[]{objectHandler});
     }
 
 
-    public Object invoke(EJBInvocationType ejbInvocationType, Object resource, int methodIndex, Object[] args) throws Throwable {
-        InvocationResult result;
-        try {
-            MDBInvocationImpl invocation = new MDBInvocationImpl(ejbInvocationType, methodIndex, args, (XAResource) resource);
-            result = firstInterceptor.invoke(invocation);
-        } catch (Throwable t) {
-            // System exception from interceptor chain - throw as is or wrapped in an EJBException
-            if (t instanceof Exception && t instanceof RuntimeException == false) {
-                t = new EJBException((Exception) t);
-            }
-            throw t;
-        }
-        if (result.isNormal()) {
-            return result.getResult();
-        } else {
-            throw result.getException();
-        }
+    public InvocationResult invoke(EJBInvocation ejbInvocation) throws Throwable {
+        return firstInterceptor.invoke(ejbInvocation);
     }
 
     /**
      * Base class for MessageEndpoint invocations. Handles operations which can
      * be performed directly by the proxy.
      */
-    public static class MDBMessageEndpointImpl implements MessageEndpoint {
-        XAResource adapterXAResource;
-        MDBLocalClientContainer container;
-
-        /**
-         * @param adapterXAResource
-         */
-        public MDBMessageEndpointImpl(MDBLocalClientContainer container, XAResource adapterXAResource) {
-            this.container = container;
-            this.adapterXAResource = adapterXAResource;
+    public static class MDBMessageEndpointProxy extends EJBProxy implements MessageEndpoint {
+        public MDBMessageEndpointProxy(EJBProxyHandler handler) {
+            super(handler);
         }
 
         public XAResource getAdapterXAResource() {
-            return adapterXAResource;
+            return (XAResource)handler.getId();
         }
 
 
@@ -152,11 +129,13 @@ public class MDBLocalClientContainer implements ClientContainer {
         public void beforeDelivery(Method method) throws NoSuchMethodException, ResourceException {
             //translate the method into an index.
             //construct invocation and call.
+            MDBLocalClientContainer container = (MDBLocalClientContainer)handler.getContainer();
             int methodIndex = container.fastClass.getIndex(method.getName(), method.getParameterTypes());
             int vopIndex = container.operationMap[methodIndex];
             Object[] args = new Object[]{new Integer(vopIndex)};
             try {
-                container.invoke(EJBInvocationType.MESSAGE_ENDPOINT, adapterXAResource, BEFORE_DELIVERY, args);
+                MDBInvocation invocation = new MDBInvocationImpl(EJBInvocationType.MESSAGE_ENDPOINT, BEFORE_DELIVERY, args, (XAResource)handler.getId());
+                container.invoke(invocation);
             } catch (Throwable throwable) {
                 if (throwable instanceof ResourceException) {
                     throw (ResourceException) throwable;
@@ -172,7 +151,9 @@ public class MDBLocalClientContainer implements ClientContainer {
         public void afterDelivery() throws ResourceException {
             Object[] args = new Object[]{};
             try {
-                container.invoke(EJBInvocationType.MESSAGE_ENDPOINT, adapterXAResource, AFTER_DELIVERY, args);
+                MDBLocalClientContainer container = (MDBLocalClientContainer)handler.getContainer();
+                MDBInvocation invocation = new MDBInvocationImpl(EJBInvocationType.MESSAGE_ENDPOINT, AFTER_DELIVERY, args, (XAResource)handler.getId());
+                container.invoke(invocation);
             } catch (Throwable throwable) {
                 if (throwable instanceof ResourceException) {
                     throw (ResourceException) throwable;

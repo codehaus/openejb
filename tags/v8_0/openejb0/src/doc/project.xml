@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project topSelected="1">
+
+  <title>The OpenEJB Project</title>
+  <logo>./images/logo_ejb.gif</logo>
+  <repository>OpenEJB</repository>
+  <href>http://openejb.sf.net</href>
+
+  <topNav>
+    <navLink>
+      <url>http://openejb.sf.net</url>
+      <display>OpenEJB at SourceForge</display>
+    </navLink>
+
+    <navLink>
+      <url>http://openejb.exolab.org</url>
+      <display>OpenEJB at Exolab</display>
+    </navLink>
+ 
+  </topNav>
+
+  <navSections>
+
+    <section name="Main">
+      <navLink>
+        <url>index.xml</url>
+        <display>Welcome!</display>
+      </navLink>
+      <navLink>
+        <url>datasheet.xml</url>
+        <display>Overview</display>
+      </navLink>
+      <navLink>
+        <url>lists.xml</url>
+        <display>Mailing Lists</display>
+      </navLink>
+      
+      <navLink>
+        <url>cvs.xml</url>
+        <display>CVS</display>
+      </navLink>
+      <navLink>
+        <url>contributors.xml</url>
+        <display>The Team</display>
+      </navLink>
+      <navLink>
+        <url>http://sourceforge.net/projects/openejb/</url>
+        <display>SourceForge</display>
+      </navLink>
+    </section>
+
+    <section name="Users">
+      <navLink>
+        <url>quickstart.xml</url>
+        <display>Quickstart</display>
+      </navLink>
+      <navLink>
+        <url>http://sourceforge.net/tracker/?group_id=44351&amp;atid=439275</url>
+        <display>Support</display>
+      </navLink>
+    </section>
+
+    <section name="Integrators">
+      <navLink>
+        <url>whyopenejb.xml</url>
+        <display>Why OpenEJB</display>
+      </navLink>
+      <navLink>
+        <url>design_openejb.xml</url>
+        <display>Design</display>
+      </navLink>
+      <navLink>
+        <url>specification.xml</url>
+        <display>Specification</display>
+      </navLink>
+      <navLink>
+        <url>OpenEJB_presentaion.ppt</url>
+        <display>Presentation</display>
+      </navLink>
+    </section>
+    
+  </navSections>
+
+  <notice>
+    Java, EJB, JDBC, JNDI, JTA, Sun, Sun Microsystems are trademarks or registered
+    trademarks of Sun Microsystems, Inc. in the United States and in other
+    countries. XML, XML Schema, XSLT and related standards are trademarks or registered
+    trademarks of MIT, INRIA, Keio or others, and a product of the World Wide Web
+    Consortium. All other product names mentioned herein are trademarks of their respective
+    owners. 
+  </notice>
+
+</project>

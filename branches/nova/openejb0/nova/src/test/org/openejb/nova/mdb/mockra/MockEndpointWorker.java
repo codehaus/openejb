@@ -56,14 +56,12 @@
 package org.openejb.nova.mdb.mockra;
 
 import java.lang.reflect.Method;
-
+import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.resource.spi.endpoint.MessageEndpoint;
 import javax.resource.spi.endpoint.MessageEndpointFactory;
 import javax.resource.spi.work.Work;
 import javax.resource.spi.work.WorkException;
-
-import org.apache.geronimo.common.Classes;
 
 import EDU.oswego.cs.dl.util.concurrent.Latch;
 
@@ -72,7 +70,15 @@ import EDU.oswego.cs.dl.util.concurrent.Latch;
  */
 public class MockEndpointWorker implements Work {
 
-    private static final Method ON_MESSAGE_METHOD = Classes.getMethod(MessageListener.class, "onMessage");
+    private static final Method ON_MESSAGE_METHOD;
+
+    static {
+        try {
+            ON_MESSAGE_METHOD = MessageListener.class.getMethod("onMessage", new Class[]{Message.class});
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     private MockResourceAdapter adapter;
     private MockEndpointActivationKey endpointActivationKey;
@@ -90,7 +96,7 @@ public class MockEndpointWorker implements Work {
     }
 
     /**
-     * 
+     *
      */
     public void start() throws WorkException {
 
@@ -100,7 +106,7 @@ public class MockEndpointWorker implements Work {
     }
 
     /**
-     * 
+     *
      */
     public void stop() throws InterruptedException {
         release();
@@ -125,12 +131,12 @@ public class MockEndpointWorker implements Work {
             transacted = messageEndpointFactory.isDeliveryTransacted(ON_MESSAGE_METHOD);
             endpoint = messageEndpointFactory.createEndpoint(null);
 
-            for(int i=0; !stopping; i++) {
+            for (int i = 0; !stopping; i++) {
 
                 // Delay message delivery a little.
                 Thread.sleep(1000);
-                
-                MockTextMessage message = new MockTextMessage("Message:"+i);                
+
+                MockTextMessage message = new MockTextMessage("Message:" + i);
                 endpoint.beforeDelivery(ON_MESSAGE_METHOD);
                 ((MessageListener) endpoint).onMessage(message);
                 endpoint.afterDelivery();

@@ -53,7 +53,6 @@ import java.util.HashSet;
 import javax.management.ObjectName;
 
 import junit.framework.TestCase;
-import org.apache.geronimo.common.StopWatch;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
@@ -93,14 +92,13 @@ public class BasicStatelessContainerTest extends TestCase {
         MockHome home = (MockHome) container.getEJBHome();
         MockRemote remote = home.create();
         remote.intMethod(1);
-        StopWatch stopWatch = new StopWatch();
         int COUNT = 10000;
-        stopWatch.start();
+        long time = System.currentTimeMillis();
         for (int i = 0; i < 10000; i++) {
             remote.intMethod(1);
         }
-        stopWatch.stop();
-        System.out.println("Per remote call w/out security: " + (stopWatch.getTime() * 1000000.0 / COUNT) + "ns");
+        time = System.currentTimeMillis() - time;
+        System.out.println("Per remote call w/out security: " + (time * 1000000.0 / COUNT) + "ns");
     }
 
     public void testLocalSpeed() throws Throwable {

@@ -127,50 +127,10 @@ public class DeployBean extends WebAdminBean {
         try {
             //the user has hit the deploy button
             if(deploy != null) { 
-                getDeployerHandle();
-                setOptions();
-                deployer.startDeployment();
-
-                //here we need to check for user action
-                if(options[0] && options[5]) {
-                    //here we automate the deployment - this may return info needed for resources
-                    deployer.automateDeployment();
-                    //here we'll need to check for outside resources
-                    printDeploymentHtml(body);
-                } else {
-                    //here we get user reaction
-                    body.println("<form action=\"Deployment\" method=\"post\">");
-                    body.println("<table border=\"0\" cellspacing=\"2\" cellpadding=\"2\">");
-                    body.println(deployer.promptForDeploymentAndContainerIds());
-                    body.println("<tr><td colspan=\"2\"><input type=\"submit\" name=\"submitDeploymentAndContainerIds\" value=\"Continue &gt;&gt;\"></td></tr>");
-                    body.println("</table>");
-                    body.println("</form>");
-                }
+                deployPartOne(body);
             //more information is needed from the user
             } else if (submitDeployment != null) {
-                String deploymentId = null;
-                String containerId = null;
-
-                //here we need to continue the deployment
-                getDeployerHandle(); //gets the deployment handle
-                //loop through all the beans and set the ids
-                for(int i=0; i<deployer.getDeployerBeanLength(); i++) {
-                    deploymentId = request.getFormParameter("deploymentId" + i);
-                    containerId = request.getFormParameter("containerId" + i);
-
-                    //check for null
-                    if(deploymentId == null) {
-                        throw new IOException("Please enter a deployment id");
-                    }
-                    //this should never happen, but better safe than sorry
-                    if(containerId == null) {
-                        throw new IOException("Please enter a container id");
-                    }
-
-                    deployer.setDeployAndContainerIds(deploymentId, containerId, i); 
-                }
-
-                printDeploymentHtml(body);
+                deployPartTwo(body);
             } else {
                 createDeployerHandle();
                 writeForm(body);
@@ -178,6 +138,54 @@ public class DeployBean extends WebAdminBean {
         } catch (Exception e) {
             body.println(e.getMessage());
         }
+    }
+    
+    private void deployPartOne(PrintWriter body) throws Exception {
+        getDeployerHandle();
+        setOptions();
+        deployer.startDeployment();
+
+        //here we need to check for user action
+        if(options[0] && options[5]) {
+            //here we automate the deployment - this may return info needed for resources
+            deployer.automateDeployment();
+            //here we'll need to check for outside resources
+            printDeploymentHtml(body);
+        } else {
+            //here we get user reaction
+            body.println("<form action=\"Deployment\" method=\"post\">");
+            body.println("<table border=\"0\" cellspacing=\"2\" cellpadding=\"2\">");
+            body.println(deployer.promptForDeploymentAndContainerIds());
+            body.println("<tr><td colspan=\"2\"><input type=\"submit\" name=\"submitDeploymentAndContainerIds\" value=\"Continue &gt;&gt;\"></td></tr>");
+            body.println("</table>");
+            body.println("</form>");
+        }
+    }
+    
+    private void deployPartTwo(PrintWriter body) throws Exception {
+        String deploymentId = null;
+        String containerId = null;
+
+        //here we need to continue the deployment
+        getDeployerHandle(); //gets the deployment handle
+        //loop through all the beans and set the ids
+        for(int i=0; i<deployer.getDeployerBeanLength(); i++) {
+            deploymentId = request.getFormParameter("deploymentId" + i);
+            containerId = request.getFormParameter("containerId" + i);
+
+            //check for null
+            if(deploymentId == null) {
+                throw new IOException("Please enter a deployment id");
+            }
+            //this should never happen, but better safe than sorry
+            if(containerId == null) {
+                throw new IOException("Please enter a container id");
+            }
+
+            deployer.setDeployAndContainerIds(deploymentId, containerId, i); 
+        }
+
+        printDeploymentHtml(body);
     }
     
     private void printDeploymentHtml(PrintWriter body) throws Exception {
@@ -510,6 +518,4 @@ public class DeployBean extends WebAdminBean {
      */
     public void writeSubMenuItems(PrintWriter body) throws IOException {
     }
-    
-    
 }

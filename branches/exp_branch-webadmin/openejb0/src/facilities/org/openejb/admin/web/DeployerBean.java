@@ -70,6 +70,7 @@ import java.rmi.RemoteException;
  * 1. Finish implementing the rest of the features of the command line tool
  * 2. Add better error handling
  * 3. Add documentation
+ * 4. Add check to make sure the same id is not being used twice
  *
  *
  * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>

@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -47,9 +47,8 @@ package org.openejb.admin.web;
 import java.util.*;
 import java.io.*;
 
-/**
- *
- * @author  Tim Urberg (timu)
+/** Prints out a list of system properties for the server.
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class PropertiesBean extends WebAdminBean {
 
@@ -62,21 +61,27 @@ public class PropertiesBean extends WebAdminBean {
         section = "Properties";
     }
 
+    /** called after all content is written to the browser
+     * @param request the http request
+     * @param response the http response
+     * @throws IOException if an exception is thrown
+     */ 
     public void postProcess(HttpRequest request, HttpResponse response) throws IOException {
     }
 
+    /** called before any content is written to the browser
+     * @param request the http request
+     * @param response the http response
+     * @throws IOException if an exception is thrown
+     */    
     public void preProcess(HttpRequest request, HttpResponse response) throws IOException {
     }
 
-    /**
-     * Write the main content
-     *
-     *
-     *
-     * @param body
-     *
-     * @exception IOException
-     *
+    /** writes the main body content to the broswer.  This content is inside a <code>&lt;p&gt;</code> block
+     *  
+     * 
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public void writeBody(PrintWriter body) throws IOException {
         Properties p = System.getProperties();
@@ -115,40 +120,27 @@ public class PropertiesBean extends WebAdminBean {
         body.println("</table>");
     }
 
-    /**
-     * Write the TITLE of the HTML document.  This is the part
-     *
+    /** Write the TITLE of the HTML document.  This is the part
      * that goes into the <HEAD><TITLE></TITLE></HEAD> tags
-     *
-     *
-     *
-     * @param body
-     *
-     * @exception IOException
-     *
+     * 
+     * @param body the output to write to
+     * @exception IOException of an exception is thrown
      */
     public void writeHtmlTitle(PrintWriter body) throws IOException {
-        body.print("System Properties");
+        body.print(HTML_TITLE);
     }
 
-    /**
-     * Write the title of the page.  This is displayed right
-     *
+    /** Write the title of the page.  This is displayed right
      * above the main block of content.
-     *
-     *
-     *
-     * @param body
-     *
-     * @exception IOException
-     *
+     * 
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public void writePageTitle(PrintWriter body) throws IOException {
         body.print("System Properties");
     }
 
-    /**
-     * Write the sub items for this bean in the left navigation bar of
+    /** Write the sub items for this bean in the left navigation bar of
      * the page.  This should look somthing like the one below:
      * 
      *      <tr>
@@ -158,14 +150,13 @@ public class PropertiesBean extends WebAdminBean {
      *        </span>
      *        </a></td>
      *      </tr>
-     * 
+     *      
      * Alternately, the bean can use the method formatSubMenuItem(..) which
      * will create HTML like the one above
      * 
-     * @param body
-     * @exception IOException
+     * @param body the output to write to
+     * @exception IOException if an exception is thrown
      */
     public void writeSubMenuItems(PrintWriter body) throws IOException {
-        body.print(this.formatSubMenuItem("Test", "Properties"));
     }
 }

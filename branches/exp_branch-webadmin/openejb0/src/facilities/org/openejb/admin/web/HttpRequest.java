@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -44,30 +44,68 @@
  */
 package org.openejb.admin.web;
 
-/**
- * 
+/** An interface to take care of HTTP Requests.  It parses headers, content, form and url
+ *  parameters.
+ *
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public interface HttpRequest extends java.io.Serializable{
     
+    /** the HTTP OPTIONS type */    
     public static final int OPTIONS = 0; // Section 9.2
+    /** the HTTP GET type */    
     public static final int GET     = 1; // Section 9.3
+    /** the HTTP HEAD type */    
     public static final int HEAD    = 2; // Section 9.4
+    /** the HTTP POST type */    
     public static final int POST    = 3; // Section 9.5
+    /** the HTTP PUT type */    
     public static final int PUT     = 4; // Section 9.6
+    /** the HTTP DELETE type */    
     public static final int DELETE  = 5; // Section 9.7
+    /** the HTTP TRACE type */    
     public static final int TRACE   = 6; // Section 9.8
+    /** the HTTP CONNECT type */    
     public static final int CONNECT = 7; // Section 9.9
+    /** the HTTP UNSUPPORTED type */    
     public static final int UNSUPPORTED = 8;
 
+    /** Gets a header based the header name passed in.
+     * @param name The name of the header to get
+     * @return The value of the header
+     */  
     public String getHeader(String name);
 
+    /** Gets a form parameter based on the name passed in.
+     * @param name The name of the form parameter to get
+     * @return The value of the parameter
+     */
     public String getFormParameter(String name);
 
+    /** Gets a URL (or query) parameter based on the name passed in.
+     * @param name The name of the URL (or query) parameter
+     * @return The value of the URL (or query) parameter
+     */
     public String getQueryParameter(String name);
 
+    /** Gets an integer value of the request method.  These values are:
+     *
+     * OPTIONS = 0
+     * GET     = 1
+     * HEAD    = 2
+     * POST    = 3
+     * PUT     = 4
+     * DELETE  = 5
+     * TRACE   = 6
+     * CONNECT = 7
+     * UNSUPPORTED = 8
+     * @return The integer value of the method
+     */ 
     public int getMethod();
 
+    /** Gets the URI for the current URL page.
+     * @return The URI
+     */ 
     public java.net.URL getURI();
 
 }

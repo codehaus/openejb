@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -52,13 +52,19 @@ import java.util.StringTokenizer;
 import java.net.URL;
 import javax.ejb.*;
 
-/**
+/** This is a webadmin bean which has default functionality such as genderating
+ * error pages and setting page content.
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public class DefaultHttpBean implements HttpBean {
+    /** The base url for this page */    
     private static final URL BASE_URL = getBaseUrl();
+    /** the ejb session context */    
     private SessionContext context;
 
+    /** gets the base URL for this page
+     * @return The base URL
+     */    
     private static URL getBaseUrl(){
         URL url = null;
         try{
@@ -77,7 +83,7 @@ public class DefaultHttpBean implements HttpBean {
     /** the main processing part of the this bean
      * @param request the http request object
      * @param response the http response object
-     * @throws RemoteException if an exception is thrown
+     * @throws IOException if an exception is thrown
      */    
     public void onMessage(HttpRequest request, HttpResponse response) throws java.io.IOException{
         // Internationalize this
@@ -110,6 +116,10 @@ public class DefaultHttpBean implements HttpBean {
         }
     }
 
+    /** Creates a "Page not found" error screen
+     * @param request the HTTP request object
+     * @param response the HTTP response object
+     */    
     public void do404(HttpRequest request, HttpResponse response){
         response.reset(404, "Object not found.");
         java.io.PrintWriter body = response.getPrintWriter();
@@ -125,6 +135,11 @@ public class DefaultHttpBean implements HttpBean {
         body.println("</BODY></HTML>");
     }
 
+    /** Creates and "Internal Server Error" page
+     * @param request the HTTP request object
+     * @param response the HTTP response object
+     * @param message the message to be sent back to the browser
+     */    
     public void do500(HttpRequest request, HttpResponse response, String message){
         response.reset(500, "Internal Server Error.");
         java.io.PrintWriter body = response.getPrintWriter();
@@ -145,15 +160,35 @@ public class DefaultHttpBean implements HttpBean {
         body.println("</html>");
     }
 
+    /** called on a stateful sessionbean after the bean is
+     * deserialized from storage and put back into use.      
+     * @throws EJBException if an exeption is thrown
+     * @throws RemoteException if an exception is thrown
+     */    
     public void ejbActivate() throws javax.ejb.EJBException, java.rmi.RemoteException {
     }
 
+    /** called on a stateful sessionbean before the bean is 
+     * removed from memory and serialized to a temporary store.  
+     * This method is never called on a stateless sessionbean
+     * @throws EJBException if an exception is thrown
+     * @throws RemoteException if an exception is thrown
+     */   
     public void ejbPassivate() throws javax.ejb.EJBException, java.rmi.RemoteException {
     }
 
+    /** called by the ejb container when this bean is about to be garbage collected
+     * @throws EJBException if an exception is thrown
+     * @throws RemoteException if an exception is thrown
+     */    
     public void ejbRemove() throws javax.ejb.EJBException, java.rmi.RemoteException {
     }
 
+    /** sets the session context for this bean
+     * @param sessionContext the session context to be set
+     * @throws EJBException if an exception is thrown
+     * @throws RemoteException if an exception is thrown
+     */    
     public void setSessionContext(javax.ejb.SessionContext sessionContext) throws javax.ejb.EJBException, java.rmi.RemoteException {
         this.context = sessionContext;
     }

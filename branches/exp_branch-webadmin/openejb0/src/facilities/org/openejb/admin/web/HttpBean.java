@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -44,11 +44,16 @@
  */
 package org.openejb.admin.web;
 
-/**
+/** This is ejb interface for the webadmin.  It contains one message which gets
+ * executed on each webadmin bean
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public interface HttpBean extends javax.ejb.SessionBean{
-    
+    /** This is the main method for all the web admin beans.  It does all the processing
+     * and delegates work as necessary.
+     * @param request the HTTP request object
+     * @param response the HTTP response object
+     * @throws IOException if an exception is thrown
+     */    
     public void onMessage(HttpRequest request, HttpResponse response) throws java.io.IOException;
-
 }

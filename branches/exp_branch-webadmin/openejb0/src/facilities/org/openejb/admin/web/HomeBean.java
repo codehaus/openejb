@@ -1,4 +1,4 @@
-/** 
+/**  
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -46,9 +46,9 @@ package org.openejb.admin.web;
 import java.io.PrintWriter;
 import java.io.IOException;
 
-/**
- *
- * @author  <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
+/** This class represents the "Home" page for the webadmin.  It contains general
+ * information, and more content to be added later.
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class HomeBean extends WebAdminBean {
     

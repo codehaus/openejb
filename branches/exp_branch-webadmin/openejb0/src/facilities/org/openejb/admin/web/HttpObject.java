@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -46,10 +46,16 @@ package org.openejb.admin.web;
 
 import java.io.IOException;
 
-/**
- * @author  Tim Uberg
+/** The standard EJB Object interface for the webadmin
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Uberg</a>
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public interface HttpObject extends javax.ejb.EJBObject {
+    /** This is the main method for all the web admin beans.  It does all the processing
+     * and delegates work as necessary.
+     * @param request the HTTP request object
+     * @param response the HTTP response object
+     * @throws RemoteException if an exception is thrown
+     */    
     public void onMessage(HttpRequest request, HttpResponse response) throws java.rmi.RemoteException;
 }

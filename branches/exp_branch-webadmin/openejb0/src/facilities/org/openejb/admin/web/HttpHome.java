@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -48,11 +48,16 @@ import java.rmi.RemoteException;
 import javax.ejb.CreateException;
 import javax.ejb.FinderException;
 
-/**
- *
- * @author  Tim Uberg
+/** This is the standard EJB Home interface for the webadmin.  It contains the
+ * create method.
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Uberg</a>
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public interface HttpHome extends javax.ejb.EJBHome {
+    /** Creates a new EJB object for the web administration
+     * @throws RemoteException if an exception is thrown
+     * @throws CreateException if an exception is thrown
+     * @return The HttpObject for this bean
+     */    
     public HttpObject create() throws RemoteException, CreateException;
 }

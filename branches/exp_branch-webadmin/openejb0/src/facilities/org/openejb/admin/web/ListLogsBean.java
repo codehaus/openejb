@@ -1,4 +1,4 @@
-/**
+/** 
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
@@ -60,6 +60,7 @@ import org.apache.regexp.RESyntaxException;
  * @author  <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class ListLogsBean extends WebAdminBean {
+    /** the type of log we're using */    
     private String logType;
     
     /** called with the bean is created */ 
@@ -123,7 +124,11 @@ public class ListLogsBean extends WebAdminBean {
         }
     }
     
-    /** gets the openejb.log file */
+    /** gets the openejb.log file
+     * @param body the output to send the data to
+     * @param logFile the logfile that we're printing
+     * @throws IOException if an exception is thrown
+     */
     private void printLogFile(PrintWriter body, File logFile) throws IOException {
         BufferedReader fileReader = new BufferedReader(new FileReader(logFile));
         //create a regular expression to figure out what kind of message we have

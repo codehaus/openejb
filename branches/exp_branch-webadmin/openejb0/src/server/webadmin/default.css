@@ -115,6 +115,43 @@ h4 {
 	line-height: 15px; color: #000000;
 }
 
+.log4j-info {
+	font-size: 12px;
+	font-family: courier new, "Tahoma", "Helvetica", "Arial", "sans-serif";
+	line-height: 16px;
+	color: Black;
+}
+
+.log4j-debug {
+	font-size: 12px;
+	font-family: courier new, "Tahoma", "Helvetica", "Arial", "sans-serif";
+	line-height: 16px;
+	color: Green;
+}
+
+.log4j-warn {
+	font-size: 12px;
+	font-family: courier new, "Tahoma", "Helvetica", "Arial", "sans-serif";
+	line-height: 16px;
+	color: Yellow;
+	background : Black;
+}
+
+.log4j-error {
+	font-size: 12px;
+	font-family: courier new, "Tahoma", "Helvetica", "Arial", "sans-serif";
+	line-height: 16px;
+	color: Red;
+}
+
+.log4j-fatal {
+	font-size: 12px;
+	font-family: courier new, "Tahoma", "Helvetica", "Arial", "sans-serif";
+	font-weight: bold;
+	line-height: 16px;
+	color: Red;
+}
+
 .bodyCode { 
 	font-size: 11px; 
 	font-family: "Tahoma", "Helvetica", "Arial", "sans-serif";

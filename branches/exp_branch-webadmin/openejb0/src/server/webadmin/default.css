@@ -133,8 +133,7 @@ h4 {
 	font-size: 12px;
 	font-family: courier new, "Tahoma", "Helvetica", "Arial", "sans-serif";
 	line-height: 16px;
-	color: Yellow;
-	background : Black;
+	color: #D2D200;
 }
 
 .log4j-error {

@@ -98,8 +98,8 @@ public class HomeBean extends WebAdminBean {
 		body.println("<li>Container Managed Persistance Mapping</li>");
         body.println("<li>EJB Jar Validator</li>");
         body.println("<li>More system information</li>");
-        body.println("<li>Better orginization of this site (i.e. the menus)</li>");
-        body.println("<li>Extensive help section and documentation</li>");
+        body.println("<li>Better menu orginization</li>");
+        body.println("<li>Addition of an extensive help section and documentation</li>");
         body.println("<li>Your suggestions!!</li>");
         body.println("</ul>");
         body.println("<br>");

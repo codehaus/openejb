@@ -94,24 +94,24 @@ import javax.rmi.PortableRemoteObject;
  * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  * @since 11/25/2001
  */
-public class HttpDaemon implements Runnable{
+public class HttpDaemon implements Runnable {
 
-    /** the tool kit for this HttpDaemon */    
+    /** the tool kit for this HttpDaemon */
     private SafeToolkit toolkit = SafeToolkit.getToolkit("OpenEJB EJB Server");
-    Logger logger = Logger.getInstance( "OpenEJB", "org.openejb.server.util.resources" );
-    Vector           clientSockets  = new Vector();
-    ServerSocket     serverSocket   = null;
+    Logger logger = Logger.getInstance("OpenEJB", "org.openejb.server.util.resources");
+    Vector clientSockets = new Vector();
+    ServerSocket serverSocket = null;
 
     // The EJB Server Port
-    int    port = 4202;
-    String ip   = "127.0.0.1";
+    int port = 4202;
+    String ip = "127.0.0.1";
     Properties props;
     EjbDaemon ejbd;
     InitialContext jndiContext;
 
     /** This creates a new instance of the HttpDaemon
      * @param ejbd The EjbDaemon to connect to
-     */    
+     */
     public HttpDaemon(EjbDaemon ejbd) {
         this.ejbd = ejbd;
     }
@@ -119,24 +119,34 @@ public class HttpDaemon implements Runnable{
     /** Initalizes this instance and takes care of starting things up
      * @param props a properties instance for system properties
      * @throws Exception if an exeption is thrown
-     */    
-    public void init(Properties props) throws Exception{
+     */
+    public void init(Properties props) throws Exception {
 
         props.putAll(System.getProperties());
 
         Properties properties = new Properties();
-        properties.put(Context.INITIAL_CONTEXT_FACTORY, "org.openejb.core.ivm.naming.InitContextFactory");
+        properties.put(
+            Context.INITIAL_CONTEXT_FACTORY,
+            "org.openejb.core.ivm.naming.InitContextFactory");
         jndiContext = new InitialContext(properties);
-        
-        SafeProperties safeProps = new SafeProperties(System.getProperties(),"HTTP Server");
+
+        SafeProperties safeProps = new SafeProperties(System.getProperties(), "HTTP Server");
         port = safeProps.getPropertyAsInt("openejb.server.port");
         port += 2;
 
-        try{
-            serverSocket = new ServerSocket(port);                                    
+        try {
+            serverSocket = new ServerSocket(port);
             //serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
-        } catch (Exception e){
-            System.out.println("Cannot bind to the ip: "+ip+" and port: "+port+".  Received exception: "+ e.getClass().getName()+":"+ e.getMessage());
+        } catch (Exception e) {
+            System.out.println(
+                "Cannot bind to the ip: "
+                    + ip
+                    + " and port: "
+                    + port
+                    + ".  Received exception: "
+                    + e.getClass().getName()
+                    + ":"
+                    + e.getMessage());
         }
     }
 
@@ -144,9 +154,8 @@ public class HttpDaemon implements Runnable{
     // jndi context of OpenEJB
     boolean stop = false;
 
-
-    /** Starts the HttpDaemon thread and does most of the work */    
-    public void run( ) {
+    /** Starts the HttpDaemon thread and does most of the work */
+    public void run() {
 
         Socket socket = null;
 
@@ -160,52 +169,57 @@ public class HttpDaemon implements Runnable{
         OutputStream out = null;
 
         InetAddress clientIP = null;
-        while ( !stop ) {
+        while (!stop) {
             try {
                 socket = serverSocket.accept();
-                
+
                 clientIP = socket.getInetAddress();
                 InetAddress serverIP = serverSocket.getInetAddress();
-                
+
                 Thread.currentThread().setName(clientIP.getHostAddress());
 
-                in  = socket.getInputStream();
+                in = socket.getInputStream();
                 out = socket.getOutputStream();
 
-                try{            
+                try {
                     EjbDaemon.checkHostsAdminAuthorization(clientIP, serverIP);
-                    
+
                     // This will not get called if a SecurityException was thrown
-                    processRequest(in, out); 
-                } catch (SecurityException e){
-                    HttpResponseImpl res = HttpResponseImpl.createForbidden(clientIP.getHostAddress());
+                    processRequest(in, out);
+                } catch (SecurityException e) {
+                    HttpResponseImpl res =
+                        HttpResponseImpl.createForbidden(clientIP.getHostAddress());
                     try {
-                        res.writeMessage( out );
+                        res.writeMessage(out);
                     } catch (Throwable t2) {
                         t2.printStackTrace();
                     }
-                    try{
+                    try {
                         out.close();
                         socket.close();
-                    } catch (Exception dontCare){}
+                    } catch (Exception dontCare) {}
                 }
 
                 // Exceptions should not be thrown from these methods
                 // They should handle their own exceptions and clean
                 // things up with the client accordingly.
-            } catch ( Throwable e ) {
-                logger.error( "Unexpected error", e );
-                System.out.println("ERROR: "+clientIP.getHostAddress()+": " +e.getMessage());
+            } catch (Throwable e) {
+                logger.error("Unexpected error", e);
+                System.out.println("ERROR: " + clientIP.getHostAddress() + ": " + e.getMessage());
             } finally {
                 try {
-                    if ( out != null ) {
-			out.flush();
-			out.close();
-		    }
-                    if ( in != null ) in.close();
-                    if ( socket != null ) socket.close();
-                } catch ( Throwable t ){
-                    logger.error("Encountered problem while closing connection with client: "+t.getMessage());
+                    if (out != null) {
+                        out.flush();
+                        out.close();
+                    }
+                    if (in != null)
+                        in.close();
+                    if (socket != null)
+                        socket.close();
+                } catch (Throwable t) {
+                    logger.error(
+                        "Encountered problem while closing connection with client: "
+                            + t.getMessage());
                 }
             }
         }
@@ -214,7 +228,7 @@ public class HttpDaemon implements Runnable{
     /** takes care of processing requests and creating the webadmin ejb's
      * @param in the input stream from the browser
      * @param out the output stream to the browser
-     */    
+     */
     public void processRequest(InputStream in, OutputStream out) {
 
         HttpRequestImpl req = new HttpRequestImpl();
@@ -222,12 +236,15 @@ public class HttpDaemon implements Runnable{
         //System.out.println("[] reading request");
 
         try {
-            req.readMessage( in );
+            req.readMessage(in);
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponseImpl.createError("Could read the request.\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            res =
+                HttpResponseImpl.createError(
+                    "Could read the request.\n" + t.getClass().getName() + ":\n" + t.getMessage(),
+                    t);
             try {
-                res.writeMessage( out );
+                res.writeMessage(out);
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
@@ -238,21 +255,28 @@ public class HttpDaemon implements Runnable{
         URL uri = null;
         String file = null;
 
-        try{
+        try {
             uri = req.getURI();
             file = uri.getFile();
             int querry = file.indexOf("?");
             if (querry != -1) {
                 file = file.substring(0, querry);
             }
-            
+
             //System.out.println("[] file="+file);
-            
+
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponseImpl.createError("Could not determine the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage());
+            res =
+                HttpResponseImpl.createError(
+                    "Could not determine the module "
+                        + file
+                        + "\n"
+                        + t.getClass().getName()
+                        + ":\n"
+                        + t.getMessage());
             try {
-                res.writeMessage( out );
+                res.writeMessage(out);
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
@@ -261,28 +285,44 @@ public class HttpDaemon implements Runnable{
 
         HttpObject httpObject = null;
 
-        try{
+        try {
             httpObject = getHttpObject(file);
             //System.out.println("[] module="+httpObject);
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponseImpl.createError("Could not load the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            res =
+                HttpResponseImpl.createError(
+                    "Could not load the module "
+                        + file
+                        + "\n"
+                        + t.getClass().getName()
+                        + ":\n"
+                        + t.getMessage(),
+                    t);
             //System.out.println("[] res="+res);
             try {
-                res.writeMessage( out );
+                res.writeMessage(out);
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
             return;
         }
 
-        try{
+        try {
             httpObject.onMessage(req, res);
         } catch (Throwable t) {
             t.printStackTrace();
-            res = HttpResponseImpl.createError("Error occurred while executing the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage(), t);
+            res =
+                HttpResponseImpl.createError(
+                    "Error occurred while executing the module "
+                        + file
+                        + "\n"
+                        + t.getClass().getName()
+                        + ":\n"
+                        + t.getMessage(),
+                    t);
             try {
-                res.writeMessage( out );
+                res.writeMessage(out);
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
@@ -290,17 +330,8 @@ public class HttpDaemon implements Runnable{
             return;
         }
 
-//      java.io.PrintWriter body = res.getPrintWriter();
-//
-//      body.println("<html>");
-//      body.println("<body>");
-//      body.println("<br><br><br><br>");
-//      body.println("<h1>"+file+"</h1>");
-//      body.println("</body>");
-//      body.println("</html>");
-
         try {
-            res.writeMessage( out );
+            res.writeMessage(out);
         } catch (Throwable t) {
             t.printStackTrace();
             return;
@@ -311,40 +342,46 @@ public class HttpDaemon implements Runnable{
      * @param beanName the name of the ejb to look up
      * @throws IOException if an exception is thrown
      * @return an object reference of the ejb
-     */    
-    protected HttpObject getHttpObject(String beanName) throws IOException{
+     */
+    protected HttpObject getHttpObject(String beanName) throws IOException {
         Object obj = null;
-        
+
         //check for no name, add something here later
-        if(beanName.equals("/")) {
-            try {obj = jndiContext.lookup("webadmin/Home");} 
-            catch(javax.naming.NamingException ne) {throw new IOException(ne.getMessage());}
+        if (beanName.equals("/")) {
+            try {
+                obj = jndiContext.lookup("webadmin/Home");
+            } catch (javax.naming.NamingException ne) {
+                throw new IOException(ne.getMessage());
+            }
         } else {
-            try{
-                obj = jndiContext.lookup("webadmin/"+beanName);
-            } catch (javax.naming.NameNotFoundException e){
-                try {obj = jndiContext.lookup("webadmin/DefaultBean");} 
-                catch(javax.naming.NamingException ne) {throw new IOException(ne.getMessage());}
-            } catch (javax.naming.NamingException e){
+            try {
+                obj = jndiContext.lookup("webadmin/" + beanName);
+            } catch (javax.naming.NameNotFoundException e) {
+                try {
+                    obj = jndiContext.lookup("webadmin/DefaultBean");
+                } catch (javax.naming.NamingException ne) {
+                    throw new IOException(ne.getMessage());
+                }
+            } catch (javax.naming.NamingException e) {
                 throw new IOException(e.getMessage());
             }
         }
 
-        HttpHome ejbHome = (HttpHome)obj;
+        HttpHome ejbHome = (HttpHome) obj;
         HttpObject httpObject = null;
-        
+
         try {
             httpObject = ejbHome.create();
-            
+
             // 
             obj = org.openejb.util.proxy.ProxyManager.getInvocationHandler(httpObject);
             org.openejb.core.ivm.BaseEjbProxyHandler handler = null;
-            handler = (org.openejb.core.ivm.BaseEjbProxyHandler)obj;
+            handler = (org.openejb.core.ivm.BaseEjbProxyHandler) obj;
             handler.setIntraVmCopyMode(false);
         } catch (javax.ejb.CreateException cre) {
             throw new IOException(cre.getMessage());
         }
-        
+
         return httpObject;
     }
 }

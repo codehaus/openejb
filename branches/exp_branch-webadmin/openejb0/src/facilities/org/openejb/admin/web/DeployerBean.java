@@ -68,11 +68,9 @@ import org.openejb.util.JarUtils;
  * web administration.
  *
  * TODO:
- * 1. Finish implementing the rest of the features of the command line tool
- * 2. Add better error handling
- * 3. Add documentation
- * 4. Add check to make sure the same id is not being used twice
- *
+ *  1. Add better error handling 
+ *  2.  Add documentation 
+ *  3.  Add check to make sure the same id is not being used twice
  *
  * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -198,18 +196,6 @@ public class DeployerBean implements javax.ejb.SessionBean {
             deploymentHTML.append("</tr>\n");
 
             //set the resource references
-            if (ejbRef != null) {
-                for (int j = 0; j < ejbRef.length; j++) {
-                    link = new ResourceLink();
-                    link.setResId(ejbRef[j][0]);
-                    deploymentHTML.append("<tr>\n<td>").append(ejbRef[j][0]).append("</td>\n");
-                    link.setResRefName(ejbRef[j][1]);
-                    deploymentHTML.append("<td>").append(ejbRef[j][1]).append("</td>\n</tr>\n");
-                    deployment.addResourceLink(link);
-                }
-            }
-
-            //set the ejb references
             if (resourceRef != null) {
                 for (int j = 0; j < resourceRef.length; j++) {
                     link = new ResourceLink();
@@ -221,6 +207,19 @@ public class DeployerBean implements javax.ejb.SessionBean {
                     deployment.addResourceLink(link);
                 }
             }
+
+            //set the ejb references
+            if (ejbRef != null) {
+                for (int j = 0; j < ejbRef.length; j++) {
+                    link = new ResourceLink();
+                    link.setResId(ejbRef[j][0]);
+                    deploymentHTML.append("<tr>\n<td>").append(ejbRef[j][0]).append("</td>\n");
+                    link.setResRefName(ejbRef[j][1]);
+                    deploymentHTML.append("<td>").append(ejbRef[j][1]).append("</td>\n</tr>\n");
+                    deployment.addResourceLink(link);
+                }
+            }
+
             deploymentHTML.append("</table>\n</td>\n");
         }
 
@@ -335,7 +334,12 @@ public class DeployerBean implements javax.ejb.SessionBean {
 
             if ((refs.length > 0) || (ejbRefs.length > 0)) {
                 htmlString.append("<td>");
-                createIdTableOutsideRef(htmlString, refs, ejbRefs, deployerBeans[i].getEjbName(), i);
+                createIdTableOutsideRef(
+                    htmlString,
+                    refs,
+                    ejbRefs,
+                    deployerBeans[i].getEjbName(),
+                    i);
                 htmlString.append("</td>");
             } else {
                 htmlString.append("<td>N/A</td>\n");
@@ -373,7 +377,10 @@ public class DeployerBean implements javax.ejb.SessionBean {
                 htmlString.append("<tr>\n");
                 htmlString.append("<td>").append(refs[i].getResRefName()).append("</td>\n");
                 htmlString.append("<td>").append(refs[i].getResType()).append("</td>\n");
-                htmlString.append("<td>\n<select name=\"resourceRefId").append(index).append("\">");
+                htmlString.append("<td>\n<select name=\"resourceRefId_").append(index).append(
+                    "_").append(
+                    i).append(
+                    "\">");
 
                 //loop through the available resources
                 for (int j = 0; j < this.resources.length; j++) {
@@ -383,7 +390,11 @@ public class DeployerBean implements javax.ejb.SessionBean {
                 }
 
                 htmlString.append("</select>\n");
-                htmlString.append("<input type=\"hidden\" name=\"resourceRefName").append(index);
+                htmlString
+                    .append("<input type=\"hidden\" name=\"resourceRefName_")
+                    .append(index)
+                    .append("_")
+                    .append(i);
                 htmlString.append("\" value=\"").append(refs[i].getResRefName()).append("\">");
                 htmlString.append("</td>\n</tr>\n");
             }
@@ -399,7 +410,10 @@ public class DeployerBean implements javax.ejb.SessionBean {
                 //check for an available link
                 ejbLink = ejbRefs[i].getEjbLink();
                 if (ejbLink == null) {
-                    htmlString.append("<td>\n<select name=\"ejbRefId").append(index).append("\">");
+                    htmlString.append("<td>\n<select name=\"ejbRefId_").append(index).append(
+                        "_").append(
+                        i).append(
+                        "\">");
                     //loop through the available beans in the jar
                     for (int j = 0; j < deployerBeans.length; j++) {
                         if (!deployerBeans[j].getEjbName().equals(deploymentName)) {
@@ -412,12 +426,18 @@ public class DeployerBean implements javax.ejb.SessionBean {
 
                     htmlString.append("</select>\n");
                 } else {
-                    htmlString.append("<td><input type=\"hidden\" name=\"ejbRefId").append(index);
+                    htmlString.append("<td><input type=\"hidden\" name=\"ejbRefId_").append(
+                        index).append(
+                        "_").append(
+                        i);
                     htmlString.append("\" value=\"").append(ejbLink).append("\">\n").append(
                         ejbLink);
                 }
 
-                htmlString.append("<input type=\"hidden\" name=\"ejbRefName").append(index);
+                htmlString.append("<input type=\"hidden\" name=\"ejbRefName_").append(
+                    index).append(
+                    "_").append(
+                    i);
                 htmlString.append("\" value=\"").append(ejbRefs[i].getEjbRefName()).append("\">");
                 htmlString.append("</td>\n</tr>\n");
             }

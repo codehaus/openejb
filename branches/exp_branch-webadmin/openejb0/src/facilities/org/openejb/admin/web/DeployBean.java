@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.StringTokenizer;
@@ -59,23 +60,24 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.rmi.PortableRemoteObject;
 
+import org.apache.regexp.RE;
+import org.apache.regexp.RESyntaxException;
+import org.openejb.OpenEJBException;
+import org.openejb.util.FileUtils;
+
 /**
  * This class takes care of deploying a bean in the web administration. 
  *
  * TODO:
  * 1. Add better error handling
- * 2. Use multiple file names for handle file (ie deploy23049.obj, deploy503930.obj) 
- *    and then delete them when finished
- * 3. Make sure we are removing the deployer object when finished to free resources
- *    as well as deleting the handle file
- * 4. Finish implementing the writeForm function
+ * 4. Finish implementing the writeForm function 
  * 5. Add documentation
  *
  * @author  <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class DeployBean extends WebAdminBean {
     private static final String HANDLE_FILE =
-        System.getProperty("openejb.home") + System.getProperty("file.separator") + "handle.obj";
+        System.getProperty("file.separator") + "deployerHandle.obj";
     private DeployerObject deployer = null;
 
     /*  key for boolean values:
@@ -124,20 +126,24 @@ public class DeployBean extends WebAdminBean {
         try {
             //the user has hit the deploy button
             if (deploy != null) {
-                getDeployerHandle();
+                String deployerHandleString = createDeployerHandle();
                 setOptions();
                 deployer.startDeployment();
                 body.println("<form action=\"Deployment\" method=\"post\">");
                 body.print(deployer.createIdTable());
+                body.println(
+                    "<input type=\"hidden\" name=\"deployerHandle\" value=\""
+                        + deployerHandleString
+                        + "\">");
                 body.println("</form>");
                 //more information is needed from the user
             } else if (submitDeployment != null) {
                 deployPartTwo(body);
             } else {
-                createDeployerHandle();
                 writeForm(body);
             }
         } catch (Exception e) {
+            //TODO - A generic error screen
             body.println(e.getMessage());
         }
     }
@@ -147,41 +153,42 @@ public class DeployBean extends WebAdminBean {
         String containerId;
         String[][] resourceRef = null;
         String[][] ejbRef = null;
-        String tempEjbRef;
-        String tempResourceRef;
-        String tempEjbName;
-        String tempResourceName;
+        String[][] tempEjbRef;
+        String[][] tempEjbName;
+        String[][] tempResourceRef;
+        String[][] tempResourceName;
         StringTokenizer ejbRefToken;
         StringTokenizer resourceRefToken;
 
+        String deployerHandleString = request.getFormParameter("deployerHandle");
+        getDeployerHandle(deployerHandleString); //gets the deployment handle
         int deployerBeansLength = deployer.getDeployerBeanLength();
+        String[][] formParams = request.getFormParameters();
 
-        //here we need to continue the deployment
-        getDeployerHandle(); //gets the deployment handle
         //loop through all the beans and set the ids
         for (int i = 0; i < deployerBeansLength; i++) {
-            deploymentId = request.getFormParameter("deploymentId" + i);
-            containerId = request.getFormParameter("containerId" + i);
-            tempResourceRef = request.getFormParameter("resourceRefId" + i);
-            tempResourceName = request.getFormParameter("resourceRefName" + i);
-            tempEjbRef = request.getFormParameter("ejbRefId" + i);
-            tempEjbName = request.getFormParameter("ejbRefName" + i);
+            deploymentId = getParameter("deploymentId" + i, formParams);
+            containerId = getParameter("containerId" + i, formParams);
+            tempResourceRef = getParameters("resourceRefId_" + i + "_", formParams);
+            tempResourceName = getParameters("resourceRefName_" + i + "_", formParams);
+            tempEjbRef = getParameters("ejbRefId_" + i + "_", formParams);
+            tempEjbName = getParameters("ejbRefName_" + i + "_", formParams);
 
             //resolve the ejb references
             ejbRef = null;
             if (tempEjbRef != null) {
-                ejbRef = resolveHtmlTokens(tempEjbRef, tempEjbName);
+                ejbRef = resolveTokens(tempEjbRef, tempEjbName);
             }
 
             //resolve the ejb references
             resourceRef = null;
             if (tempResourceRef != null) {
-                resourceRef = resolveHtmlTokens(tempResourceRef, tempResourceName);
+                resourceRef = resolveTokens(tempResourceRef, tempResourceName);
             }
 
             //check for null
             if (deploymentId == null) {
-                throw new IOException("Please enter a deployment id");
+                throw new IOException("Please enter a deployment id for bean number: " + (i + 1));
             }
             //this should never happen, but better safe than sorry
             if (containerId == null) {
@@ -192,25 +199,69 @@ public class DeployBean extends WebAdminBean {
         }
 
         printDeploymentHtml(body);
+        deployer.remove();
     }
 
-    private String[][] resolveHtmlTokens(String referenceId, String referenceName) {
-        StringTokenizer refToken = new StringTokenizer(referenceId, ",");
-        String[][] refString = new String[refToken.countTokens()][2];
+    private String getParameter(String name, String[][] params) {
+        String[][] temp = getParameters(name, params);
+        return temp != null ? temp[0][1] : null;
+    }
 
-        int i = 0;
-        while (refToken.hasMoreTokens()) {
-            refString[i++][0] = refToken.nextToken();
+    private String[][] getParameters(String name, String[][] params) {
+        int paramsLength = params.length;
+        HashMap values = new HashMap();
+
+        for (int i = 0; i < paramsLength; i++) {
+            if (params[i][0].indexOf(name) != -1) {
+                values.put(params[i][0], params[i][1]);
+            }
         }
 
-        refToken = new StringTokenizer(referenceName, ",");
-
-        i = 0;
-        while (refToken.hasMoreTokens()) {
-            refString[i++][1] = refToken.nextToken();
+        Iterator keys = values.keySet().iterator();
+        String[][] returnString = new String[values.size()][2];
+        int j = 0;
+        String temp = null;
+        while (keys.hasNext()) {
+            temp = (String) keys.next();
+            returnString[j][0] = temp;
+            returnString[j++][1] = (String) values.get(temp);
         }
 
-        return refString;
+        return returnString.length > 0 ? returnString : null;
+    }
+
+    private String[][] resolveTokens(String[][] referenceId, String[][] referenceName)
+        throws RESyntaxException, OpenEJBException {
+        RE firstNumberInString = new RE("\\w_(\\d)");
+        int idIndex = 0;
+        int nameIndex = 0;
+        String idNumbers;
+        String nameNumbers;
+        String[][] returnValue = new String[referenceId.length][2];
+
+        if(referenceId.length != referenceName.length) {
+            throw new OpenEJBException("referenceId is not the same size as referenceName");
+        }
+         
+        for (int i=0; i<referenceId.length; i++) {
+            firstNumberInString.match(referenceId[i][0]);
+            idIndex = firstNumberInString.getParenStart(1);
+            idNumbers = referenceId[i][0].substring(idIndex, referenceId[i][0].length());
+            
+            for (int j=0; j<referenceName.length; j++) {
+                firstNumberInString.match(referenceName[j][0]);
+                nameIndex = firstNumberInString.getParenStart(1);
+                nameNumbers = referenceName[j][0].substring(nameIndex, referenceName[j][0].length());
+                
+                if(nameNumbers.equals(idNumbers)) {
+                    returnValue[i][0] = referenceId[i][1];
+                    returnValue[i][1] = referenceName[j][1];
+                    break;
+                }
+            }
+        }
+
+        return returnValue;
     }
 
     private void printDeploymentHtml(PrintWriter body) throws Exception {
@@ -224,11 +275,10 @@ public class DeployBean extends WebAdminBean {
         body.println("</tr>\n");
         body.println(deployer.getDeploymentHTML());
         body.println("</table>");
-        deployer.remove();
     }
 
     /** gets an object reference and handle */
-    private void createDeployerHandle() throws Exception {
+    private String createDeployerHandle() throws Exception {
         Properties p = new Properties();
         p.put(Context.INITIAL_CONTEXT_FACTORY, "org.openejb.core.ivm.naming.InitContextFactory");
 
@@ -238,14 +288,13 @@ public class DeployBean extends WebAdminBean {
         //create a new instance
         DeployerHome home = (DeployerHome) PortableRemoteObject.narrow(obj, DeployerHome.class);
         deployer = home.create();
-        //execute a method to create the object
-        String temp = deployer.getDeploymentHTML();
 
         //get the handle for that instance
         Handle deployerHandle = deployer.getHandle();
 
         //write the handle out to a file
-        File myHandleFile = new File(HANDLE_FILE);
+        File myHandleFile =
+            new File(FileUtils.createTempDirectory().getAbsolutePath() + HANDLE_FILE);
         if (!myHandleFile.exists()) {
             myHandleFile.createNewFile();
         }
@@ -254,12 +303,13 @@ public class DeployBean extends WebAdminBean {
         objectOut.writeObject(deployerHandle); //writes the handle to the file
         objectOut.flush();
         objectOut.close();
+
+        return myHandleFile.getAbsolutePath();
     }
 
     /** this function gets the deployer handle */
-    private void getDeployerHandle() throws Exception {
-        File myHandleFile = new File(HANDLE_FILE);
-        
+    private void getDeployerHandle(String handleFile) throws Exception {
+        File myHandleFile = new File(handleFile);
 
         //get the object
         ObjectInputStream objectIn = new ObjectInputStream(new FileInputStream(myHandleFile));

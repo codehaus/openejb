@@ -76,7 +76,7 @@ import org.openejb.nova.dispatch.VirtualOperation;
 import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TxnPolicy;
-import org.openejb.nova.security.SubjectIdExtractInterceptor;
+//import org.openejb.nova.security.SubjectIdExtractInterceptor;
 
 /**
  *
@@ -312,9 +312,9 @@ public abstract class AbstractEJBContainer
 
     protected URI startServerRemoting(Interceptor firstInterceptor) {
         // set up server side remoting endpoint
-        if (setSecurityInterceptor) {
-            firstInterceptor = new SubjectIdExtractInterceptor(firstInterceptor);
-        }
+//        if (setSecurityInterceptor) {
+//            firstInterceptor = new SubjectIdExtractInterceptor(firstInterceptor);
+//        }
         DeMarshalingInterceptor demarshaller = new DeMarshalingInterceptor(firstInterceptor, classLoader);
         remoteId = InterceptorRegistry.instance.register(demarshaller);
         return uri.resolve("#" + remoteId);

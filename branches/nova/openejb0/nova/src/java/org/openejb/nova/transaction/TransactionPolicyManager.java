@@ -47,37 +47,34 @@
  */
 package org.openejb.nova.transaction;
 
-import javax.transaction.TransactionManager;
-
-import org.apache.geronimo.core.service.Interceptor;
-import org.apache.geronimo.core.service.Invocation;
-import org.apache.geronimo.core.service.InvocationResult;
-
-import org.openejb.nova.EJBInvocation;
 import org.openejb.nova.EJBInvocationType;
+import org.openejb.nova.deployment.TransactionPolicySource;
+import org.openejb.nova.dispatch.MethodSignature;
 
 /**
  * @version $Revision$ $Date$
  */
-public class TransactionContextInterceptor implements Interceptor {
-    private final Interceptor next;
-    private final TransactionManager txnManager;
-    private final TransactionPolicyManager transactionPolicyManager;
+public final class TransactionPolicyManager {
+    private final TxnPolicy[][] transactionPolicy = new TxnPolicy[EJBInvocationType.MAX_ORDINAL][];
 
-    public TransactionContextInterceptor(Interceptor next, TransactionManager txnManager, TransactionPolicyManager transactionPolicyManager) {
-        this.next = next;
-        this.txnManager = txnManager;
-        this.transactionPolicyManager = transactionPolicyManager;
+    public TransactionPolicyManager(TransactionPolicySource transactionPolicySource, MethodSignature[] signatures) {
+        transactionPolicy[EJBInvocationType.HOME.getOrdinal()] = mapPolicies("Home", signatures, transactionPolicySource);
+        transactionPolicy[EJBInvocationType.REMOTE.getOrdinal()] = mapPolicies("Remote", signatures, transactionPolicySource);
+        transactionPolicy[EJBInvocationType.LOCALHOME.getOrdinal()] = mapPolicies("LocalHome", signatures, transactionPolicySource);
+        transactionPolicy[EJBInvocationType.LOCAL.getOrdinal()] = mapPolicies("Local", signatures, transactionPolicySource);
+        transactionPolicy[EJBInvocationType.WEB_SERVICE.getOrdinal()] = mapPolicies("ServiceEndpoint", signatures, transactionPolicySource);
     }
 
-    public InvocationResult invoke(Invocation invocation) throws Throwable {
-        EJBInvocation ejbInvocation = (EJBInvocation) invocation;
+    public TxnPolicy getTransactionPolicy(EJBInvocationType invocationType, int operationIndex) {
+        return transactionPolicy[invocationType.getTransactionPolicyKey()][operationIndex];
+    }
 
-        EJBInvocationType invocationType = ejbInvocation.getType();
-        int methodIndex = ejbInvocation.getMethodIndex();
-
-        TxnPolicy policy = transactionPolicyManager.getTransactionPolicy(invocationType, methodIndex);
-        assert policy != null: "transaction policy array was not set up correctly, no policy for " + invocation;
-        return policy.invoke(next, ejbInvocation, txnManager);
+    private static TxnPolicy[] mapPolicies(String intfName, MethodSignature[] signatures, TransactionPolicySource transactionPolicySource) {
+        TxnPolicy[] policies = new TxnPolicy[signatures.length];
+        for (int index = 0; index < signatures.length; index++) {
+            MethodSignature signature = signatures[index];
+            policies[index] = transactionPolicySource.getTransactionPolicy(intfName, signature);
+        }
+        return policies;
     }
 }

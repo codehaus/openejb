@@ -81,6 +81,7 @@ import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
+import org.openejb.nova.transaction.TransactionPolicyManager;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
@@ -97,6 +98,7 @@ public class CMPEntityContainer extends AbstractEJBContainer {
     private final Interceptor interceptor;
     private final MethodSignature[] signatures;
     private final InstancePool pool;
+    private final TransactionPolicyManager transactionPolicyManager;
 
     public CMPEntityContainer(EntityContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator, CMPConfiguration cmpConfig) throws Exception {
         super(config, transactionManager, trackedConnectionAssociator);
@@ -119,14 +121,14 @@ public class CMPEntityContainer extends AbstractEJBContainer {
 
         ejbLoadCommand = persistenceFactory.getQueryCommand(new MethodSignature("ejbLoad"));
         ejbStoreCommand = persistenceFactory.getUpdateCommand(new MethodSignature("ejbStore"));
-        buildTransactionPolicyMap(vopFactory.getSignatures());
+        transactionPolicyManager = new TransactionPolicyManager(config.transactionPolicySource, vopFactory.getSignatures());
 
         pool = new SoftLimitedInstancePool(new EntityInstanceFactory(componentContext, vopFactory.getInstanceContextFactory()), 1);
 
         Interceptor firstInterceptor;
         firstInterceptor = new DispatchInterceptor(vtable);
         if (trackedConnectionAssociator != null) {
-            firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
+            firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, config.unshareableResources);
         }
         if (setIdentity) {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
@@ -142,7 +144,7 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         }
         firstInterceptor = new EntityInstanceInterceptor(firstInterceptor, pool);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicyManager);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
         this.interceptor = firstInterceptor;
     }

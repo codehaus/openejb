@@ -72,6 +72,7 @@ import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
+import org.openejb.nova.transaction.TransactionPolicyManager;
 
 /**
  * @version $Revision$ $Date$
@@ -82,6 +83,7 @@ public class StatefulContainer extends AbstractEJBContainer {
     private final InstanceCache instanceCache;
     private final Interceptor interceptor;
     private final MethodSignature[] signatures;
+    private final TransactionPolicyManager transactionPolicyManager;
 
     public StatefulContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
         super(config, transactionManager, trackedConnectionAssociator);
@@ -90,7 +92,7 @@ public class StatefulContainer extends AbstractEJBContainer {
         StatefulOperationFactory vopFactory = StatefulOperationFactory.newInstance(this, beanClass);
         vtable = vopFactory.getVTable();
         signatures = vopFactory.getSignatures();
-        buildTransactionPolicyMap(vopFactory.getSignatures());
+        transactionPolicyManager = new TransactionPolicyManager(config.transactionPolicySource, vopFactory.getSignatures());
 
         // setup the instance factory and cache
         instanceFactory = new StatefulInstanceFactory(componentContext, this);
@@ -100,7 +102,7 @@ public class StatefulContainer extends AbstractEJBContainer {
         Interceptor firstInterceptor;
         firstInterceptor = new DispatchInterceptor(vtable);
         if (trackedConnectionAssociator != null) {
-            firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
+            firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, config.unshareableResources);
         }
         if (setIdentity) {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
@@ -115,7 +117,7 @@ public class StatefulContainer extends AbstractEJBContainer {
             firstInterceptor = new PolicyContextHandlerEJBInterceptor(firstInterceptor);
         }
         firstInterceptor = new StatefulInstanceInterceptor(firstInterceptor, this, instanceFactory, instanceCache);
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicyManager);
         firstInterceptor = new ComponentContextInterceptor(firstInterceptor, componentContext);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, getEJBName());
 

@@ -163,7 +163,7 @@ public class CMPOperationFactory extends AbstractOperationFactory {
             if (signature.getMethodName().startsWith("ejbSelect")) {
                 int index;
                 try {
-                    index = MethodHelper.getSuperIndex(fastClass, signature);
+                    index = MethodHelper.getSuperIndex(enhancedClass, signature);
                 } catch (ClassNotFoundException e) {
                     throw new IllegalStateException("Cannot load classes for " + signature);
                 }
@@ -188,8 +188,8 @@ public class CMPOperationFactory extends AbstractOperationFactory {
                 Method getter = beanClass.getMethod("get" + baseName, null);
                 Method setter = beanClass.getMethod("set" + baseName, new Class[]{getter.getReturnType()});
 
-                itable[MethodHelper.getSuperIndex(fastClass, getter)] = new CMPFieldGetter(i);
-                itable[MethodHelper.getSuperIndex(fastClass, setter)] = new CMPFieldSetter(i);
+                itable[MethodHelper.getSuperIndex(enhancedClass, getter)] = new CMPFieldGetter(i);
+                itable[MethodHelper.getSuperIndex(enhancedClass, setter)] = new CMPFieldSetter(i);
             } catch (NoSuchMethodException e) {
                 throw new IllegalArgumentException("Missing accessor for field " + fieldName);
             }
@@ -217,8 +217,8 @@ public class CMPOperationFactory extends AbstractOperationFactory {
                     setOperation = new SingleValuedCMRSetter(relatedContainer, queryCommand, persistenceFactory.getUpdateCommand(new MethodSignature(setter)));
                 }
 
-                itable[MethodHelper.getSuperIndex(fastClass, getter)] = getOperation;
-                itable[MethodHelper.getSuperIndex(fastClass, setter)] = setOperation;
+                itable[MethodHelper.getSuperIndex(enhancedClass, getter)] = getOperation;
+                itable[MethodHelper.getSuperIndex(enhancedClass, setter)] = setOperation;
             } catch (NoSuchMethodException e) {
                 throw new IllegalArgumentException("Missing accessor for cmr-field " + fieldName);
             }

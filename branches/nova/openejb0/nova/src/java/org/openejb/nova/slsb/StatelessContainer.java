@@ -72,6 +72,7 @@ import org.openejb.nova.security.EJBRunAsInterceptor;
 import org.openejb.nova.security.EJBSecurityInterceptor;
 import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
+import org.openejb.nova.transaction.TransactionPolicyManager;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
@@ -82,6 +83,7 @@ public class StatelessContainer extends AbstractEJBContainer {
     private final Interceptor interceptor;
     private final MethodSignature[] signatures;
     private final InstancePool pool;
+    private final TransactionPolicyManager transactionPolicyManager;
 
     public StatelessContainer(EJBContainerConfiguration config, TransactionManager transactionManager, TrackedConnectionAssociator trackedConnectionAssociator) throws Exception {
         super(config, transactionManager, trackedConnectionAssociator);
@@ -89,7 +91,7 @@ public class StatelessContainer extends AbstractEJBContainer {
         StatelessOperationFactory vopFactory = StatelessOperationFactory.newInstance(this);
         vtable = vopFactory.getVTable();
         signatures = vopFactory.getSignatures();
-        buildTransactionPolicyMap(vopFactory.getSignatures());
+        transactionPolicyManager = new TransactionPolicyManager(config.transactionPolicySource, vopFactory.getSignatures());
 
         pool = new SoftLimitedInstancePool(new StatelessInstanceFactory(this), 1);
 
@@ -97,9 +99,9 @@ public class StatelessContainer extends AbstractEJBContainer {
         Interceptor firstInterceptor;
         firstInterceptor = new DispatchInterceptor(vtable);
         if (trackedConnectionAssociator != null) {
-            firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, unshareableResources);
+            firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator, config.unshareableResources);
         }
-        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicy);
+        firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionManager, transactionPolicyManager);
         if (setIdentity) {
             firstInterceptor = new EJBIdentityInterceptor(firstInterceptor);
         }

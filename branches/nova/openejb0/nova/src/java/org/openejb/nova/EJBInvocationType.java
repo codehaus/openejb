@@ -83,6 +83,7 @@ public final class EJBInvocationType implements Serializable {
         REMOTE, HOME, LOCAL, LOCALHOME, WEB_SERVICE, TIMEOUT, MESSAGE_ENDPOINT
     };
 
+    public static int MAX_ORDINAL = VALUES.length;
 
     public boolean isLocal() {
         return local;

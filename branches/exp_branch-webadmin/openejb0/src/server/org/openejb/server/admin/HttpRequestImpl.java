@@ -55,6 +55,7 @@ import javax.naming.*;
 import java.util.StringTokenizer;
 import java.io.DataInput;
 import org.openejb.admin.web.HttpRequest;
+import java.net.URLDecoder;
 
 /**
  * 
@@ -163,12 +164,12 @@ public class HttpRequestImpl implements  HttpRequest {
 
             /* [1] Parse the Name */
             if (!param.hasMoreTokens()) continue;
-            String name = param.nextToken();
+            String name = URLDecoder.decode(param.nextToken());
             if (name == null) continue;
 
             /* [2] Parse the Value */
             if (!param.hasMoreTokens()) continue;
-            String value = param.nextToken();
+            String value = URLDecoder.decode(param.nextToken());
             if (value == null) continue;
 
             //System.out.println("[] "+name+" = "+value);
@@ -264,12 +265,12 @@ public class HttpRequestImpl implements  HttpRequest {
             StringTokenizer param = new StringTokenizer(parameters.nextToken(), "=");    
             
             /* [1] Parse the Name */
-            name = param.nextToken();
+            name = URLDecoder.decode(param.nextToken());
             if (name == null) break;
 
             /* [2] Parse the Value */
             try {
-                value = param.nextToken();
+                value = URLDecoder.decode(param.nextToken());
             } catch (java.util.NoSuchElementException nse) {
                 value = ""; //if there is no token set value to null
             }

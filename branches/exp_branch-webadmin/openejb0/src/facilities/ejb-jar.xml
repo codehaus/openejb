@@ -41,5 +41,21 @@
     <session-type>Stateless</session-type>
     <transaction-type>Bean</transaction-type>
   </session>
+  <session>
+    <ejb-name>webadmin/Deployment</ejb-name>
+    <home>org.openejb.admin.web.HttpHome</home>
+    <remote>org.openejb.admin.web.HttpObject</remote>
+    <ejb-class>org.openejb.admin.web.DeployBean</ejb-class>
+    <session-type>Stateless</session-type>
+    <transaction-type>Bean</transaction-type>
+  </session>
+  <session>
+    <ejb-name>deploy/webadmin/Deployer</ejb-name>
+    <home>org.openejb.admin.web.DeployerHome</home>
+    <remote>org.openejb.admin.web.DeployerObject</remote>
+    <ejb-class>org.openejb.admin.web.DeployerBean</ejb-class>
+    <session-type>Stateful</session-type>
+    <transaction-type>Bean</transaction-type>
+  </session>
 </enterprise-beans>
 </ejb-jar>

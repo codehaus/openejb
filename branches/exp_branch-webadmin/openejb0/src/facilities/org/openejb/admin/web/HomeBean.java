@@ -94,13 +94,15 @@ public class HomeBean extends WebAdminBean {
         body.println("and we will review it and add it to the project.<br><br>");
         body.println("Future revisions of the OpenEJB Web Administration will contain:");
         body.println("<ul type=\"disc\">");
-	body.println("<li>Better bean deployment with more features</li>");
+	body.println("<li>Better bean deployment</li>");
 	body.println("<li>Container Managed Persistance Mapping</li>");
+        body.println("<li>EJB Jar Validator</li>");
         body.println("<li>More system information</li>");
-        body.println("<li>Extensive help section</li>");
+        body.println("<li>Better orginization of this site (i.e. the menus)</li>");
+        body.println("<li>Extensive help section and documentation</li>");
         body.println("<li>Your suggestions!!</li>");
         body.println("</ul>");
-        body.println("<hr>");
+        body.println("<br>");
         body.println("If you have any problems with this website, please don’t hesitate to email the OpenEJB users list: ");
         body.println("<a href=\"mailto:openejb-user@lists.sourceforge.net\">openejb-user@lists.sourceforge.net</a> and we’ll");
         body.println("respond to you as soon as possible.");

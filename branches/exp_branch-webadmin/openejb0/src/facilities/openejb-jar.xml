@@ -20,4 +20,12 @@
         ejb-name="webadmin/ListLogs" 
         deployment-id="webadmin/ListLogs"
         container-id="Default Stateless Container"/>
+    <ejb-deployment 
+        ejb-name="webadmin/Deployment" 
+        deployment-id="webadmin/Deployment"
+        container-id="Default Stateless Container"/>
+    <ejb-deployment 
+        ejb-name="deploy/webadmin/Deployer" 
+        deployment-id="deploy/webadmin/Deployer"
+        container-id="Default Stateful Container"/>
 </openejb-jar>

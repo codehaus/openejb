@@ -175,11 +175,12 @@ public class DeployerBean implements javax.ejb.SessionBean {
             for (int i = 0; i < beans.length; i++) {
                 if (tempJarFile.getName().equalsIgnoreCase(beans[i].getName())) {
                     throw new RemoteException(
-                        tempJarFile.getName()
-                            + " already exists in "
-                            + System.getProperty("openejb.home")
+                        System.getProperty("openejb.home")
                             + System.getProperty("file.separator")
-                            + "beans");
+                            + "beans"
+                            + System.getProperty("file.separator")
+                            + tempJarFile.getName()
+                            + " already exists.");
                 }
             }
         }

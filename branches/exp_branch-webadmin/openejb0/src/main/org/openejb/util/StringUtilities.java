@@ -51,7 +51,7 @@ import java.util.StringTokenizer;
  * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public class StringUtilities {
-    
+
     /**
      * Gets the last token in a StringTokenizer.
      * @param tokenString - the string to get the last token from
@@ -60,12 +60,40 @@ public class StringUtilities {
      */
     public static String getLastToken(String tokenString, String delimeter) {
         StringTokenizer token = new StringTokenizer(tokenString, delimeter);
-        
+
         String returnValue = null;
-        while(token.hasMoreTokens()) {
+        while (token.hasMoreTokens()) {
             returnValue = token.nextToken();
         }
-        
+
         return returnValue;
+    }
+
+    /**
+     * Checks a String to see if it's value is null, 
+     * and if so returns a blank string.
+     * @param stringToCheckForNull - the string to check for null
+     * @return the checked string
+     */
+    public static String replaceNullStringWithBlankString(String stringToCheckForNull) {
+        if (stringToCheckForNull == null) {
+            return "";
+        } else {
+            return stringToCheckForNull;
+        }
+    }
+
+    /**
+     * Checks a String to see if it's value is null or blank, 
+     * and if so returns a non-breaking space.
+     * @param stringToCheckForNull - the string to check for null or blank 
+     * @return the checked string
+     */
+    public static String replaceNullOrBlankStringWithNonBreakingSpace(String stringToCheckForNull) {
+        if ((stringToCheckForNull == null) || (stringToCheckForNull.equals(""))) {
+            return "&nbsp;";
+        } else {
+            return stringToCheckForNull;
+        }
     }
 }

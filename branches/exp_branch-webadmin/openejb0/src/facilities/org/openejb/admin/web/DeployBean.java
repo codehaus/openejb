@@ -149,21 +149,20 @@ public class DeployBean extends WebAdminBean {
         } catch (Exception e) {
             //timu - Create a generic error screen
             handleException(e, body);
-            e.printStackTrace();
         }
     }
 
     private void handleException(Exception e, PrintWriter body) {
-        if(e instanceof UndeclaredThrowableException) {
+        if (e instanceof UndeclaredThrowableException) {
             UndeclaredThrowableException ue = (UndeclaredThrowableException) e;
             Throwable t = ue.getUndeclaredThrowable();
-            if(t != null) {
+            if (t != null) {
                 body.println(t.getMessage());
             } else {
                 body.println("An unknown system error occured.");
             }
         } else {
-            if(e != null) {
+            if (e != null) {
                 body.println(e.getMessage());
             } else {
                 body.println("An unknown system error occured.");
@@ -550,8 +549,11 @@ public class DeployBean extends WebAdminBean {
         body.println("two beans can share the same deployment ID.");
         body.println("</td>");
         body.println("</tr>");
+        body.println("<tr>");
+        body.println("<td colspan=\"2\">&nbsp;</td>");
+        body.println("</tr>");
 
-        //force over write of the bean
+        /* force over write of the bean - this will have to wait for now until the bug gets fixed
         body.println("<tr>");
         body.println("<td colspan=\"2\">");
         body.println("<input type=\"checkbox\" name=\"force\" value=\"-f\">");
@@ -562,6 +564,7 @@ public class DeployBean extends WebAdminBean {
         body.println("<tr>");
         body.println("<td colspan=\"2\">&nbsp;</td>");
         body.println("</tr>");
+        */
 
         // sets the OpenEJB configuration file 
         body.println("<tr>");

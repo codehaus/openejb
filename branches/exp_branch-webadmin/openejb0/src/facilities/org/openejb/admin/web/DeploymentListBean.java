@@ -58,6 +58,7 @@ import org.openejb.alt.assembler.classic.EnvEntryInfo;
 import org.openejb.alt.assembler.classic.JndiEncInfo;
 import org.openejb.alt.assembler.classic.ResourceReferenceInfo;
 import org.openejb.alt.config.ConfigurationFactory;
+import org.openejb.util.StringUtilities;
 
 /**
  *
@@ -142,7 +143,10 @@ public class DeploymentListBean extends WebAdminBean {
             (org.openejb.core.DeploymentInfo) OpenEJB.getDeploymentInfo(id);
 
         printRow("Name", bean.ejbName, body);
-        printRow("Description", bean.description, body);
+        printRow(
+            "Description",
+            StringUtilities.replaceNullOrBlankStringWithNonBreakingSpace(bean.description),
+            body);
 
         String type = null;
 

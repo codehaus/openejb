@@ -1,20 +1,23 @@
 <?xml version="1.0"?>
-
 <openejb-jar xmlns="http://www.openejb.org/openejb-jar/1.1">
-	<ejb-deployment 
-        ejb-name="webadmin/HelloWorld" 
-        deployment-id="webadmin/HelloWorld"
+    <ejb-deployment 
+        ejb-name="webadmin/Home" 
+        deployment-id="webadmin/Home"
         container-id="Default Stateless Container"/>
-	<ejb-deployment 
+    <ejb-deployment 
         ejb-name="webadmin/DefaultBean" 
         deployment-id="webadmin/DefaultBean"
         container-id="Default Stateless Container"/>
-	<ejb-deployment 
+    <ejb-deployment 
         ejb-name="webadmin/ConfigBean" 
         deployment-id="webadmin/Configuration"
         container-id="Default Stateless Container"/>
     <ejb-deployment 
         ejb-name="webadmin/Properties" 
         deployment-id="webadmin/Properties"
+        container-id="Default Stateless Container"/>
+    <ejb-deployment 
+        ejb-name="webadmin/ListLogs" 
+        deployment-id="webadmin/ListLogs"
         container-id="Default Stateless Container"/>
 </openejb-jar>

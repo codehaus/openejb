@@ -314,6 +314,7 @@ public class HttpResponseImpl implements HttpResponse {
         /** Response body */
         writer.flush();
         body = baos.toByteArray();
+        System.out.println("[] body "+body.length );
         out.writeObject( body );
     }
     
@@ -329,6 +330,7 @@ public class HttpResponseImpl implements HttpResponse {
 
         /** Response body */
         body = (byte[]) in.readObject();
+        System.out.println("[] body "+body.length );
         baos = new ByteArrayOutputStream();
         baos.write( body );
         writer = new PrintWriter( baos );

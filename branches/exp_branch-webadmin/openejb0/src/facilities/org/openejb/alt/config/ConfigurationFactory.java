@@ -116,6 +116,7 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
         }
 
         configLocation = ConfigUtils.searchForConfiguration(configLocation);
+        System.setProperty("openejb.configuration", configLocation);
 
     }
 

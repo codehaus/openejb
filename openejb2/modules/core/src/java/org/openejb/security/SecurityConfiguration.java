@@ -66,7 +66,6 @@ public class SecurityConfiguration implements Serializable {
     private Permissions uncheckedPolicy = new Permissions();
     private Map rolePolicies = new HashMap();
     private Map roleReferences = new HashMap();
-    private Map roleMapping = new HashMap();
 
     public String getPolicyContextId() {
         return policyContextId;
@@ -90,9 +89,5 @@ public class SecurityConfiguration implements Serializable {
 
     public Map getRoleReferences() {
         return roleReferences;
-    }
-
-    public Map getRoleMapping() {
-        return roleMapping;
     }
 }

@@ -60,10 +60,6 @@ import org.openejb.security.SecurityConfiguration;
  */
 public interface SecureBuilder extends ResourceEnvironmentBuilder {
 
-    String getContainerId();
-
-    void setContainerId(String containerId);
-
     Subject getDefaultSubject();
 
     void setDefaultSubject(Subject defaultSubject);

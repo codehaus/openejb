@@ -59,11 +59,32 @@ import javax.naming.Context;
 import javax.ejb.*;
 import javax.naming.*;
 
-/** This is the template web admin bean to extend from.  It contains all the functionaltiy
+/** This is the template web admin bean to extend from.  It contains all the functionality for the webadministration.  To use
+ *  this class, simply sub-class it:<br><br>
+ *
+ *  <code>
+ *  public class MyBean extends WebAdminBean {
+ *     ...
+ *  }
+ *  </code>
+ *  <br><br>
+ *  and declare the following methods:<br><br>
+ *
+ *  <code>
+ *  public void ejbCreate() {}<br>
+ *  public void preProcess(HttpRequest request, HttpResponse response) throws IOException {}<br>
+ *  public void postProcess(HttpRequest request, HttpResponse response) throws IOException {}<br>
+ *  public void writeBody(PrintWriter body) throws IOException {}<br>
+ *  public void writeHtmlTitle(PrintWriter body) throws IOException {}<br>
+ *  public void writePageTitle(PrintWriter body) throws IOException {}<br>
+ *  public void writeSubMenuItems(PrintWriter body) throws IOException {}<br>
+ *  </code>
+ *
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public abstract class WebAdminBean implements HttpBean {
-    /** called automaticaly by the container
+    /** used for the session context
      */    
     protected SessionContext ejbContext;
     /** the substitue
@@ -72,15 +93,17 @@ public abstract class WebAdminBean implements HttpBean {
     /** the navigation sections
      */    
     public static String[] navSections;
-    /** the section
+    /** the menu section
      */    
     protected String section = "";
-    /** the request
+    /** the HTTP request
      */    
     protected HttpRequest request;
-    /** the response
+    /** the HTTP response
      */    
     protected HttpResponse response;
+    /** the standard title */
+    public static final String HTML_TITLE = "OpenEJB Web Administration Console";
 
 
     /** the main method of this bean, it takes care of the processing
@@ -127,13 +150,13 @@ public abstract class WebAdminBean implements HttpBean {
         postProcess(request, response);
     }
 
-    /** before the process is done
+    /** called before any content is written to the browser
      * @param request the http request
      * @param response the http response
      * @throws IOException if an exception is thrown
      */    
     public abstract void preProcess(HttpRequest request, HttpResponse response) throws IOException;
-    /** after the processing is completed
+    /** called after all content is written to the browser
      * @param request the http request
      * @param response the http response
      * @throws IOException if an exception is thrown
@@ -244,7 +267,7 @@ public abstract class WebAdminBean implements HttpBean {
      */
     public abstract void writeSubMenuItems(PrintWriter body) throws IOException;
 
-    /** formats a sub menu item
+    /** formats a sub menu item for the left navigation
      * @param itemName the name for display
      * @param url the url to link
      * @return the html that is formatted
@@ -261,7 +284,8 @@ public abstract class WebAdminBean implements HttpBean {
         return buff.toString();
     }
 
-    /** Write the main content
+    /** writes the main body content to the broswer.  This content is inside a <code>&lt;p&gt;</code> block
+     *  
      * 
      * @param body the output to write to
      * @exception IOException if an exception is thrown
@@ -298,7 +322,7 @@ public abstract class WebAdminBean implements HttpBean {
         return out.toString();
     }
 
-    /** writes a template
+    /** writes a template from the input stream to the output stream
      * @param out the output to write to
      * @param template the template to read
      * @throws IOException if an exception is thrown
@@ -313,23 +337,23 @@ public abstract class WebAdminBean implements HttpBean {
         //System.out.println("[] done reading");
     }
 
-    /** gets the template
+    /** gets an html template which is the content of the pages written to the browser
      * @throws IOException if an exception is thrown
      * @return the template
      */    
     public InputStream getTemplate() throws IOException{
-        System.out.println("[] get template");
+        //System.out.println("[] get template");
         return new URL( "resource:/openejb/webadmin/template.html" ).openConnection().getInputStream();
     }
 
-    /** initalizes the left navigation
+    /** initalizes the left and top menu navigation
      */    
     public void initNavSections(){
         try{
             java.util.Vector sections = new java.util.Vector();
             Context ctx = org.openejb.OpenEJB.getJNDIContext();
             NamingEnumeration enum = ctx.list("openejb/ejb/webadmin");
-            System.out.println("\n\nENUM "+enum);
+            //System.out.println("\n\nENUM "+enum);
             
             if ( enum == null){
                 return;
@@ -337,8 +361,8 @@ public abstract class WebAdminBean implements HttpBean {
 
             while (enum.hasMore()) {
                 NameClassPair entry = (NameClassPair)enum.next();
-                System.out.println("ITEM NAME  "+entry.getName());
-                System.out.println("ITEM CLASS "+entry.getClassName());
+                //System.out.println("ITEM NAME  "+entry.getName());
+                //System.out.println("ITEM CLASS "+entry.getClassName());
                 if ( !entry.getClassName().equals("org.openejb.core.stateless.EncReference") ) {
                     continue;
                 } 

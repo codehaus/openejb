@@ -47,43 +47,42 @@
  */
 package org.openejb.nova;
 
-import java.net.URI;
-import java.util.Set;
-
-import javax.transaction.TransactionManager;
-import javax.security.auth.Subject;
-
-import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
-import org.apache.geronimo.naming.java.ReadOnlyContext;
-import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
-
-import org.openejb.nova.transaction.EJBUserTransaction;
-import org.openejb.nova.transaction.TxnPolicy;
-import org.openejb.nova.deployment.TransactionPolicySource;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.RollbackException;
+import javax.transaction.Status;
+import javax.transaction.Synchronization;
+import javax.transaction.SystemException;
+import javax.transaction.Transaction;
+import javax.transaction.xa.XAResource;
 
 /**
- *
- *
+ * 
+ * 
  * @version $Revision$ $Date$
  */
-public class EJBContainerConfiguration {
-    public URI uri;
-    public String ejbName;
-    public String beanClassName;
-    public String homeInterfaceName;
-    public String remoteInterfaceName;
-    public String localHomeInterfaceName;
-    public String localInterfaceName;
-    public String messageEndpointInterfaceName;
-    public TransactionDemarcation txnDemarcation;
-    public EJBUserTransaction userTransaction;
-    public ReadOnlyContext componentContext;
-    public TrackedConnectionAssociator trackedConnectionAssociator;
-    public Set unshareableResources;
-    public TransactionPolicySource transactionPolicySource;
-    public String contextId;
-    public Subject runAs;
-    public boolean setSecurityInterceptor;
-    public boolean setPolicyContextHandlerDataEJB;
-    public boolean setIdentity;
+public class MockTransaction implements Transaction {
+    public void commit() throws HeuristicMixedException, HeuristicRollbackException, RollbackException, SecurityException, SystemException {
+    }
+
+    public boolean delistResource(XAResource xaResource, int i) throws IllegalStateException, SystemException {
+        return false;
+    }
+
+    public boolean enlistResource(XAResource xaResource) throws IllegalStateException, RollbackException, SystemException {
+        return false;
+    }
+
+    public int getStatus() throws SystemException {
+        return Status.STATUS_NO_TRANSACTION;
+    }
+
+    public void registerSynchronization(Synchronization synchronization) throws IllegalStateException, RollbackException, SystemException {
+    }
+
+    public void rollback() throws IllegalStateException, SystemException {
+    }
+
+    public void setRollbackOnly() throws IllegalStateException, SystemException {
+    }
 }

@@ -55,6 +55,7 @@ import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
+import javax.transaction.Status;
 
 /**
  *
@@ -62,6 +63,7 @@ import javax.transaction.TransactionManager;
  * @version $Revision$ $Date$
  */
 public class MockTransactionManager implements TransactionManager {
+    private Transaction transaction = new MockTransaction();
     public boolean committed;
     public boolean rolledBack;
 
@@ -78,11 +80,11 @@ public class MockTransactionManager implements TransactionManager {
     }
 
     public int getStatus() throws SystemException {
-        return 0;
+        return Status.STATUS_NO_TRANSACTION;
     }
 
     public Transaction getTransaction() throws SystemException {
-        return null;
+        return transaction;
     }
 
     public void resume(Transaction tobj) throws IllegalStateException, InvalidTransactionException, SystemException {

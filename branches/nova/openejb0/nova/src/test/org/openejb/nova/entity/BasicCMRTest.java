@@ -57,6 +57,7 @@ package org.openejb.nova.entity;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
@@ -64,6 +65,7 @@ import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.jmx.GBeanMBean;
 import org.apache.geronimo.kernel.Kernel;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
+import org.apache.geronimo.transaction.TransactionManagerProxy;
 
 import junit.framework.TestCase;
 import org.hsqldb.jdbcDataSource;
@@ -96,6 +98,7 @@ public class BasicCMRTest extends TestCase {
     }
 
     private final jdbcDataSource ds = new jdbcDataSource();
+    private ObjectName tmName;
 
     public void testDummy() {
         // JUnit requires one test
@@ -116,7 +119,6 @@ public class BasicCMRTest extends TestCase {
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-        config.txnManager = new MockTransactionManager();
         config.pkClassName = Integer.class.getName();
         config.transactionPolicySource = new TransactionPolicySource() {
             public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
@@ -167,10 +169,15 @@ public class BasicCMRTest extends TestCase {
         kernel.boot();
         mbServer = kernel.getMBeanServer();
 
+        GBeanMBean transactionManager = new GBeanMBean(TransactionManagerProxy.GBEAN_INFO);
+        transactionManager.setAttribute("Delegate", new MockTransactionManager());
+        tmName = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
+        start(tmName, transactionManager);
 
         container = new GBeanMBean(CMPEntityContainer.GBEAN_INFO);
         container.setAttribute("EJBContainerConfiguration", config);
         container.setAttribute("CMPConfiguration", cmpConfig);
+        container.setReferencePatterns("TransactionManager", Collections.singleton(tmName));
         start(CONTAINER_NAME, container);
 
     }
@@ -188,6 +195,7 @@ public class BasicCMRTest extends TestCase {
 
     protected void tearDown() throws Exception {
         stop(CONTAINER_NAME);
+        stop(tmName);
         kernel.shutdown();
     }
 

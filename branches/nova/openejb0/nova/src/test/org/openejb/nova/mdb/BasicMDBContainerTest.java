@@ -49,6 +49,7 @@ package org.openejb.nova.mdb;
 
 import java.net.URI;
 import java.util.HashSet;
+import java.util.Collections;
 import javax.jms.MessageListener;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -58,6 +59,7 @@ import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.jmx.GBeanMBean;
 import org.apache.geronimo.kernel.Kernel;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
+import org.apache.geronimo.transaction.TransactionManagerProxy;
 
 import junit.framework.TestCase;
 import org.openejb.nova.EJBContainerConfiguration;
@@ -81,6 +83,7 @@ public class BasicMDBContainerTest extends TestCase {
 	private MBeanServer mbServer;
 	private EJBContainerConfiguration config;
     private MockResourceAdapter resourceAdapter;
+    private ObjectName tmName;
 
     protected void setUp() throws Exception {
 		super.setUp();
@@ -91,7 +94,6 @@ public class BasicMDBContainerTest extends TestCase {
 		config.uri = new URI("async", null, "localhost", 3434, "/JMX", null, CONTAINER_NAME.toString());
         config.beanClassName = MockEJB.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-        config.txnManager = new MockTransactionManager();
         config.messageEndpointInterfaceName = MessageListener.class.getName();
         config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();
@@ -112,9 +114,16 @@ public class BasicMDBContainerTest extends TestCase {
 		kernel.boot();
 
 		mbServer = kernel.getMBeanServer();
+
+        GBeanMBean transactionManager = new GBeanMBean(TransactionManagerProxy.GBEAN_INFO);
+        transactionManager.setAttribute("Delegate", new MockTransactionManager());
+        tmName = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
+        start(tmName, transactionManager);
+
 		container = new GBeanMBean(MDBContainer.GBEAN_INFO);
 		container.setAttribute("EJBContainerConfiguration", config);
 		container.setAttribute("ActivationSpec", spec);
+        container.setReferencePatterns("TransactionManager", Collections.singleton(tmName));
 		start(CONTAINER_NAME, container);
     }
 
@@ -130,9 +139,10 @@ public class BasicMDBContainerTest extends TestCase {
 
 	protected void tearDown() throws Exception {
 		stop(CONTAINER_NAME);
+        stop(tmName);
 		kernel.shutdown();
 	}
-    public void testNothing() throws Exception {
+    public void testMessage() throws Exception {
         // @todo put a wait limit in here... otherwise this can lock a build
         // Wait for 3 messages to arrive..
         System.out.println("Waiting for message 1");

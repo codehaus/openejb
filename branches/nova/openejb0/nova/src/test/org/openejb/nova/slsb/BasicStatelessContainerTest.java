@@ -50,6 +50,7 @@ package org.openejb.nova.slsb;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Collections;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
@@ -59,6 +60,8 @@ import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.gbean.jmx.GBeanMBean;
 import org.apache.geronimo.kernel.Kernel;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
+import org.apache.geronimo.transaction.TransactionProxy;
+import org.apache.geronimo.transaction.TransactionManagerProxy;
 
 import junit.framework.TestCase;
 import org.openejb.nova.EJBContainerConfiguration;
@@ -72,60 +75,61 @@ import org.openejb.nova.transaction.TxnPolicy;
  * @version $Revision$ $Date$
  */
 public class BasicStatelessContainerTest extends TestCase {
-	private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
-	private EJBContainerConfiguration config;
-	private Kernel kernel;
-	private GBeanMBean container;
-	private ObjectName containerName;
-	private Set containerPatterns;
-	private MBeanServer mbServer;
+    private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
+    private EJBContainerConfiguration config;
+    private Kernel kernel;
+    private GBeanMBean container;
+    private ObjectName containerName;
+    private Set containerPatterns;
+    private MBeanServer mbServer;
+    private ObjectName tmName;
 
-	public void testRemoteInvocation() throws Throwable {
-		MockHome home = (MockHome) mbServer.invoke(containerName, "getEJBHome", null, null);
-		MockRemote remote = home.create();
-		assertEquals(2, remote.intMethod(1));
-	}
+    public void testRemoteInvocation() throws Throwable {
+        MockHome home = (MockHome) mbServer.invoke(containerName, "getEJBHome", null, null);
+        MockRemote remote = home.create();
+        assertEquals(2, remote.intMethod(1));
+    }
 
-	public void testLocalInvocation() throws Throwable {
-		MockLocalHome home = (MockLocalHome) mbServer.invoke(containerName, "getEJBLocalHome", null, null);
-		MockLocal remote = home.create();
-		assertEquals(2, remote.intMethod(1));
-		assertEquals(2, remote.intMethod(1));
-		remote.remove();
-	}
+    public void testLocalInvocation() throws Throwable {
+        MockLocalHome home = (MockLocalHome) mbServer.invoke(containerName, "getEJBLocalHome", null, null);
+        MockLocal remote = home.create();
+        assertEquals(2, remote.intMethod(1));
+        assertEquals(2, remote.intMethod(1));
+        remote.remove();
+    }
 
-	public void testRemoteSpeed() throws Throwable {
-		MockHome home = (MockHome) mbServer.invoke(containerName, "getEJBHome", null, null);
-		MockRemote remote = home.create();
-		remote.intMethod(1);
-		StopWatch stopWatch = new StopWatch();
-		stopWatch.start();
-		for (int i = 0; i < 1000; i++) {
-			remote.intMethod(1);
-		}
-		stopWatch.stop();
-		System.out.println("Remote: " + stopWatch.getTime());
-	}
+    public void testRemoteSpeed() throws Throwable {
+        MockHome home = (MockHome) mbServer.invoke(containerName, "getEJBHome", null, null);
+        MockRemote remote = home.create();
+        remote.intMethod(1);
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        for (int i = 0; i < 1000; i++) {
+            remote.intMethod(1);
+        }
+        stopWatch.stop();
+        System.out.println("Remote: " + stopWatch.getTime());
+    }
 
-	public void XtestLocalSpeed() throws Throwable {
-		MockLocalHome home = (MockLocalHome) mbServer.invoke(containerName, "getEJBLocalHome", null, null);
+    public void XtestLocalSpeed() throws Throwable {
+        MockLocalHome home = (MockLocalHome) mbServer.invoke(containerName, "getEJBLocalHome", null, null);
 
-		MockLocal local = home.create();
-		Integer integer = new Integer(1);
-		local.integerMethod(integer);
-		int COUNT = 10000;
-		for (int i = 0; i < COUNT; i++) {
-			local.integerMethod(integer);
-		}
+        MockLocal local = home.create();
+        Integer integer = new Integer(1);
+        local.integerMethod(integer);
+        int COUNT = 10000;
+        for (int i = 0; i < COUNT; i++) {
+            local.integerMethod(integer);
+        }
 
-		COUNT = 100000;
-		long start = System.currentTimeMillis();
-		for (int i = 0; i < COUNT; i++) {
-			local.integerMethod(integer);
-		}
-		long end = System.currentTimeMillis();
-		System.out.println("Per local call w/out security: " + ((end - start) * 1000000.0 / COUNT) + "ns");
-	}
+        COUNT = 100000;
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < COUNT; i++) {
+            local.integerMethod(integer);
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("Per local call w/out security: " + ((end - start) * 1000000.0 / COUNT) + "ns");
+    }
 
 /*
     public void XtestLocalSpeed2() throws Throwable {
@@ -147,7 +151,7 @@ public class BasicStatelessContainerTest extends TestCase {
     }
 */
 
-   protected void setUp() throws Exception {
+    protected void setUp() throws Exception {
         super.setUp();
 
         config = new EJBContainerConfiguration();
@@ -158,7 +162,6 @@ public class BasicStatelessContainerTest extends TestCase {
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-        config.txnManager = new MockTransactionManager();
         config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();
         config.transactionPolicySource = new TransactionPolicySource() {
@@ -174,13 +177,20 @@ public class BasicStatelessContainerTest extends TestCase {
         kernel = new Kernel("statelessSessionTest");
         kernel.boot();
         mbServer = kernel.getMBeanServer();
+
+        GBeanMBean transactionManager = new GBeanMBean(TransactionManagerProxy.GBEAN_INFO);
+        transactionManager.setAttribute("Delegate", new MockTransactionManager());
+        tmName = JMXUtil.getObjectName("geronimo.test:role=TransactionManager");
+        start(tmName, transactionManager);
+
         container = new GBeanMBean(StatelessContainer.GBEAN_INFO);
-	  	container.setAttribute("EJBContainerConfiguration", config);
+        container.setAttribute("EJBContainerConfiguration", config);
+        container.setReferencePatterns("TransactionManager", Collections.singleton(tmName));
         start(containerName, container);
 
     }
 
-   private void start(ObjectName name, Object instance) throws Exception {
+    private void start(ObjectName name, Object instance) throws Exception {
         mbServer.registerMBean(instance, name);
         mbServer.invoke(name, "start", null, null);
     }
@@ -193,6 +203,7 @@ public class BasicStatelessContainerTest extends TestCase {
 
     protected void tearDown() throws Exception {
         stop(containerName);
+        stop(tmName);
         kernel.shutdown();
     }
 }

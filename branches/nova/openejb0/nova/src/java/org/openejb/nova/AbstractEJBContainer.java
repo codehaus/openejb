@@ -140,7 +140,6 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
         localClassName = config.localInterfaceName;
         messageEndpointClassName = config.messageEndpointInterfaceName;
         txnDemarcation = config.txnDemarcation;
-        txnManager = config.txnManager;
         userTransaction = config.userTransaction;
         componentContext = config.componentContext;
         trackedConnectionAssociator = config.trackedConnectionAssociator;

@@ -47,39 +47,38 @@
  */
 package org.openejb.nova.security;
 
-import javax.ejb.EJBException;
-import javax.management.ObjectName;
-import javax.security.auth.Subject;
-import javax.security.auth.callback.NameCallback;
-import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.login.LoginContext;
-import javax.security.jacc.EJBMethodPermission;
-import javax.security.jacc.PolicyConfiguration;
-import javax.security.jacc.PolicyConfigurationFactory;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import java.security.Policy;
 import java.util.Collections;
 import java.util.HashSet;
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import javax.ejb.EJBException;
+import javax.management.ObjectName;
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.LoginContext;
+import javax.security.jacc.EJBMethodPermission;
+import javax.security.jacc.PolicyConfiguration;
+import javax.security.jacc.PolicyConfigurationFactory;
 
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
-import org.apache.geronimo.security.jacc.GeronimoPolicy;
-import org.apache.geronimo.security.RealmPrincipal;
-import org.apache.geronimo.security.jacc.RoleMappingConfiguration;
-import org.apache.geronimo.security.jacc.GeronimoPolicyConfigurationFactory;
 import org.apache.geronimo.security.ContextManager;
+import org.apache.geronimo.security.RealmPrincipal;
 import org.apache.geronimo.security.SecurityService;
+import org.apache.geronimo.security.jacc.GeronimoPolicy;
+import org.apache.geronimo.security.jacc.RoleMappingConfiguration;
 import org.apache.geronimo.security.realm.providers.PropertiesFileSecurityRealm;
 import org.apache.geronimo.security.realm.providers.PropertiesFileUserPrincipal;
-import junit.framework.TestCase;
 
+import junit.framework.TestCase;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.MockTransactionManager;
 import org.openejb.nova.deployment.TransactionPolicySource;
@@ -131,7 +130,6 @@ public class EJBSecurityInterceptorTest extends TestCase {
         config.remoteInterfaceName = MockRemote.class.getName();
         config.localInterfaceName = MockLocal.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
-        config.txnManager = new MockTransactionManager();
         config.trackedConnectionAssociator = new ConnectionTrackingCoordinator();
         config.unshareableResources = new HashSet();
         config.transactionPolicySource = new TransactionPolicySource() {
@@ -143,6 +141,7 @@ public class EJBSecurityInterceptorTest extends TestCase {
         config.setSecurityInterceptor = true;
 
         container = new StatelessContainer(config);
+        container.setTransactionManager(new MockTransactionManager());
         container.doStart();
     }
 

@@ -48,6 +48,7 @@
 package org.openejb.nova;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.CallbackFilter;
@@ -100,7 +101,13 @@ public class EJBProxyFactory {
         }
 
         public int accept(Method method) {
+            // we don't intercept non-public methods like finalize
+            if(!Modifier.isPublic(method.getModifiers())) {
+                return 0;
+            }
+
             try {
+                // if the super class defined this method don't intercept
                 superClass.getMethod(method.getName(), method.getParameterTypes());
                 return 0;
             } catch (Throwable e) {

@@ -53,15 +53,30 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Properties;
 
+import org.openejb.util.Messages;
+import org.openejb.util.Logger;
 import org.openejb.server.ServiceException;
+import org.openejb.client.RequestMethods;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  * @since 11/25/2001
  */
-public class EjbDaemon implements org.openejb.server.ServerService {
+public class EjbDaemon implements org.openejb.server.ServerService, RequestMethods {
     
+    static Messages messages = new Messages( "org.openejb.server.ejbd" );
+    // TODO: Get the logger from the ServerManager/ or context
+    Logger logger = Logger.getInstance( "OpenEJB.server.remote", "org.openejb.server.ejbd" );
+    
+    static ContainterAdapter containterAdapter;
+
+    public static ContainerAdapter getContainerAdapter(){
+        return containerAdapter;
+    }
+
     public void init(Properties props) throws Exception {
+        containterAdapter = new ContainterAdapter();
+        ContainterAdapter.init(props);
     }
     
     boolean stop;
@@ -130,6 +145,16 @@ public class EjbDaemon implements org.openejb.server.ServerService {
         }
     }
     
+    EjbRequestHandler ejbHandler = new EjbRequestHandler();
+    private void processEjbRequest(ObjectInputStream in, ObjectOutputStream out) {
+        ejbHandler.processRequest(in,out);
+    }
+    
+    private void processJndiRequest(ObjectInputStream in, ObjectOutputStream out) {
+    }
+    private void processAuthRequest(ObjectInputStream in, ObjectOutputStream out) {
+    }
+
     public void start() throws ServiceException {
     }
     

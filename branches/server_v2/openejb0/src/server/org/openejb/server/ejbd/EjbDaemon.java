@@ -114,13 +114,12 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
     ClientObjectFactory clientObjectFactory;
     DeploymentIndex deploymentIndex;
     EjbRequestHandler ejbHandler;
+    JndiRequestHandler jndiHandler;
 
-    static InetAddress[] admins;
     boolean stop = false;
-
-    private EjbDaemon() {
-    }
     static EjbDaemon thiss;
+
+    private EjbDaemon() {}
 
     public static EjbDaemon getEjbDaemon() {
         if ( thiss == null ) {
@@ -143,13 +142,13 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         System.out.println("[init] OpenEJB Remote Server");
 
 
-        clientJndi = (javax.naming.Context)OpenEJB.getJNDIContext().lookup("openejb/ejb");
 
         deploymentIndex = new DeploymentIndex();
 
         sMetaData = new ServerMetaData("127.0.0.1", 4201);
         clientObjectFactory = new ClientObjectFactory();
-        ejbHandler = new EjbRequestHandler();
+        ejbHandler  = new EjbRequestHandler();
+        jndiHandler = new JndiRequestHandler();
     }
 
     public void service(Socket socket) throws IOException{
@@ -228,47 +227,10 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
         ejbHandler.processRequest(in,out);
     }
 
-    static javax.naming.Context clientJndi;
+
 
     public void processJndiRequest(ObjectInputStream in, ObjectOutputStream out) throws Exception{
-        JNDIRequest  req = new JNDIRequest();
-        JNDIResponse res = new JNDIResponse();
-        req.readExternal( in );
-
-        // We are assuming that the request method is JNDI_LOOKUP
-        // TODO: Implement the JNDI_LIST and JNDI_LIST_BINDINGS methods
-
-        String name = req.getRequestString();
-        if ( name.startsWith("/") ) name = name.substring(1);
-
-        DeploymentInfo deployment = deploymentIndex.getDeployment(name);
-
-        if (deployment == null) {
-            try {
-                Object obj = clientJndi.lookup(name);
-
-                if ( obj instanceof Context ) {
-                    res.setResponseCode( JNDI_CONTEXT );
-                } else res.setResponseCode( JNDI_NOT_FOUND );
-
-            } catch (NameNotFoundException e) {
-                res.setResponseCode(JNDI_NOT_FOUND);
-            } catch (NamingException e) {
-                res.setResponseCode(JNDI_NAMING_EXCEPTION);
-                res.setResult( e );
-            }
-        } else {
-            res.setResponseCode( JNDI_EJBHOME );
-            EJBMetaDataImpl metaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
-                                                           deployment.getRemoteInterface(),
-                                                           deployment.getPrimaryKeyClass(),
-                                                           deployment.getComponentType(),
-                                                           deployment.getDeploymentID().toString(),
-                                                           deploymentIndex.getDeploymentIndex(name));
-            res.setResult( metaData );
-        }
-
-        res.writeExternal( out );
+        jndiHandler.processRequest(in,out);
     }
 
     public void processAuthRequest(ObjectInputStream in, ObjectOutputStream out) throws Exception{
@@ -940,6 +902,56 @@ public class EjbDaemon implements org.openejb.spi.ApplicationServer, ResponseCod
             } catch (java.io.IOException ie) {
                 logger.error("Failed to write to EJBResponse", ie);
             }
+        }
+    }
+
+    class JndiRequestHandler {
+        
+        javax.naming.Context clientJndi;
+
+        JndiRequestHandler() throws Exception{
+            clientJndi = (javax.naming.Context)OpenEJB.getJNDIContext().lookup("openejb/ejb");
+        }
+
+        public void processRequest(ObjectInputStream in, ObjectOutputStream out) throws Exception{
+            JNDIRequest  req = new JNDIRequest();
+            JNDIResponse res = new JNDIResponse();
+            req.readExternal( in );
+
+            // We are assuming that the request method is JNDI_LOOKUP
+            // TODO: Implement the JNDI_LIST and JNDI_LIST_BINDINGS methods
+
+            String name = req.getRequestString();
+            if ( name.startsWith("/") ) name = name.substring(1);
+
+            DeploymentInfo deployment = deploymentIndex.getDeployment(name);
+
+            if (deployment == null) {
+                try {
+                    Object obj = clientJndi.lookup(name);
+
+                    if ( obj instanceof Context ) {
+                        res.setResponseCode( JNDI_CONTEXT );
+                    } else res.setResponseCode( JNDI_NOT_FOUND );
+
+                } catch (NameNotFoundException e) {
+                    res.setResponseCode(JNDI_NOT_FOUND);
+                } catch (NamingException e) {
+                    res.setResponseCode(JNDI_NAMING_EXCEPTION);
+                    res.setResult( e );
+                }
+            } else {
+                res.setResponseCode( JNDI_EJBHOME );
+                EJBMetaDataImpl metaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
+                                                               deployment.getRemoteInterface(),
+                                                               deployment.getPrimaryKeyClass(),
+                                                               deployment.getComponentType(),
+                                                               deployment.getDeploymentID().toString(),
+                                                               deploymentIndex.getDeploymentIndex(name));
+                res.setResult( metaData );
+            }
+
+            res.writeExternal( out );
         }
     }
 }

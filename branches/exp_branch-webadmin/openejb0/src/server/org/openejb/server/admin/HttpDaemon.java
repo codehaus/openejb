@@ -154,13 +154,32 @@ public class HttpDaemon implements Runnable{
         while ( !stop ) {
             try {
                 socket = serverSocket.accept();
+                
                 clientIP = socket.getInetAddress();
+                InetAddress serverIP = serverSocket.getInetAddress();
+                
                 Thread.currentThread().setName(clientIP.getHostAddress());
 
                 in  = socket.getInputStream();
                 out = socket.getOutputStream();
 
-                processRequest(in, out); 
+                try{            
+                    EjbDaemon.checkHostsAdminAuthorization(clientIP, serverIP);
+                    
+                    // This will not get called if a SecurityException was thrown
+                    processRequest(in, out); 
+                } catch (SecurityException e){
+                    HttpResponseImpl res = HttpResponseImpl.createForbidden(clientIP.getHostAddress());
+                    try {
+                        res.writeMessage( out );
+                    } catch (Throwable t2) {
+                        t2.printStackTrace();
+                    }
+                    try{
+                        out.close();
+                        socket.close();
+                    } catch (Exception dontCare){}
+                }
 
                 // Exceptions should not be thrown from these methods
                 // They should handle their own exceptions and clean

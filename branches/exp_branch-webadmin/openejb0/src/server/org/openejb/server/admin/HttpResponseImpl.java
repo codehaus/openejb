@@ -301,6 +301,23 @@ public class HttpResponseImpl implements HttpResponse {
         return res;
     }
 
+    protected static HttpResponseImpl createForbidden(String ip){
+        HttpResponseImpl res = new HttpResponseImpl(403, "Forbidden", "text/html");
+        java.io.PrintWriter body = res.getPrintWriter();
+
+        body.println("<html>");
+        body.println("<body>");
+        body.println("<h3>Forbidden</h3>");
+        body.println("<br><br>");
+        // Add more text here
+        // IP not allowed, etc.
+
+        body.println("</body>");
+        body.println("</html>");
+
+        return res;
+    }
+
     private void writeObject(java.io.ObjectOutputStream out) throws IOException{
         /** Response string */
         out.writeObject( responseString );

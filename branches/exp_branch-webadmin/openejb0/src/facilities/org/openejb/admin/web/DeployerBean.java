@@ -70,13 +70,11 @@ import org.openejb.util.JarUtils;
  * This is a stateless session bean which handles the action of deployment for the
  * web administration.
  *
- * TODO:
+ * timu:
  *  1. Add better error handling 
- *  2.  Add documentation 
- *  3.  Add check to make sure the same id is not being used twice
+ *  2. Add documentation 
  *
  * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
- * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public class DeployerBean implements javax.ejb.SessionBean {
     //private boolean values
@@ -179,15 +177,17 @@ public class DeployerBean implements javax.ejb.SessionBean {
         EjbDeployment deployment = new EjbDeployment();
         ResourceLink link;
 
-        if(this.usedBeanNames.contains(deploymentId)) {
-            throw new RemoteException("The deployment id: " + deploymentId + 
-            " is already being used by another bean, please choose another deployment id.");
+        if (this.usedBeanNames.contains(deploymentId)) {
+            throw new RemoteException(
+                "The deployment id: "
+                    + deploymentId
+                    + " is already being used by another bean, please choose another deployment id.");
         }
-        
+
         this.usedBeanNames.add(deploymentId);
 
-            //set the deployment info
-            deployment.setEjbName(deployerBeans[i].getEjbName());
+        //set the deployment info
+        deployment.setEjbName(deployerBeans[i].getEjbName());
         deploymentHTML.append("<tr>\n<td>").append(deployerBeans[i].getEjbName()).append("</td>\n");
         deployment.setDeploymentId(deploymentId);
         deploymentHTML.append("<td>").append(deploymentId).append("</td>\n");
@@ -312,7 +312,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
         ResourceRef[] refs;
         EjbRef[] ejbRefs;
 
-        htmlString.append("<table cellspacing=\"1\" cellpadding=\"2\" border=\"1\">\n");
+        htmlString.append("<table cellspacing=\"1\" cellpadding=\"1\" border=\"1\">\n");
         htmlString.append("<tr align=\"left\">\n");
         htmlString.append("<th>Bean Name</th>\n");
         htmlString.append("<th>Deployment Id</th>\n");
@@ -477,7 +477,7 @@ public class DeployerBean implements javax.ejb.SessionBean {
 
     private void resetUsedDeploymentIds() {
         this.usedBeanNames = new ArrayList();
-        
+
         //put all the used deployments into the array
         DeploymentInfo[] deployments = OpenEJB.deployments();
         for (int i = 0; i < deployments.length; i++) {

@@ -121,10 +121,12 @@ public class PropertiesBean extends WebAdminBean {
     }
 
     /** Write the TITLE of the HTML document.  This is the part
-     * that goes into the <HEAD><TITLE></TITLE></HEAD> tags
-     * 
+     * that goes into the <code>&lt;head&gt;&lt;title&gt;
+     * &lt;/title&gt;&lt;/head&gt;</code> tags
+     *
      * @param body the output to write to
      * @exception IOException of an exception is thrown
+     *
      */
     public void writeHtmlTitle(PrintWriter body) throws IOException {
         body.print(HTML_TITLE);
@@ -142,20 +144,23 @@ public class PropertiesBean extends WebAdminBean {
 
     /** Write the sub items for this bean in the left navigation bar of
      * the page.  This should look somthing like the one below:
-     * 
-     *      <tr>
-     *       <td valign="top" align="left">
-     *        <a href="system?show=deployments"><span class="subMenuOff">
+     *
+     *      <code>
+     *      &lt;tr&gt;
+     *       &lt;td valign="top" align="left"&gt;
+     *        &lt;a href="system?show=deployments"&gt;&lt;span class="subMenuOff"&gt;
      *        &nbsp;&nbsp;&nbsp;Deployments
-     *        </span>
-     *        </a></td>
-     *      </tr>
-     *      
+     *        &lt;/span&gt;
+     *        &lt;/a&gt;&lt;/td&gt;
+     *      &lt;/tr&gt;
+     *      </code>
+     *
      * Alternately, the bean can use the method formatSubMenuItem(..) which
      * will create HTML like the one above
-     * 
+     *
      * @param body the output to write to
      * @exception IOException if an exception is thrown
+     *
      */
     public void writeSubMenuItems(PrintWriter body) throws IOException {
     }

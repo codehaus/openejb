@@ -48,7 +48,7 @@ import java.rmi.RemoteException;
 
 /**
  *
- * @author  Administrator
+ * @author <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
 public interface DeployerHome extends javax.ejb.EJBHome {
     public DeployerObject create() throws RemoteException, CreateException;

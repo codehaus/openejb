@@ -68,10 +68,11 @@ import org.openejb.util.FileUtils;
 /**
  * This class takes care of deploying a bean in the web administration. 
  *
- * TODO:
+ * timu:
  * 1. Add better error handling
- * 4. Finish implementing the writeForm function 
- * 5. Add documentation
+ * 2. Finish implementing the writeForm function 
+ * 3. Add documentation
+ * 4. Fix ejb-link error on startup
  *
  * @author  <a href="mailto:tim_urberg@yahoo.com">Tim Urberg</a>
  */
@@ -129,6 +130,10 @@ public class DeployBean extends WebAdminBean {
                 String deployerHandleString = createDeployerHandle();
                 setOptions();
                 deployer.startDeployment();
+                body.println(
+                    "Below is a list of beans in the jar which you have chosen to deploy. "
+                        + "Please enter the information requested in the form fields and click Continue &gt;&gt; "
+                        + "to continue.<br>");
                 body.println("<form action=\"Deployment\" method=\"post\">");
                 body.print(deployer.createIdTable());
                 body.println(
@@ -136,14 +141,13 @@ public class DeployBean extends WebAdminBean {
                         + deployerHandleString
                         + "\">");
                 body.println("</form>");
-                //more information is needed from the user
             } else if (submitDeployment != null) {
                 deployPartTwo(body);
             } else {
                 writeForm(body);
             }
         } catch (Exception e) {
-            //TODO - A generic error screen
+            //timu - Create a generic error screen
             body.println(e.getMessage());
         }
     }
@@ -188,15 +192,23 @@ public class DeployBean extends WebAdminBean {
 
             //check for null
             if (deploymentId == null) {
-                throw new IOException("Please enter a deployment id for bean number: " + (i + 1));
+                throw new Exception("Please enter a deployment id for bean number: " + (i + 1));
             }
             //this should never happen, but better safe than sorry
             if (containerId == null) {
-                throw new IOException("Please enter a container id");
+                throw new Exception("Please enter a container id container number: " + (i + 1));
             }
 
             deployer.setDeployAndContainerIds(deploymentId, containerId, resourceRef, ejbRef, i);
         }
+
+        //print out a message to the user to let them know thier bean was deployed
+        body.println("You jar is now deployed.  If you chose to move or copy your jar" +
+            "from it's original location, you will now find it in: " + System.getProperty("openejb.home") + 
+            System.getProperty("file.separator") + "beans. You will need to restart OpenEJB for this " +
+                "deployment to take affect.  Once you restart, you should see your bean(s) in the " +
+                "<a href=\"DeploymentList\">list of beans</a> on this console.  Below is a table of " +
+                "the bean(s) you deployed.<br>");
 
         printDeploymentHtml(body);
         deployer.remove();
@@ -239,21 +251,22 @@ public class DeployBean extends WebAdminBean {
         String nameNumbers;
         String[][] returnValue = new String[referenceId.length][2];
 
-        if(referenceId.length != referenceName.length) {
+        if (referenceId.length != referenceName.length) {
             throw new OpenEJBException("referenceId is not the same size as referenceName");
         }
-         
-        for (int i=0; i<referenceId.length; i++) {
+
+        for (int i = 0; i < referenceId.length; i++) {
             firstNumberInString.match(referenceId[i][0]);
             idIndex = firstNumberInString.getParenStart(1);
             idNumbers = referenceId[i][0].substring(idIndex, referenceId[i][0].length());
-            
-            for (int j=0; j<referenceName.length; j++) {
+
+            for (int j = 0; j < referenceName.length; j++) {
                 firstNumberInString.match(referenceName[j][0]);
                 nameIndex = firstNumberInString.getParenStart(1);
-                nameNumbers = referenceName[j][0].substring(nameIndex, referenceName[j][0].length());
-                
-                if(nameNumbers.equals(idNumbers)) {
+                nameNumbers =
+                    referenceName[j][0].substring(nameIndex, referenceName[j][0].length());
+
+                if (nameNumbers.equals(idNumbers)) {
                     returnValue[i][0] = referenceId[i][1];
                     returnValue[i][1] = referenceName[j][1];
                     break;
@@ -395,7 +408,7 @@ public class DeployBean extends WebAdminBean {
 
     /** writes the form for this page 
      *
-     * TODO - finish the sections that are not implemented
+     * timu - finish the sections that are not implemented
      */
     private void writeForm(PrintWriter body) throws IOException {
         //the form decleration
@@ -596,7 +609,8 @@ public class DeployBean extends WebAdminBean {
     }
 
     /** Write the TITLE of the HTML document.  This is the part
-     * that goes into the <HEAD><TITLE></TITLE></HEAD> tags
+     * that goes into the <code>&lt;head&gt;&lt;title&gt;
+     * &lt;/title&gt;&lt;/head&gt;</code> tags
      *
      * @param body the output to write to
      * @exception IOException of an exception is thrown
@@ -618,22 +632,24 @@ public class DeployBean extends WebAdminBean {
     }
 
     /** Write the sub items for this bean in the left navigation bar of
-     * the page.  This should look somthing like the one below:
-     *
-     *      <tr>
-     *       <td valign="top" align="left">
-     *        <a href="system?show=deployments"><span class="subMenuOff">
-     *        &nbsp;&nbsp;&nbsp;Deployments
-     *        </span>
-     *        </a></td>
-     *      </tr>
-     *
-     * Alternately, the bean can use the method formatSubMenuItem(..) which
-     * will create HTML like the one above
-     *
-     * @param body the output to write to
-     * @exception IOException if an exception is thrown
-     *
-     */
+    * the page.  This should look somthing like the one below:
+    *
+    *      <code>
+    *      &lt;tr&gt;
+    *       &lt;td valign="top" align="left"&gt;
+    *        &lt;a href="system?show=deployments"&gt;&lt;span class="subMenuOff"&gt;
+    *        &nbsp;&nbsp;&nbsp;Deployments
+    *        &lt;/span&gt;
+    *        &lt;/a&gt;&lt;/td&gt;
+    *      &lt;/tr&gt;
+    *      </code>
+    *
+    * Alternately, the bean can use the method formatSubMenuItem(..) which
+    * will create HTML like the one above
+    *
+    * @param body the output to write to
+    * @exception IOException if an exception is thrown
+    *
+    */
     public void writeSubMenuItems(PrintWriter body) throws IOException {}
 }

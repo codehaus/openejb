@@ -98,10 +98,6 @@ public class ConfigBean extends WebAdminBean {
      * @throws IOException if an exception is thrown
      */    
     public void writeSubMenuItems(PrintWriter body) throws IOException{
-        //body.print(formatSubMenuItem("Menu Item 1", "Configuration?foo=bar1"));
-        //body.print(formatSubMenuItem("Menu Item 2", "Configuration?foo=bar2"));
-        //body.print(formatSubMenuItem("Menu Item 3", "Configuration?foo=bar3"));
-        //body.print(formatSubMenuItem("Menu Item 4", "Configuration?foo=bar4"));
     }
 
     
@@ -112,7 +108,6 @@ public class ConfigBean extends WebAdminBean {
      */
     public void writeBody(PrintWriter body) throws IOException{
         String confLocation = System.getProperty("openejb.configuration");
-        //System.out.println("CONF? "+confLocation);
         File confFile = new File(confLocation);
         FileInputStream conf = new FileInputStream( confFile );
 

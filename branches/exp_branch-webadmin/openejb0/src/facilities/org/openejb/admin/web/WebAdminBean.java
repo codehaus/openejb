@@ -160,10 +160,12 @@ public abstract class WebAdminBean implements HttpBean {
     public abstract void postProcess(HttpRequest request, HttpResponse response) throws IOException;
     
     /** Write the TITLE of the HTML document.  This is the part
-     * that goes into the <HEAD><TITLE></TITLE></HEAD> tags
-     * 
+     * that goes into the <code>&lt;head&gt;&lt;title&gt;
+     * &lt;/title&gt;&lt;/head&gt;</code> tags
+     *
      * @param body the output to write to
      * @exception IOException of an exception is thrown
+     *
      */
     public abstract void writeHtmlTitle(PrintWriter body) throws IOException;
 
@@ -178,18 +180,20 @@ public abstract class WebAdminBean implements HttpBean {
     /** Write the top navigation bar of the page. This should look somthing
      * like the one below:
      * 
-     *     <a href="system?show=server">
-     *     <span class="menuTopOff">Remote Server</span>
-     *     </a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-     *     <a href="system?show=containers">
-     *     <span class="menuTopOff">Containers</span>
-     *     </a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-     *     <a href="system?show=deployments">
-     *     <span class="menuTopOff">Deployments</span>
-     *     </a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-     *     <a href="system?show=logs">
-     *     <span class="menuTopOff">Logs</span>
-     *     </a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     *     <code>
+     *     &lt;a href="system?show=server"&gt;
+     *     &lt;span class="menuTopOff"&gt;Remote Server&lt;/span&gt;
+     *     &lt;/a&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     *     &lt;a href="system?show=containers"&gt;
+     *     &lt;span class="menuTopOff"&gt;Containers&lt;/span&gt;
+     *     &lt;/a&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     *     &lt;a href="system?show=deployments"&gt;
+     *     &lt;span class="menuTopOff"&gt;Deployments&lt;/span&gt;
+     *     &lt;/a&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     *     &lt;a href="system?show=logs"&gt;
+     *     &lt;span class="menuTopOff"&gt;Logs&lt;/span&gt;
+     *     &lt;/a&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+     *     </code>
      * 
      * @param body the output to write to
      * @exception IOException if an exception is thrown
@@ -207,27 +211,29 @@ public abstract class WebAdminBean implements HttpBean {
      /** Write the left navigation bar of the page.  This should look somthing
      * like the one below:
      * 
-     *      <tr>
-     *       <td valign="top" align="left">
-     *        <span class="subMenuOn">
+     *     <code>
+     *     &lt;tr&gt;
+     *       &lt;td valign="top" align="left"&gt;
+     *        &lt;span class="subMenuOn"&gt;
      *        Admin
-     *        </span>
-     *       </td>
-     *      </tr>
-     *      <tr>
-     *       <td valign="top" align="left">
-     *        <a href="system?show=status"><span class="subMenuOff">
+     *        &lt;/span&gt;
+     *       &lt;/td&gt;
+     *      &lt;/tr&gt;
+     *      &lt;tr&gt;
+     *       &lt;td valign="top" align="left"&gt;
+     *        &lt;a href="system?show=status"&gt;&lt;span class="subMenuOff"&gt;
      *        &nbsp;&nbsp;&nbsp;Status
-     *        </span>
-     *        </a></td>
-     *      </tr>
-     *      <tr>
-     *       <td valign="top" align="left">
-     *        <a href="system?show=deployments"><span class="subMenuOff">
+     *        &lt;/span&gt;
+     *        &lt;/a&gt;&lt;/td&gt;
+     *      &lt;/tr&gt;
+     *      &lt;tr&gt;
+     *       &lt;&lt;td valign="top" align="left"&gt;
+     *        &lt;a href="system?show=deployments"&gt;&lt;span class="subMenuOff"&gt;
      *        &nbsp;&nbsp;&nbsp;Deployments
-     *        </span>
-     *        </a></td>
-     *      </tr>
+     *        &lt;/span&gt;
+     *        &lt;/a&gt;&lt;/td&gt;
+     *      &lt;/tr&gt;
+     *      </code>
      * 
       * @param body the output to write to
       * @exception IOException if an exception is thrown
@@ -246,20 +252,23 @@ public abstract class WebAdminBean implements HttpBean {
     
     /** Write the sub items for this bean in the left navigation bar of
      * the page.  This should look somthing like the one below:
-     * 
-     *      <tr>
-     *       <td valign="top" align="left">
-     *        <a href="system?show=deployments"><span class="subMenuOff">
+     *
+     *      <code>
+     *      &lt;tr&gt;
+     *       &lt;td valign="top" align="left"&gt;
+     *        &lt;a href="system?show=deployments"&gt;&lt;span class="subMenuOff"&gt;
      *        &nbsp;&nbsp;&nbsp;Deployments
-     *        </span>
-     *        </a></td>
-     *      </tr>
-     *      
+     *        &lt;/span&gt;
+     *        &lt;/a&gt;&lt;/td&gt;
+     *      &lt;/tr&gt;
+     *      </code>
+     *
      * Alternately, the bean can use the method formatSubMenuItem(..) which
      * will create HTML like the one above
-     * 
+     *
      * @param body the output to write to
      * @exception IOException if an exception is thrown
+     *
      */
     public abstract void writeSubMenuItems(PrintWriter body) throws IOException;
 
@@ -382,10 +391,10 @@ public abstract class WebAdminBean implements HttpBean {
 
     /** prints a table row similar to this
      *
-     * <tr>
-     *   <td>some info</td>
-     *   <td>some more info</td>
-     * </tr>
+     * &lt;tr&gt;
+     *   &lt;td&gt;some info&lt;/td&gt;
+     *   &lt;td&gt;some more info&lt;/td&gt;
+     * &lt;/tr&gt;
      * @param col1 the first column
      * @param col2 the second column
      * @param out the output to write to
@@ -404,11 +413,11 @@ public abstract class WebAdminBean implements HttpBean {
 
     /** prints a table row similar to this
      *
-     * <tr>
-     *   <td>some info</td>
-     *   <td>some more info</td>
-     *   <td>yet some more info</td>
-     * </tr>
+     * &lt;tr&gt;
+     *   &lt;td&gt;some info&lt;/td&gt;
+     *   &lt;td&gt;some more info&lt;/td&gt;
+     *   &lt;td&gt;yet some more info&lt;/td&gt;
+     * &lt;/tr&gt;
      * @param col1 the first column
      * @param col2 the second column
      * @param col3 the third column

@@ -190,7 +190,7 @@ public class BasicCMPEntityContainerTest extends TestCase {
         ds.setDatabase(".");
         ds.setUser("sa");
         ds.setPassword("");
-
+        
         config = new EntityContainerConfiguration();
         config.uri = new URI("async", null, "localhost", 3434, "/JMX", null, CONTAINER_NAME.toString());
         config.beanClassName = MockCMPEJB.class.getName();
@@ -284,7 +284,7 @@ public class BasicCMPEntityContainerTest extends TestCase {
     }
 
     private Connection initDatabase() throws SQLException {
-        Connection c = DriverManager.getConnection("jdbc:hsqldb:.", "sa", "");
+        Connection c = ds.getConnection();
         Statement s = c.createStatement();
         s.execute("CREATE TABLE MOCK(ID INTEGER, VALUE VARCHAR(50))");
         s.execute("INSERT INTO MOCK(ID, VALUE) VALUES(1, 'Hello')");

@@ -60,6 +60,7 @@ import javax.ejb.RemoveException;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
+import org.apache.geronimo.security.ContextManager;
 import net.sf.cglib.proxy.Callbacks;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.Factory;
@@ -69,7 +70,7 @@ import net.sf.cglib.proxy.SimpleCallbacks;
 import net.sf.cglib.reflect.FastClass;
 
 import org.openejb.nova.EJBInvocation;
-import org.openejb.nova.EJBInvocationImpl;
+import org.openejb.nova.EJBInvocationImplRemote;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBRemoteClientContainer;
 import org.openejb.nova.dispatch.MethodHelper;
@@ -167,7 +168,7 @@ public class EntityRemoteClientContainer implements EJBRemoteClientContainer {
     private void remove(Object id) throws RemoveException, RemoteException {
         InvocationResult result;
         try {
-            EJBInvocation invocation = new EJBInvocationImpl(EJBInvocationType.REMOTE, id, removeIndex, null);
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.REMOTE, id, removeIndex, null, ContextManager.getCurrentCallerId());
             result = firstInterceptor.invoke(invocation);
         } catch (RemoteException e) {
             throw e;
@@ -233,7 +234,8 @@ public class EntityRemoteClientContainer implements EJBRemoteClientContainer {
         public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
             EntityRemoteClientContainer container = ((EntityHomeImpl) o).container;
             int vopIndex = container.homeMap[methodProxy.getSuperIndex()];
-            return container.invoke(new EJBInvocationImpl(EJBInvocationType.HOME, vopIndex, objects));
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.HOME, vopIndex, objects, ContextManager.getCurrentCallerId());
+            return container.invoke(invocation);
         }
     }
 
@@ -286,7 +288,8 @@ public class EntityRemoteClientContainer implements EJBRemoteClientContainer {
             EntityObjectImpl entityObject = ((EntityObjectImpl) o);
             EntityRemoteClientContainer container = entityObject.container;
             int vopIndex = container.objectMap[methodProxy.getSuperIndex()];
-            return container.invoke(new EJBInvocationImpl(EJBInvocationType.REMOTE, entityObject.id, vopIndex, args));
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.REMOTE, entityObject.id, vopIndex, args, ContextManager.getCurrentCallerId());
+            return container.invoke(invocation);
         }
     }
 

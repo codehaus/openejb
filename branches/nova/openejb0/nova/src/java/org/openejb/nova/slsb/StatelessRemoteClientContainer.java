@@ -59,6 +59,7 @@ import javax.ejb.RemoveException;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
+import org.apache.geronimo.security.ContextManager;
 import net.sf.cglib.proxy.Callbacks;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.Factory;
@@ -67,10 +68,9 @@ import net.sf.cglib.proxy.MethodProxy;
 import net.sf.cglib.proxy.SimpleCallbacks;
 import net.sf.cglib.reflect.FastClass;
 
-import org.openejb.nova.EJBInvocation;
-import org.openejb.nova.EJBInvocationImpl;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBRemoteClientContainer;
+import org.openejb.nova.EJBInvocationImplRemote;
 import org.openejb.nova.dispatch.MethodHelper;
 import org.openejb.nova.dispatch.MethodSignature;
 import org.openejb.nova.method.EJBCallbackFilter;
@@ -220,7 +220,7 @@ public class StatelessRemoteClientContainer implements EJBRemoteClientContainer 
             InvocationResult result;
             try {
                 int vopIndex = objectMap[methodProxy.getSuperIndex()];
-                EJBInvocation invocation = new EJBInvocationImpl(EJBInvocationType.REMOTE, vopIndex, args);
+                EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.REMOTE, vopIndex, args, ContextManager.getCurrentCallerId());
                 result = firstInterceptor.invoke(invocation);
             } catch (Throwable t) {
                 // System Exception from interceptor chain

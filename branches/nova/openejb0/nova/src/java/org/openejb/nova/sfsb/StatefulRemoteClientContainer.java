@@ -67,9 +67,10 @@ import net.sf.cglib.proxy.SimpleCallbacks;
 import net.sf.cglib.reflect.FastClass;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.core.service.InvocationResult;
+import org.apache.geronimo.security.ContextManager;
 
 import org.openejb.nova.EJBInvocation;
-import org.openejb.nova.EJBInvocationImpl;
+import org.openejb.nova.EJBInvocationImplRemote;
 import org.openejb.nova.EJBInvocationType;
 import org.openejb.nova.EJBRemoteClientContainer;
 import org.openejb.nova.dispatch.MethodHelper;
@@ -164,7 +165,8 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
     private void remove(Object id) throws RemoveException, RemoteException {
         InvocationResult result;
         try {
-            result = firstInterceptor.invoke(new EJBInvocationImpl(EJBInvocationType.REMOTE, id, removeIndex, null));
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.REMOTE, id, removeIndex, null, ContextManager.getCurrentCallerId());
+            result = firstInterceptor.invoke(invocation);
         } catch (RemoteException e) {
             throw e;
         } catch (Throwable t) {
@@ -231,7 +233,8 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
         public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
             StatefulRemoteClientContainer container = ((StatefulHomeImpl) o).container;
             int vopIndex = container.homeMap[methodProxy.getSuperIndex()];
-            return container.invoke(new EJBInvocationImpl(EJBInvocationType.HOME, vopIndex, objects));
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.HOME, vopIndex, objects, ContextManager.getCurrentCallerId());
+            return container.invoke(invocation);
         }
     }
 
@@ -284,7 +287,8 @@ public class StatefulRemoteClientContainer implements EJBRemoteClientContainer {
             StatefulObjectImpl statefulObject = ((StatefulObjectImpl) o);
             StatefulRemoteClientContainer container = statefulObject.container;
             int vopIndex = container.objectMap[methodProxy.getSuperIndex()];
-            return container.invoke(new EJBInvocationImpl(EJBInvocationType.REMOTE, statefulObject.id, vopIndex, args));
+            EJBInvocationImplRemote invocation = new EJBInvocationImplRemote(EJBInvocationType.REMOTE, statefulObject.id, vopIndex, args, ContextManager.getCurrentCallerId());
+            return container.invoke(invocation);
         }
     }
 

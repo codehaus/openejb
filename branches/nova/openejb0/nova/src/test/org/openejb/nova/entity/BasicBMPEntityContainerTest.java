@@ -49,13 +49,16 @@ package org.openejb.nova.entity;
 
 import java.net.URI;
 import java.util.HashSet;
-
+import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import junit.framework.TestCase;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
+import org.apache.geronimo.gbean.jmx.GBeanMBean;
+import org.apache.geronimo.kernel.Kernel;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
+
+import junit.framework.TestCase;
 import org.openejb.nova.MockTransactionManager;
 import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.MethodSignature;
@@ -72,7 +75,9 @@ import org.openejb.nova.transaction.TxnPolicy;
 public class BasicBMPEntityContainerTest extends TestCase {
     private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
     private EntityContainerConfiguration config;
-    private BMPEntityContainer container;
+    private Kernel kernel;
+    private GBeanMBean container;
+    private MBeanServer mbServer;
 
     public void testSimpleConfig() throws Throwable {
 //        EJBInvocationImpl invocation = new EJBInvocationImpl(EJBInvocationType.HOME, ejbClass.getIndex("ejbHomeIntMethod", new Class[]{Integer.TYPE}), new Object[]{new Integer(1)});
@@ -96,7 +101,7 @@ public class BasicBMPEntityContainerTest extends TestCase {
     }
 
     public void XtestRemoteInvoke() throws Exception {
-        MockHome home = (MockHome) container.getEJBHome();
+        MockHome home = (MockHome) mbServer.invoke(CONTAINER_NAME, "getEJBHome", null, null);
         assertEquals(2, home.intMethod(1));
 
         MockRemote remote = home.findByPrimaryKey(new Integer(1));
@@ -104,7 +109,8 @@ public class BasicBMPEntityContainerTest extends TestCase {
     }
 
     public void testLocalInvoke() throws Exception {
-        MockLocalHome home = (MockLocalHome) container.getEJBLocalHome();
+        MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
+
         assertEquals(2, home.intMethod(1));
 
         MockLocal local = home.findByPrimaryKey(new Integer(1));
@@ -113,13 +119,13 @@ public class BasicBMPEntityContainerTest extends TestCase {
     }
 
     public void testLocalCreate() throws Exception {
-        MockLocalHome home = (MockLocalHome) container.getEJBLocalHome();
+        MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
         MockLocal local = home.create(new Integer(1), null);
         assertEquals(new Integer(1), local.getPrimaryKey());
     }
 
     public void testLocalRemove() throws Exception {
-        MockLocalHome home = (MockLocalHome) container.getEJBLocalHome();
+        MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
         home.remove(new Integer(1));
 
         MockLocal local = home.create(new Integer(1), null);
@@ -147,12 +153,28 @@ public class BasicBMPEntityContainerTest extends TestCase {
             }
         };
 
-        container = new BMPEntityContainer(config);
-        container.doStart();
+        kernel = new Kernel("BeanManagedPersistenceTest");
+        kernel.boot();
+        mbServer = kernel.getMBeanServer();
+
+        container = new GBeanMBean(BMPEntityContainer.GBEAN_INFO);
+        container.setAttribute("EJBContainerConfiguration", config);
+        start(CONTAINER_NAME, container);
     }
 
+    private void start(ObjectName name, Object instance) throws Exception {
+        mbServer.registerMBean(instance, name);
+        mbServer.invoke(name, "start", null, null);
+    }
+
+    private void stop(ObjectName name) throws Exception {
+        mbServer.invoke(name, "stop", null, null);
+        mbServer.unregisterMBean(name);
+    }
+
+
     protected void tearDown() throws Exception {
-        container.doStop();
-        super.tearDown();
+        stop(CONTAINER_NAME);
+        kernel.shutdown();
     }
 }

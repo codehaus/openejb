@@ -52,6 +52,8 @@ import java.net.URI;
 import org.apache.geronimo.cache.InstanceCache;
 import org.apache.geronimo.cache.SimpleInstanceCache;
 import org.apache.geronimo.core.service.Interceptor;
+import org.apache.geronimo.gbean.GBeanInfo;
+import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 
@@ -68,11 +70,9 @@ import org.openejb.nova.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.nova.transaction.TransactionContextInterceptor;
 
 /**
- *
  * @version $Revision$ $Date$
  */
 public class StatefulContainer extends AbstractEJBContainer {
-
     private StatefulInstanceFactory instanceFactory;
     private InstanceCache instanceCache;
 
@@ -127,7 +127,6 @@ public class StatefulContainer extends AbstractEJBContainer {
         StatefulClientContainerFactory clientFactory = new StatefulClientContainerFactory(vopFactory, target, homeInterface, remoteInterface, firstInterceptor, localHomeInterface, localInterface);
         remoteClientContainer = clientFactory.getRemoteClient();
         localClientContainer = clientFactory.getLocalClient();
-
     }
 
     public void doStop() throws WaitingException, Exception {
@@ -138,8 +137,21 @@ public class StatefulContainer extends AbstractEJBContainer {
         super.doStop();
     }
 
+    /**
+     * BWM - Does this need to have an exposed JMX endpoint?
+     */
     public InstanceCache getInstanceCache() {
         return instanceCache;
     }
 
+    public static final GBeanInfo GBEAN_INFO;
+
+    static {
+        GBeanInfoFactory infoFactory = new GBeanInfoFactory(StatefulContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
+        GBEAN_INFO = infoFactory.getBeanInfo();
+    }
+
+    public static GBeanInfo getGBeanInfo() {
+        return GBEAN_INFO;
+    }
 }

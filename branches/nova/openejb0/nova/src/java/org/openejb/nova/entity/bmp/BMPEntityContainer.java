@@ -50,6 +50,9 @@ package org.openejb.nova.entity.bmp;
 import java.net.URI;
 
 import org.apache.geronimo.core.service.Interceptor;
+import org.apache.geronimo.gbean.GBeanInfo;
+import org.apache.geronimo.gbean.GBeanInfoFactory;
+import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 
@@ -71,11 +74,9 @@ import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
- *
  * @version $Revision$ $Date$
  */
 public class BMPEntityContainer extends AbstractEJBContainer {
-
     private final String pkClassName;
 
     public BMPEntityContainer(EntityContainerConfiguration config) {
@@ -148,4 +149,19 @@ public class BMPEntityContainer extends AbstractEJBContainer {
         return pkClassName;
     }
 
+
+    public static final GBeanInfo GBEAN_INFO;
+
+    static {
+        GBeanInfoFactory infoFactory = new GBeanInfoFactory(BMPEntityContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
+
+        infoFactory.setConstructor(new GConstructorInfo(
+                new String[]{"EJBContainerConfiguration"},
+                new Class[]{EntityContainerConfiguration.class}));
+        GBEAN_INFO = infoFactory.getBeanInfo();
+    }
+
+    public static GBeanInfo getGBeanInfo() {
+        return GBEAN_INFO;
+    }
 }

@@ -55,7 +55,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import javax.ejb.FinderException;
 import javax.ejb.ObjectNotFoundException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -76,16 +78,16 @@ import org.openejb.nova.entity.cmp.CMPEntityContainer;
 import org.openejb.nova.entity.cmp.CMPQuery;
 import org.openejb.nova.entity.cmp.CMRelation;
 import org.openejb.nova.entity.cmp.SimpleCommandFactory;
+import org.openejb.nova.persistence.CMPBindingGenerator;
+import org.openejb.nova.persistence.SQLGenerator;
 import org.openejb.nova.persistence.jdbc.Binding;
-import org.openejb.nova.persistence.jdbc.binding.IntBinding;
-import org.openejb.nova.persistence.jdbc.binding.StringBinding;
 import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.TxnPolicy;
 
 /**
  * @version $Revision$ $Date$
  */
-public class BasicCMPEntityContainerTest extends TestCase {
+public class SQLGeneratorCMPEntityContainerTest extends TestCase {
     private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
     private EntityContainerConfiguration config;
     private Kernel kernel;
@@ -105,6 +107,9 @@ public class BasicCMPEntityContainerTest extends TestCase {
         assertEquals(2, home.intMethod(1));
 
         MockLocal local = home.findByPrimaryKey(new Integer(1));
+
+        System.out.println("The Int field: " + local.getIntField() + " and the value: " + local.getValue());
+
         assertEquals(3, local.intMethod(1));
         assertEquals(1, local.getIntField());
         c.close();
@@ -130,6 +135,7 @@ public class BasicCMPEntityContainerTest extends TestCase {
     public void testLifeCycle() throws Exception {
         Connection c = initDatabase();
         MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
+
 
         Statement s = c.createStatement();
         ResultSet rs = s.executeQuery("SELECT ID FROM MOCK WHERE ID=2");
@@ -157,6 +163,7 @@ public class BasicCMPEntityContainerTest extends TestCase {
         Connection c = initDatabase();
         MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
 
+
         assertEquals("Hello", home.singleSelect(new Integer(1)));
         try {
             home.singleSelect(new Integer(2));
@@ -165,13 +172,16 @@ public class BasicCMPEntityContainerTest extends TestCase {
             // ok
         }
 
+        System.err.println("alright, singleSelect now works");
         Collection result = home.multiSelect(new Integer(1));
         assertEquals(1, result.size());
         assertEquals("Hello", result.iterator().next());
 
+
         result = home.multiSelect(new Integer(0));
         assertEquals(0, result.size());
 
+        System.err.println("Got past multiSelect too!");
         result = home.multiObject(new Integer(1));
         assertEquals(1, result.size());
         MockLocal local = (MockLocal) result.iterator().next();
@@ -180,8 +190,50 @@ public class BasicCMPEntityContainerTest extends TestCase {
         c.close();
     }
 
+
+    public void testACID() throws Exception {
+        initDatabase();
+        final String DENT = "Huh? What? Where's the tea?";
+
+        MockLocalHome home = (MockLocalHome) mbServer.invoke(CONTAINER_NAME, "getEJBLocalHome", null, null);
+
+
+        MockLocal tBean = home.create(new Integer(42), "Life, the universe, and everything");
+
+        assertNotNull(tBean);
+
+        tBean = null;
+
+        tBean = home.findByPrimaryKey(new Integer(42));
+
+        tBean.setValue(DENT);
+
+        tBean = null;
+        tBean = home.findByPrimaryKey(new Integer(42));
+
+        assertEquals(DENT, tBean.getValue());
+
+        tBean.remove();
+
+
+        boolean beanRemoved = false;
+
+        try {
+            tBean = home.findByPrimaryKey(new Integer(42));
+        } catch (FinderException fe) {
+            beanRemoved = true;
+        }
+
+        assertTrue(beanRemoved);
+
+    }
+
     protected void setUp() throws Exception {
         super.setUp();
+
+
+        String abstractSchemaName = "Mock";
+        String dbTable = "MOCK";
 
         ds.setDatabase(".");
         ds.setUser("sa");
@@ -211,39 +263,79 @@ public class BasicCMPEntityContainerTest extends TestCase {
 
         SimpleCommandFactory persistenceFactory = new SimpleCommandFactory(ds);
         ArrayList queries = new ArrayList();
+        HashMap colMap = new HashMap();
+        HashMap typeMap = new HashMap();
         MethodSignature signature;
-
-        signature = new MethodSignature("ejbFindByPrimaryKey", new String[]{"java.lang.Object"});
-        persistenceFactory.defineQuery(signature, "SELECT ID FROM MOCK WHERE ID=?", new Binding[]{new IntBinding(1, 0)}, new Binding[]{new IntBinding(1, 0)});
-        queries.add(new CMPQuery("Mock", false, signature, false, null));
-        signature = new MethodSignature("ejbLoad", new String[]{});
-        persistenceFactory.defineQuery(signature, "SELECT ID,VALUE FROM MOCK WHERE ID=?", new Binding[]{new IntBinding(1, 0)}, new Binding[]{new IntBinding(1, 0), new StringBinding(2, 1)});
-        queries.add(new CMPQuery(signature, false, null));
-        signature = new MethodSignature("ejbSelectSingleValue", new String[]{"java.lang.Integer"});
-        persistenceFactory.defineQuery(signature, "SELECT VALUE FROM MOCK WHERE ID=?", new Binding[]{new IntBinding(1, 0)}, new Binding[]{new StringBinding(1, 0)});
-        queries.add(new CMPQuery(signature, false, null));
-        signature = new MethodSignature("ejbSelectMultiValue", new String[]{"java.lang.Integer"});
-        persistenceFactory.defineQuery(signature, "SELECT VALUE FROM MOCK WHERE ID=?", new Binding[]{new IntBinding(1, 0)}, new Binding[]{new StringBinding(1, 0)});
-        queries.add(new CMPQuery(signature, true, null));
-        signature = new MethodSignature("ejbSelectMultiObject", new String[]{"java.lang.Integer"});
-        persistenceFactory.defineQuery(signature, "SELECT ID FROM MOCK WHERE ID=?", new Binding[]{new IntBinding(1, 0)}, new Binding[]{new IntBinding(1, 0)});
-        queries.add(new CMPQuery("Mock", true, signature, true, null));
-
-        signature = new MethodSignature("ejbCreate", new String[]{"java.lang.Integer", "java.lang.String"});
-        persistenceFactory.defineUpdate(signature, "INSERT INTO MOCK(ID, VALUE) VALUES(?,?)", new Binding[]{new IntBinding(1, 0), new StringBinding(2, 1)});
-        signature = new MethodSignature("ejbRemove", new String[0]);
-        persistenceFactory.defineUpdate(signature, "DELETE FROM MOCK WHERE ID=?", new Binding[]{new IntBinding(1, 0)});
-        signature = new MethodSignature("ejbStore", new String[0]);
-        persistenceFactory.defineUpdate(signature, "UPDATE MOCK SET VALUE = ? WHERE ID=?", new Binding[]{new StringBinding(1, 1), new IntBinding(2, 0)});
+        String sql;
+        Binding[] inputBindings;
+        ArrayList bindings;
 
         CMPConfiguration cmpConfig = new CMPConfiguration();
+        cmpConfig.defineFields(new String[]{"id", "value"});
+
+
+        colMap.put("id", "ID");
+        colMap.put("value", "VALUE");
+        typeMap.put("id", "java.lang.Integer");
+        typeMap.put("value", "java.lang.String");
+
+        SQLGenerator sqlHelper = new SQLGenerator(cmpConfig.cmpFieldMap, colMap, dbTable);
+        CMPBindingGenerator binder = new CMPBindingGenerator(cmpConfig.cmpFieldMap, typeMap);
+
+        signature = new MethodSignature("ejbFindByPrimaryKey", new String[]{"java.lang.Object"});
+        sql = sqlHelper.createQuery(new String[]{"id"}, new String[]{"id"});
+        bindings = binder.bindQuery(new String[]{"id"}, new String[]{"id"});
+        persistenceFactory.defineQuery(signature, sql, (Binding[]) bindings.get(1), (Binding[]) bindings.get(0));
+        queries.add(new CMPQuery(abstractSchemaName, false, signature, false, null));
+
+        signature = new MethodSignature("ejbLoad", new String[]{});
+        sql = sqlHelper.createQuery(new String[]{"id", "value"}, new String[]{"id"});
+        bindings = binder.bindQuery(new String[]{"id", "value"}, new String[]{"id"});
+        persistenceFactory.defineQuery(signature, sql, (Binding[]) bindings.get(binder.INPUT_BINDINGS), (Binding[]) bindings.get(binder.OUTPUT_BINDINGS));
+        queries.add(new CMPQuery(signature, false, null));
+
+        signature = new MethodSignature("ejbSelectSingleValue", new String[]{"java.lang.Integer"});
+        sql = sqlHelper.createQuery(new String[]{"value"}, new String[]{"id"});
+        bindings = binder.bindQuery(new String[]{"value"}, new String[]{"id"}, true);
+        persistenceFactory.defineQuery(signature, sql, (Binding[]) bindings.get(binder.INPUT_BINDINGS), (Binding[]) bindings.get(binder.OUTPUT_BINDINGS));
+        queries.add(new CMPQuery(signature, false, null));
+
+        signature = new MethodSignature("ejbSelectMultiValue", new String[]{"java.lang.Integer"});
+        sql = sqlHelper.createQuery(new String[]{"value"}, new String[]{"id"});
+        bindings = binder.bindQuery(new String[]{"value"}, new String[]{"id"}, true);
+        persistenceFactory.defineQuery(signature, sql, (Binding[]) bindings.get(binder.INPUT_BINDINGS), (Binding[]) bindings.get(binder.OUTPUT_BINDINGS));
+        queries.add(new CMPQuery(signature, true, null));
+
+        signature = new MethodSignature("ejbSelectMultiObject", new String[]{"java.lang.Integer"});
+        sql = sqlHelper.createQuery(new String[]{"id"}, new String[]{"id"});
+        bindings = binder.bindQuery(new String[]{"id"}, new String[]{"id"}, true);
+        persistenceFactory.defineQuery(signature, sql, (Binding[]) bindings.get(binder.INPUT_BINDINGS), (Binding[]) bindings.get(binder.OUTPUT_BINDINGS));
+        queries.add(new CMPQuery("Mock", true, signature, true, null));
+
+
+        signature = new MethodSignature("ejbCreate", new String[]{"java.lang.Integer", "java.lang.String"});
+        sql = sqlHelper.createInsert(new String[]{"id", "value"});
+        inputBindings = binder.bindUpdate(new String[]{"id", "value"});
+        persistenceFactory.defineUpdate(signature, sql, inputBindings);
+
+        signature = new MethodSignature("ejbRemove", new String[0]);
+        sql = sqlHelper.createDelete(new String[]{"id"});
+        inputBindings = binder.bindUpdate(new String[]{"id"});
+        persistenceFactory.defineUpdate(signature, sql, inputBindings);
+
+        signature = new MethodSignature("ejbStore", new String[0]);
+        sql = sqlHelper.createUpdate(new String[]{"value"}, new String[]{"id"});
+        inputBindings = binder.bindUpdate(new String[]{"value", "id"}); // TODO: Careful of ordering here - we should cleanup this tricky bit
+        persistenceFactory.defineUpdate(signature, sql, inputBindings);
+
+
         cmpConfig.persistenceFactory = persistenceFactory;
         cmpConfig.queries = (CMPQuery[]) queries.toArray(new CMPQuery[0]);
-        cmpConfig.cmpFieldNames = new String[]{"id", "value"};
+
         cmpConfig.relations = new CMRelation[]{};
         cmpConfig.schema = "Mock";
 
-        kernel = new Kernel("ContainerManagedPersistenceTest");
+        kernel = new Kernel("SQLGeneratorContainerManagedPersistenceTest");
         kernel.boot();
         mbServer = kernel.getMBeanServer();
 

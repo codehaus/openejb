@@ -1,7 +1,7 @@
 /* ====================================================================
  * Redistribution and use of this software and associated documentation
  * ("Software"), with or without modification, are permitted provided
- * that the following conditions are met:
+  * that the following conditions are met:
  *
  * 1. Redistributions of source code must retain copyright
  *    statements and notices.  Redistributions must also contain a
@@ -47,14 +47,40 @@
  */
 package org.openejb.nova.entity.cmp;
 
+import java.util.HashMap;
+
 /**
- * 
- * 
+ *
+ *
  * @version $Revision$ $Date$
  */
 public class CMPConfiguration {
-    public CMPCommandFactory persistenceFactory;
+    /**
+     * Becomes a CMPCommandFactory (superclass of SimpleCF) within the container
+     * however we need to stay as subclass for now because of instance needed defs.
+     */
+    public SimpleCommandFactory persistenceFactory;
     public CMPQuery[] queries;
-    public String[] cmpFieldNames;
     public CMRelation[] relations;
+
+    /**
+     * Abstract schema name
+     */
+    public String schema;
+
+    // These should not be set manually...set them via defineFields
+    // TODO: Change visibility and force usage to setter/getterss
+    public String[] cmpFieldNames;
+    public HashMap cmpFieldMap;
+
+    public void defineFields(String[] fields) {
+        this.cmpFieldNames = fields;
+        this.cmpFieldMap = new HashMap();
+
+        // TODO: See if we can map easier...
+        for (int i = 0; i < cmpFieldNames.length; i++) {
+            cmpFieldMap.put(cmpFieldNames[i], new Integer(i));
+        }
+
+    }
 }

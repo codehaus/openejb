@@ -47,13 +47,19 @@
  */
 package org.openejb.nova.mdb;
 
+import java.net.URI;
 import java.util.HashSet;
-
 import javax.jms.MessageListener;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 
-import junit.framework.TestCase;
 import org.apache.geronimo.connector.outbound.connectiontracking.ConnectionTrackingCoordinator;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
+import org.apache.geronimo.gbean.jmx.GBeanMBean;
+import org.apache.geronimo.kernel.Kernel;
+import org.apache.geronimo.kernel.jmx.JMXUtil;
+
+import junit.framework.TestCase;
 import org.openejb.nova.EJBContainerConfiguration;
 import org.openejb.nova.MockTransactionManager;
 import org.openejb.nova.deployment.TransactionPolicySource;
@@ -63,20 +69,26 @@ import org.openejb.nova.mdb.mockra.MockBootstrapContext;
 import org.openejb.nova.mdb.mockra.MockResourceAdapter;
 import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.transaction.TxnPolicy;
+import org.openejb.nova.util.ServerUtil;
 
 /**
- *
- *
- *
  * @version $Revision$ $Date$
  */
 public class BasicMDBContainerTest extends TestCase {
-    private EJBContainerConfiguration config;
-    private MDBContainer container;
+	private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
+	private Kernel kernel;
+	private GBeanMBean container;
+	private MBeanServer mbServer;
+	private EJBContainerConfiguration config;
     private MockResourceAdapter resourceAdapter;
 
     protected void setUp() throws Exception {
+		super.setUp();
+
+		mbServer = ServerUtil.newLocalServer();
+
         config = new EJBContainerConfiguration();
+		config.uri = new URI("async", null, "localhost", 3434, "/JMX", null, CONTAINER_NAME.toString());
         config.beanClassName = MockEJB.class.getName();
         config.txnDemarcation = TransactionDemarcation.CONTAINER;
         config.txnManager = new MockTransactionManager();
@@ -88,18 +100,40 @@ public class BasicMDBContainerTest extends TestCase {
                 return ContainerPolicy.Required;
             }
         };
-    }
 
-    public void testNothing() throws Exception {
-
-
+		// Todo: Is the MockResourceAdapter something that needs to be GBeaned?s
         resourceAdapter = new MockResourceAdapter();
         resourceAdapter.start(new MockBootstrapContext() );
         MockActivationSpec spec = new MockActivationSpec();
         spec.setResourceAdapter(resourceAdapter);
-        container = new MDBContainer(config, spec);
-        container.doStart();
 
+
+		kernel = new Kernel("messageDrivenTest");
+		kernel.boot();
+
+		mbServer = kernel.getMBeanServer();
+		container = new GBeanMBean(MDBContainer.GBEAN_INFO);
+		container.setAttribute("EJBContainerConfiguration", config);
+		container.setAttribute("ActivationSpec", spec);
+		start(CONTAINER_NAME, container);
+    }
+
+	private void start(ObjectName name, Object instance) throws Exception {
+		mbServer.registerMBean(instance, name);
+		mbServer.invoke(name, "start", null, null);
+	}
+
+	private void stop(ObjectName name) throws Exception {
+		mbServer.invoke(name, "stop", null, null);
+		mbServer.unregisterMBean(name);
+	}
+
+	protected void tearDown() throws Exception {
+		stop(CONTAINER_NAME);
+		kernel.shutdown();
+	}
+    public void testNothing() throws Exception {
+        // @todo put a wait limit in here... otherwise this can lock a build
         // Wait for 3 messages to arrive..
         System.out.println("Waiting for message 1");
         MockEJB.messageCounter.acquire();
@@ -109,10 +143,5 @@ public class BasicMDBContainerTest extends TestCase {
         MockEJB.messageCounter.acquire();
 
         System.out.println("Done.");
-        container.doStop();
-    }
-
-    protected void tearDown() throws Exception {
-        config = null;
     }
 }

@@ -56,47 +56,45 @@
 package org.openejb.nova.entity;
 
 import java.net.URI;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
-import java.lang.reflect.Method;
-
+import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import junit.framework.TestCase;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
+import org.apache.geronimo.gbean.jmx.GBeanMBean;
+import org.apache.geronimo.kernel.Kernel;
 import org.apache.geronimo.kernel.jmx.JMXUtil;
+
+import junit.framework.TestCase;
 import org.hsqldb.jdbcDataSource;
 import org.openejb.nova.MockTransactionManager;
-import org.openejb.nova.transaction.TxnPolicy;
-import org.openejb.nova.transaction.ContainerPolicy;
 import org.openejb.nova.deployment.TransactionPolicySource;
 import org.openejb.nova.dispatch.MethodSignature;
+import org.openejb.nova.entity.cmp.CMPConfiguration;
 import org.openejb.nova.entity.cmp.CMPEntityContainer;
 import org.openejb.nova.entity.cmp.CMPQuery;
-import org.openejb.nova.entity.cmp.SimpleCommandFactory;
 import org.openejb.nova.entity.cmp.CMRelation;
-import org.openejb.nova.entity.cmp.CMPConfiguration;
+import org.openejb.nova.entity.cmp.SimpleCommandFactory;
 import org.openejb.nova.persistence.jdbc.Binding;
 import org.openejb.nova.persistence.jdbc.binding.IntBinding;
 import org.openejb.nova.persistence.jdbc.binding.StringBinding;
+import org.openejb.nova.transaction.ContainerPolicy;
+import org.openejb.nova.transaction.TxnPolicy;
 
 /**
- *
- *
- *
  * @version $Revision$ $Date$
  */
 public class BasicCMRTest extends TestCase {
     private static final ObjectName CONTAINER_NAME = JMXUtil.getObjectName("geronimo.test:ejb=Mock");
+    private EntityContainerConfiguration config;
+    private Kernel kernel;
+    private GBeanMBean container;
+    private MBeanServer mbServer;
+
     static {
         new org.hsqldb.jdbcDriver();
     }
 
-    private EntityContainerConfiguration config;
-    private CMPEntityContainer container;
     private final jdbcDataSource ds = new jdbcDataSource();
 
     public void testDummy() {
@@ -124,6 +122,7 @@ public class BasicCMRTest extends TestCase {
             public TxnPolicy getTransactionPolicy(String methodIntf, MethodSignature signature) {
                 return ContainerPolicy.Required;
             }
+
             public TxnPolicy getTransactionPolicy(String methodIntf, String methodName, String[] parameterTypes) {
                 return ContainerPolicy.Required;
             }
@@ -150,36 +149,46 @@ public class BasicCMRTest extends TestCase {
         queries.add(new CMPQuery("Mock", true, signature, true, null));
 
         signature = new MethodSignature("ejbCreate", new String[]{"java.lang.Integer", "java.lang.String"});
-        persistenceFactory.defineUpdate(signature, "INSERT INTO MOCK(ID, VALUE) VALUES(?,?)", new Binding[]{new IntBinding(1, 0), new StringBinding(2,1)});
+        persistenceFactory.defineUpdate(signature, "INSERT INTO MOCK(ID, VALUE) VALUES(?,?)", new Binding[]{new IntBinding(1, 0), new StringBinding(2, 1)});
         signature = new MethodSignature("ejbRemove", new String[0]);
         persistenceFactory.defineUpdate(signature, "DELETE FROM MOCK WHERE ID=?", new Binding[]{new IntBinding(1, 0)});
         signature = new MethodSignature("ejbStore", new String[0]);
-        persistenceFactory.defineUpdate(signature, "UPDATE MOCK SET VALUE = ? WHERE ID=?", new Binding[]{new StringBinding(1,1), new IntBinding(2, 0)});
+        persistenceFactory.defineUpdate(signature, "UPDATE MOCK SET VALUE = ? WHERE ID=?", new Binding[]{new StringBinding(1, 1), new IntBinding(2, 0)});
 
         CMPConfiguration cmpConfig = new CMPConfiguration();
         cmpConfig.persistenceFactory = persistenceFactory;
         cmpConfig.queries = (CMPQuery[]) queries.toArray(new CMPQuery[0]);
-        cmpConfig.cmpFieldNames = new String[] { "id", "value" };
-        cmpConfig.relations = new CMRelation[] {};
-        container = new CMPEntityContainer(config, cmpConfig);
+        cmpConfig.cmpFieldNames = new String[]{"id", "value"};
+        cmpConfig.relations = new CMRelation[]{};
+        cmpConfig.schema = "Mock";
 
-        persistenceFactory.defineContainer("Mock", container);
-        container.doStart();
+
+        kernel = new Kernel("BeanManagedPersistenceTest");
+        kernel.boot();
+        mbServer = kernel.getMBeanServer();
+
+
+        container = new GBeanMBean(CMPEntityContainer.GBEAN_INFO);
+        container.setAttribute("EJBContainerConfiguration", config);
+        container.setAttribute("CMPConfiguration", cmpConfig);
+        start(CONTAINER_NAME, container);
+
     }
+
+    private void start(ObjectName name, Object instance) throws Exception {
+        mbServer.registerMBean(instance, name);
+        mbServer.invoke(name, "start", null, null);
+    }
+
+    private void stop(ObjectName name) throws Exception {
+        mbServer.invoke(name, "stop", null, null);
+        mbServer.unregisterMBean(name);
+    }
+
 
     protected void tearDown() throws Exception {
-        container.doStop();
-
-        super.tearDown();
-    }
-
-    private Connection initDatabase() throws SQLException {
-        Connection c = DriverManager.getConnection("jdbc:hsqldb:.", "sa", "");
-        Statement s = c.createStatement();
-        s.execute("CREATE TABLE MOCK(ID INTEGER, VALUE VARCHAR(50))");
-        s.execute("INSERT INTO MOCK(ID, VALUE) VALUES(1, 'Hello')");
-        s.close();
-        return c;
+        stop(CONTAINER_NAME);
+        kernel.shutdown();
     }
 
 }

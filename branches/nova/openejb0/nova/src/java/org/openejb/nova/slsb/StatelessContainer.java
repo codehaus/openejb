@@ -50,6 +50,8 @@ package org.openejb.nova.slsb;
 import java.net.URI;
 
 import org.apache.geronimo.core.service.Interceptor;
+import org.apache.geronimo.gbean.GBeanInfo;
+import org.apache.geronimo.gbean.GBeanInfoFactory;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 
@@ -67,7 +69,6 @@ import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
- *
  * @version $Revision$ $Date$
  */
 public class StatelessContainer extends AbstractEJBContainer {
@@ -130,4 +131,15 @@ public class StatelessContainer extends AbstractEJBContainer {
         super.doStop();
     }
 
+    public static final GBeanInfo GBEAN_INFO;
+
+    static {
+        GBeanInfoFactory infoFactory = new GBeanInfoFactory(StatelessContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
+
+        GBEAN_INFO = infoFactory.getBeanInfo();
+    }
+
+    public static GBeanInfo getGBeanInfo() {
+        return GBEAN_INFO;
+    }
 }

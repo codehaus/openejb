@@ -51,6 +51,10 @@ import java.net.URI;
 import java.util.List;
 
 import org.apache.geronimo.core.service.Interceptor;
+import org.apache.geronimo.gbean.GAttributeInfo;
+import org.apache.geronimo.gbean.GBeanInfo;
+import org.apache.geronimo.gbean.GBeanInfoFactory;
+import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 
@@ -75,7 +79,6 @@ import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
- *
  * @version $Revision$ $Date$
  */
 public class CMPEntityContainer extends AbstractEJBContainer {
@@ -89,6 +92,10 @@ public class CMPEntityContainer extends AbstractEJBContainer {
     public CMPEntityContainer(EntityContainerConfiguration config, CMPConfiguration cmpConfig) {
         super(config);
         pkClassName = config.pkClassName;
+
+        // now that we can reference our actual container object, set it in the command factory
+        cmpConfig.persistenceFactory.defineContainer(cmpConfig.schema, this);
+
         this.persistenceFactory = cmpConfig.persistenceFactory;
         this.queries = cmpConfig.queries;
         this.cmpFieldNames = cmpConfig.cmpFieldNames;
@@ -186,4 +193,22 @@ public class CMPEntityContainer extends AbstractEJBContainer {
         return pkClassName;
     }
 
+
+    public static final GBeanInfo GBEAN_INFO;
+
+    static {
+        GBeanInfoFactory infoFactory = new GBeanInfoFactory(CMPEntityContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
+
+        infoFactory.setConstructor(new GConstructorInfo(
+                new String[]{"EJBContainerConfiguration", "CMPConfiguration"},
+                new Class[]{EntityContainerConfiguration.class, CMPConfiguration.class}));
+        infoFactory.addAttribute(new GAttributeInfo("CMPConfiguration", true));
+
+        GBEAN_INFO = infoFactory.getBeanInfo();
+    }
+
+
+    public static GBeanInfo getGBeanInfo() {
+        return GBEAN_INFO;
+    }
 }

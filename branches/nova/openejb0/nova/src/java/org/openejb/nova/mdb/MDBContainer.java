@@ -58,6 +58,10 @@ import javax.transaction.xa.XAResource;
 
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
+import org.apache.geronimo.gbean.GAttributeInfo;
+import org.apache.geronimo.gbean.GBeanInfo;
+import org.apache.geronimo.gbean.GBeanInfoFactory;
+import org.apache.geronimo.gbean.GConstructorInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ComponentContextInterceptor;
 
@@ -75,11 +79,9 @@ import org.openejb.nova.transaction.TransactionContextInterceptor;
 import org.openejb.nova.util.SoftLimitedInstancePool;
 
 /**
- *
  * @version $Revision$ $Date$
  */
 public class MDBContainer extends AbstractEJBContainer implements MessageEndpointFactory {
-
     private ActivationSpec activationSpec;
     private Class mdbInterface;
     private MDBLocalClientContainer messageClientContainer;
@@ -91,7 +93,6 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
 
     public void doStart() throws WaitingException, Exception {
         super.doStart();
-
 
         try {
             mdbInterface = Thread.currentThread().getContextClassLoader().loadClass(messageEndpointClassName);
@@ -174,4 +175,21 @@ public class MDBContainer extends AbstractEJBContainer implements MessageEndpoin
         return activationSpec.getResourceAdapter();
     }
 
+    public static final GBeanInfo GBEAN_INFO;
+
+    static {
+        GBeanInfoFactory infoFactory = new GBeanInfoFactory(MDBContainer.class.getName(), AbstractEJBContainer.GBEAN_INFO);
+
+        infoFactory.setConstructor(new GConstructorInfo(
+                new String[]{"EJBContainerConfiguration", "ActivationSpec"},
+                new Class[]{EJBContainerConfiguration.class, ActivationSpec.class}));
+
+        infoFactory.addAttribute(new GAttributeInfo("ActivationSpec", true));
+        GBEAN_INFO = infoFactory.getBeanInfo();
+    }
+
+
+    public static GBeanInfo getGBeanInfo() {
+        return GBEAN_INFO;
+    }
 }

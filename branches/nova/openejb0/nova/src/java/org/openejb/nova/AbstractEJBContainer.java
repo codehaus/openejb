@@ -1,6 +1,6 @@
 /* ====================================================================
  * Redistribution and use of this software and associated documentation
- * ("Software"), with or without modification, are permitted provided
+  * ("Software"), with or without modification, are permitted provided
  * that the following conditions are met:
  *
  * 1. Redistributions of source code must retain copyright
@@ -58,18 +58,19 @@ import javax.ejb.EJBLocalObject;
 import javax.ejb.EJBObject;
 import javax.security.auth.Subject;
 import javax.transaction.TransactionManager;
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.geronimo.cache.InstancePool;
 import org.apache.geronimo.connector.outbound.connectiontracking.TrackedConnectionAssociator;
 import org.apache.geronimo.core.service.Interceptor;
 import org.apache.geronimo.ejb.metadata.TransactionDemarcation;
+import org.apache.geronimo.gbean.GAttributeInfo;
 import org.apache.geronimo.gbean.GBean;
 import org.apache.geronimo.gbean.GBeanContext;
+import org.apache.geronimo.gbean.GBeanInfo;
+import org.apache.geronimo.gbean.GBeanInfoFactory;
+import org.apache.geronimo.gbean.GConstructorInfo;
+import org.apache.geronimo.gbean.GOperationInfo;
+import org.apache.geronimo.gbean.GReferenceInfo;
 import org.apache.geronimo.gbean.WaitingException;
 import org.apache.geronimo.naming.java.ReadOnlyContext;
 import org.apache.geronimo.remoting.DeMarshalingInterceptor;
@@ -85,8 +86,6 @@ import org.openejb.nova.transaction.EJBUserTransaction;
 import org.openejb.nova.transaction.TxnPolicy;
 
 /**
- *
- *
  * @version $Revision$ $Date$
  */
 public abstract class AbstractEJBContainer implements EJBContainer, GBean {
@@ -265,6 +264,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     /**
      * Return the name of this EJB's implementation class
+     *
      * @return the name of this EJB's implementation class
      */
     public String getBeanClassName() {
@@ -273,6 +273,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     /**
      * Return the name of this EJB's home interface class
+     *
      * @return the name of this EJB's home interface class
      */
     public String getHomeClassName() {
@@ -281,6 +282,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     /**
      * Return the name of this EJB's remote component interface class
+     *
      * @return the name of this EJB's remote component interface class
      */
     public String getRemoteClassName() {
@@ -289,6 +291,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     /**
      * Return the name of this EJB's local home class
+     *
      * @return the name of this EJB's local home class
      */
     public String getLocalHomeClassName() {
@@ -297,6 +300,7 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
 
     /**
      * Return the name of this EJB's local component interface class
+     *
      * @return the name of this EJB's local component interface class
      */
     public String getLocalClassName() {
@@ -359,6 +363,49 @@ public abstract class AbstractEJBContainer implements EJBContainer, GBean {
             policies[index.intValue()] = policy;
         }
     }
+
+    public static final GBeanInfo GBEAN_INFO;
+
+    static {
+        GBeanInfoFactory infoFactory = new GBeanInfoFactory("OpenEJB Nova EJB Container (CMP Entity Beans)",
+                AbstractEJBContainer.class.getName());
+        /**
+         * Default constructor; takes onl a EJBContainerConfiguration Object.
+         * Any containers that wish to have different constructors (CMPContainer and MDBContainer have multiple argument
+         * constructors), must override by setting their own constructor at GBEAN_INFO initialisation.
+         */
+        infoFactory.setConstructor(new GConstructorInfo(
+                new String[]{"EJBContainerConfiguration"},
+                new Class[]{EJBContainerConfiguration.class}));
+
+        infoFactory.addAttribute(new GAttributeInfo("EJBContainerConfiguration", true));
+
+        infoFactory.addReference(new GReferenceInfo("TransactionManager", TransactionManager.class.getName()));
+        infoFactory.addReference(new GReferenceInfo("TrackedConnectionAssociator", TrackedConnectionAssociator.class.getName()));
+
+        /**
+         *	TODO: Dain informs me at some point we'll make these attributes, but currently JNDI Referencer can't support it in the way we want.
+         */
+
+        infoFactory.addOperation(new GOperationInfo("getBeanClass"));
+        infoFactory.addOperation(new GOperationInfo("getComponentContext"));
+        infoFactory.addOperation(new GOperationInfo("getDemarcation"));
+        infoFactory.addOperation(new GOperationInfo("getEJBHome"));
+        infoFactory.addOperation(new GOperationInfo("getEJBLocalHome"));
+        infoFactory.addOperation(new GOperationInfo("getEJBLocalObject", new String[]{Object.class.getName()}));
+        infoFactory.addOperation(new GOperationInfo("getEJBName"));
+        infoFactory.addOperation(new GOperationInfo("getEJBObject", new String[]{Object.class.getName()}));
+        infoFactory.addOperation(new GOperationInfo("getUserTransaction"));
+
+        GBEAN_INFO = infoFactory.getBeanInfo();
+    }
+
+
+    public static GBeanInfo getGBeanInfo() {
+        return GBEAN_INFO;
+    }
+
+
 }
 
 

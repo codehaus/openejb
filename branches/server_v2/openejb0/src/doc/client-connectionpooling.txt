@@ -1,0 +1,95 @@
+There was a thread on the connection dropping a while back.  I posted some 
+details on how to easily add a pooling strategy.  The neat thing about the 
+solution is that it doesn't even require recompiling or tampering with 
+your OpenEJB distrobution.  It's a pluggable aspect of the client-side 
+API.  
+
+Here is an email containing some of the details:
+http://www.mail-archive.com/openejb-user@lists.sourceforge.net/msg00653.html
+
+Basically, all calls for a connection on the client-side go to a static 
+class called ConnectionManager.  The ConnectionManager just delegates all 
+of those connection requests to a singleton instance of the 
+ConnectionFactory interface.  
+
+You can implement your own ConnectionFactory that handles connections the 
+way you like, then install it on the client with a method call like this: 
+
+  ConnectionManager.setFactory("org.foo.my.SpecialConnectionFacoryImpl");
+
+Done.  You class org.foo.my.SpecialConnectionFacoryImpl will be 
+instantiated and made the default implementation.  All future requests for 
+connections will go it it.  Now it has the power to pool and reuse 
+connections rather than creating and destroying one each call.  
+
+Here is an idea of what kind of ConnectionFactory and Connection 
+implementation you would need for pooling.  This code won't compile 
+(needs a few try/catch blocks), but it is good for illustrative purposes. 
+
+<PooledConnectionFactory.java>
+import org.openejb.client.ServerMetaData;
+import org.openejb.client.ConnectionFactory;
+import org.openejb.client.Connection;
+
+import java.net.Socket;
+import java.io.OutputStream;
+import java.io.InputStream;
+
+public class PooledConnectionFactory implements ConnectionFactory {
+
+    // Some better pool would be good.
+    // This is just for example.
+    java.util.Stack pool;
+
+    public void init(Properties props){
+        pool = new java.util.Stack();
+    }
+
+    
+    /**
+     * Get a connection from the pool
+     */
+    public Connection getConnection(ServerMetaData server) 
+    throws java.io.IOException {
+        // Grab a connection from the pool
+        Connection conn = (Connection)pool.pop();
+
+        if (conn == null) {
+            conn = new PooledConnection(server); 
+        }
+        return conn;
+    }
+
+    class PooledConnection implements Connection{
+        Socket actualConnection;
+        InputStream  in;
+        OutputStream out;
+
+        PooledConnection(ServerMetaData server){
+
+            actualConnection = new Socket(server.getAddress(),
+                                          server.getPort());
+        }
+
+        public void close() throws java.io.IOException {
+            // Don't actuall close the connection,
+            // just return it to the pool.
+            pool.push(this);
+
+        }
+        public InputStream getInputStream() throws IOException {
+            if (in == null) {
+                in = actualConnection.getInputStream();
+            }
+            return in;
+        }
+        public OutputStream getOuputStream() throws IOException {
+            if (out == null) {
+                out = actualConnection.getOutputStream();
+            }
+            return out;
+        }
+    }
+}
+</PooledConnectionFactory.java>
+

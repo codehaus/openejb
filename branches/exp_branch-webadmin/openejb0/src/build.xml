@@ -58,7 +58,7 @@
     <pathelement location="${jaxp.home}/${jaxp.xalan1compat.jar}"/>
     <pathelement location="${junit.jar}"/>
     <pathelement location="${jakarta.regexp.jar}"/>
-    <pathelement location="${xslp.jar}"/>
+    <pathelement location="${xalan.jar}"/>
   </path>
   
   <!-- Build classpath for test cases -->     
@@ -127,7 +127,7 @@
     <echo message="jaxp.xalan1compat.jar  = ${jaxp.home}/${jaxp.xalan1compat.jar}"/>
     <echo message="junit.jar              = ${junit.jar}"/>
     <echo message="jakarta.regexp.jar     = ${jakarta.regexp.jar}"/>
-    <echo message="xslp.jar               = ${xslp.jar}"/>    
+    <echo message="xalan.jar              = ${xalan.jar}"/>    
   </target>
 
   <!-- ================================================================== -->
@@ -317,8 +317,8 @@
     />
     
     <available 
-      classname="com.kvisco.xsl.XSLProcessor"
-      property="xslp.present"
+      classname="org.apache.xalan.Version"
+      property="xalan.present"
       classpathref="project.classpath"
     />
     
@@ -362,6 +362,11 @@
     <available
       property="build-testsuite.present"
       file="src/build-testsuite.xml"
+    />
+    
+    <available
+      property="build-webadmin.present"
+      file="src/build-webadmin.xml"
     />
     
   </target>  
@@ -478,21 +483,21 @@
   <target name="check.openorb" unless="openorb.present">
     <antcall target="property-warning">
       <param name="name" value="openorb.jar"/>
-      <param name="value" value="${openorb.home}/dist/${openorb.jar}"/>
+      <param name="value" value="${openorb.home}/${openorb.jar}"/>
     </antcall>
   </target>
   
   <target name="check.openorb.rmi" unless="openorb.rmi.present">
     <antcall target="property-warning">
       <param name="name" value="openorb.rmi.jar"/>
-      <param name="value" value="${openorb.home}/dist/${openorb.rmi.jar}"/>
+      <param name="value" value="${openorb.home}/${openorb.rmi.jar}"/>
     </antcall>
   </target>
   
   <target name="check.openorb.tools" unless="openorb.tools.present">
     <antcall target="property-warning">
       <param name="name" value="openorb.tools.jar"/>
-      <param name="value" value="${openorb.home}/dist/${openorb.tools.jar}"/>
+      <param name="value" value="${openorb.home}/${openorb.tools.jar}"/>
     </antcall>
   </target>
   
@@ -559,10 +564,10 @@
     </antcall>
   </target>
   
-  <target name="check.xslp" unless="xslp.present">
+  <target name="check.xalan" unless="xalan.present">
     <antcall target="property-warning">
-      <param name="name" value="xslp.jar"/>
-      <param name="value" value="${xslp.jar}"/>
+      <param name="name" value="xalan.jar"/>
+      <param name="value" value="${xalan.jar}"/>
     </antcall>
   </target>
   
@@ -621,7 +626,7 @@
                    check.jaxp.parser,
                    check.junit,
                    check.jakarta.regexp,
-                   check.xslp"
+                   check.xalan"
           description="--> prepares the build environment">
           
     <mkdir dir="${build.dir}"/>
@@ -629,14 +634,22 @@
     <mkdir dir="${build.dest}"/>
     <mkdir dir="${dest.doc.dir}"/>
     <mkdir dir="${dest.javadoc.dir}"/>
-    <mkdir dir="${final.dir}"/>
-    <mkdir dir="${final.dir}/bin"/>
-    <mkdir dir="${final.dir}/conf"/>
-    <mkdir dir="${final.dir}/docs"/>
-    <mkdir dir="${final.dir}/lib"/>
-    <mkdir dir="${final.dir}/src"/>
-    <mkdir dir="${final.dir}/beans"/>
+    <mkdir dir="./beans"/>
     
+    <style
+        style="src/doc/style/changelog.xsl"
+        in="${docs.src}/CHANGELOG.xml"
+        out="${final.dir}/src/etc/CHANGELOG"
+        processor="trax">
+
+    	<param name="version" expression="${version}"/>
+    
+        <classpath>
+            <path refid="project.classpath"/>
+        </classpath>
+           
+    </style>
+ 
     <antcall target="delegate">
         <param name="target.name" value="prepare"/>
     </antcall>    
@@ -728,30 +741,68 @@
         <fileset dir="${docs.src}/spec" />
     </copy>
     
-    
     <style basedir="${docs.src}" 
         destdir="${docs.dest}/html" 
         style="src/doc/style/sysdesign.xsl"
         includes="**/design_*.xml" 
-        excludes="style/**,project.xml"
-        processor="xslp">           
+        excludes="style/**,project.xml,CHANGELOG.xml,download.xml,release-plan.xml"
+        processor="trax">           
       
         <classpath>
             <path refid="project.classpath"/>
         </classpath>
-           
     </style>
+    
     <style basedir="${docs.src}" 
         destdir="${docs.dest}/html" 
         style="src/doc/style/website.xsl"
         includes="**/**.xml" 
-        excludes="style/**,src/doc/design_**,project.xml"
-        processor="xslp">           
+        excludes="style/**,src/doc/design_**,project.xml,CHANGELOG.xml,download.xml,release-plan.xml"
+        processor="trax">           
+      
+        <classpath>
+            <path refid="project.classpath"/>
+        </classpath>           
+    </style>
+    
+    <style style="src/doc/style/download.xsl"
+        in="${docs.src}/CHANGELOG.xml" 
+        out="${docs.dest}/html/download.html" 
+        processor="trax">           
+      
+        <classpath>
+            <path refid="project.classpath"/>
+        </classpath>           
+    </style>
+    
+    <style style="src/doc/style/release-plan.xsl"
+        in="${docs.src}/CHANGELOG.xml" 
+        out="${docs.dest}/html/release-plan.html" 
+        processor="trax">           
+      
+        <classpath>
+            <path refid="project.classpath"/>
+        </classpath>           
+    </style>
+
+    <style style="src/doc/style/release-notes.xsl"
+        in="${docs.src}/CHANGELOG.xml" 
+        out="${docs.dest}/release-notes.html" 
+        processor="trax">           
+      
+        <classpath>
+            <path refid="project.classpath"/>
+        </classpath>           
+    </style>
+
+    <style style="src/doc/style/change-notes.xsl"
+        in="${docs.src}/CHANGELOG.xml" 
+        out="${docs.dest}/change-notes.html" 
+        processor="trax">           
       
         <classpath>
             <path refid="project.classpath"/>
         </classpath>
-           
     </style>
     
     <copy todir="${docs.dest}/html/images">
@@ -859,9 +910,17 @@
           description="--> archives all files as a complete OpenEJB distribution package"/>
           
   <target name="prepare-package">
+    <mkdir dir="${final.dir}"/>
+    <mkdir dir="${final.dir}/bin"/>
+    <mkdir dir="${final.dir}/conf"/>
+    <mkdir dir="${final.dir}/docs"/>
+    <mkdir dir="${final.dir}/lib"/>
+    <mkdir dir="${final.dir}/dist"/>
+    <mkdir dir="${final.dir}/src"/>
+    <mkdir dir="${final.dir}/beans"/>
   
     <!-- copy required jar files -->               
-    <copy todir="${final.dir}/lib">
+    <copy todir="${final.dir}/dist">
     
       <fileset dir="dist" >
         <include name="openejb-${version}.jar"/>
@@ -903,6 +962,7 @@
     <copy todir="${final.dir}/src">
     
       <fileset dir="src" >
+        <include name="doc/**"/>
 		<include name="etc/CHANGELOG"/>
 		<include name="etc/LICENSE"/>
 		<include name="etc/MANIFEST.MF"/>
@@ -1041,6 +1101,22 @@
     </ant>
   </target>
   
+  <target name="delegate-webadmin" if="build-webadmin.present">
+    <echo message="delegating webadmin"/>
+    <ant antfile="src/build-webadmin.xml" target="${target.name}">
+      <property file="build.properties"/>
+      
+      <property name="build.src" value="${build.src}"/>
+      <property name="build.dest" value="${build.dest}"/>
+      <property name="src.java.dir" value="${src.java.dir}"/>
+      <property name="src.doc.dir" value="${src.doc.dir}"/>
+      <property name="dest.doc.dir" value="${dest.doc.dir}"/>
+      <property name="dest.javadoc.dir" value="${dest.javadoc.dir}"/>
+      <property name="final.name" value="${final.name}"/>
+      <property name="final.dir" value="${final.dir}/"/>
+    </ant>
+  </target>
+  
   <target name="delegate-openejb-server" if="build-openejb-server.present">
     <ant antfile="src/build-openejb-server.xml" target="${target.name}">
       <property file="build.properties"/>
@@ -1119,6 +1195,8 @@
   <target name="delegate">
   
     <antcall target="delegate-openejb" />
+    
+    <antcall target="delegate-webadmin" />
     
     <antcall target="delegate-openejb-server" />
     

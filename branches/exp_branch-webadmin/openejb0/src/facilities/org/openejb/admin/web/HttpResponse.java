@@ -49,8 +49,6 @@ package org.openejb.admin.web;
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
 public interface HttpResponse extends java.io.Serializable{
-
-
     public void setHeader(String name, String value);
 
     public String getHeader(String name);
@@ -73,4 +71,5 @@ public interface HttpResponse extends java.io.Serializable{
 
     public void reset(int code, String responseString);
 
+    public String getServerName();
 }

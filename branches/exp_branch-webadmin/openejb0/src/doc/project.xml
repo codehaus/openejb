@@ -5,18 +5,31 @@
   <logo>./images/logo_ejb.gif</logo>
   <repository>OpenEJB</repository>
   <href>http://openejb.sf.net</href>
+  <group_id>44351</group_id>
+  <bug_id>439274</bug_id>
+  <task_id>460291</task_id>
 
   <topNav>
     <navLink>
-      <url>http://openejb.sf.net</url>
-      <display>OpenEJB at SourceForge</display>
+      <url>http://openejb.sourceforge.net</url>
+      <display>OpenEJB</display>
     </navLink>
-
     <navLink>
-      <url>http://openejb.exolab.org</url>
-      <display>OpenEJB at Exolab</display>
+      <url>http://openjms.sourceforge.net</url>
+      <display>OpenJMS</display>
     </navLink>
- 
+    <navLink>
+      <url>http://openorb.sourceforge.net</url>
+      <display>OpenORB</display>
+    </navLink>
+    <navLink>
+      <url>http://castor.exolab.org</url>
+      <display>Castor</display>
+    </navLink>
+    <navLink>
+      <url>http://tyrex.sourceforge.net</url>
+      <display>Tyrex</display>
+    </navLink>
   </topNav>
 
   <navSections>
@@ -48,6 +61,10 @@
       <navLink>
         <url>hello-world.xml</url>
         <display>Hello World!</display>
+      </navLink>
+      <navLink>
+        <url>cmp_entity_postgresql.xml</url>
+        <display>Hello World CMP</display>
       </navLink>
       <navLink>
         <url>deploy.xml</url>

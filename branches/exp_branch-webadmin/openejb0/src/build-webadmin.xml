@@ -1,12 +1,13 @@
-<project name="OpenEJB-RI-Server" default="jar" basedir="../">
+<project name="OpenEJB-Webadmin" default="jar" basedir="../">
   <!-- 
   		Contributions by:
   			Daniel S. Haischt <sirabyss@gmx.net>
   	-->
 
-  <property name="build.riserver.src" value="${build.src}/riserver"/>
-  <property name="build.riserver.dest" value="${build.dest}/riserver"/>
-  <property name="dest.riserver.javadoc.dir" value="${dest.javadoc.dir}/riserver"/>
+  <property name="build.webadmin.src" value="${build.src}/webadmin"/>
+  <property name="build.webadmin.dest" value="${build.dest}/webadmin"/>
+  <property name="src.webadmin.dir" value="${src.dir}/facilities"/>
+  <property name="dest.webadmin.javadoc.dir" value="${dest.javadoc.dir}/webadmin"/>
   
   <!-- Build classpath -->
   <path id="project.classpath">
@@ -47,59 +48,51 @@
   <!-- ================================================================== -->
 
   <target name="prepare">
-  
-    <mkdir dir="${build.riserver.src}"/>
-    <mkdir dir="${build.riserver.dest}"/>
-    <mkdir dir="${dest.riserver.javadoc.dir}"/>
+    <echo message="preparing webadmin"/>
+    <mkdir dir="${build.webadmin.src}"/>
+    <mkdir dir="${build.webadmin.dest}"/>
+    <mkdir dir="${dest.webadmin.javadoc.dir}"/>
+    <mkdir dir="${build.webadmin.dest}/META-INF"/>
+    <mkdir dir="beans"/>
     
-    <copy todir="${build.riserver.src}">
+    <copy todir="${build.webadmin.src}">
     
-      <fileset dir="${src.java.dir}/facilities" >
-        <include name="${src.java.dir}/facilities/org/openejb/alt/util/Messages.java"/>
-        <include name="**/ri/**"/>
+      <fileset dir="${src.webadmin.dir}" >
+        <include name="**/admin/**"/>
         <exclude name="**/CVS/**"/>
+        <exclude name="**/javax/**"/>
         <exclude name="**/*.class"/>
       </fileset>
     
     </copy>
     
-  </target>
-  
-  <target name="copy.manifest">
-  
-    <copy todir="${build.riserver.dest}">
+     <copy todir="${build.webadmin.dest}">
     
       <fileset dir="${src.java.dir}/etc" >
+        <include name="**/CHANGELOG"/>
         <include name="**/LICENSE"/>
         <include name="**/MANIFEST.MF"/>
         <include name="**/README"/>
       </fileset>
-    
+
+      <fileset dir="${src.webadmin.dir}" >
+        <include name="ejb-jar.xml"/>
+        <include name="openejb-jar.xml"/>
+      </fileset>
+
     </copy>
 
-	<copy todir="${build.riserver.dest}">
+    <copy todir="${build.webadmin.dest}/META-INF">
+    
+      <fileset dir="${src.webadmin.dir}" >
+        <include name="ejb-jar.xml"/>
+        <include name="openejb-jar.xml"/>
+      </fileset>
 
-	  <fileset dir="${final.dir}/src/etc" >
-		<include name="**/CHANGELOG"/>
-	  </fileset>
-
-	</copy>
-
-    <replace file="${build.riserver.dest}/MANIFEST.MF" token="$$VERSION$$" value="${version}"/>
-  
+    </copy>
+    
+    <replace file="${build.webadmin.dest}/MANIFEST.MF" token="$$VERSION$$" value="${version}"/>
   </target>
-    
-    <target name="copy.i18n">
-    
-      <copy todir="${build.riserver.dest}">
-      
-        <fileset dir="${src.java.dir}/facilities" >
-          <include name="**/resources/*.properties"/>
-        </fileset>
-      
-      </copy>
-    
-    </target>
 
   <!-- ================================================================== -->
   <!-- Compiles the source directory                                      -->
@@ -109,8 +102,10 @@
           depends="prepare"
           description="--> compiles the java source files">
           
-    <javac srcdir="${build.riserver.src}"
-           destdir="${build.riserver.dest}"
+    <echo message="compiling webadmin"/>
+    <javac srcdir="${build.webadmin.src}"
+           destdir="${build.webadmin.dest}"
+           excludes="**/*_Foo.*"
            debug="${debug}"
            deprecation="${deprecation}">
            
@@ -128,13 +123,30 @@
   <!-- ================================================================== -->
   
   <target name="jar"
-          depends="compile, copy.manifest, copy.i18n"
+          depends="compile"
           description="--> generates all java archives (default)">
-          
-    <jar jarfile="dist/${project}_ri_server-${version}.jar"
-         basedir="${build.riserver.dest}"
-         manifest="${build.riserver.dest}/MANIFEST.MF"/>
-          
+    
+    <echo message="jarring webadmin"/>      
+    <jar jarfile="dist/${project}_httpbean-api-${version}.jar"
+         basedir="build/classes/webadmin"
+         includes="org/openejb/admin/web/HttpBean.class,
+                   org/openejb/admin/web/HttpHome.class,
+                   org/openejb/admin/web/HttpObject.class,
+                   org/openejb/admin/web/HttpRequest.class,
+                   org/openejb/admin/web/HttpResponse.class"
+         manifest="${build.webadmin.dest}/MANIFEST.MF"/>
+    
+    <jar jarfile="beans/${project}_webadmin-${version}.jar"
+         basedir="${build.webadmin.dest}"
+         includes="**/web/**,META-INF/*.xml"
+         excludes="org/openejb/admin/web/HttpBean.class,
+                   org/openejb/admin/web/HttpHome.class,
+                   org/openejb/admin/web/HttpObject.class,
+                   org/openejb/admin/web/HttpRequest.class,
+                   org/openejb/admin/web/HttpResponse.class,
+                   **/web/*Test*.class"
+         manifest="${build.webadmin.dest}/MANIFEST.MF"/>
+
   </target>
   
   <!-- ================================================================== -->
@@ -146,9 +158,9 @@
           description="--> generates the API documentation">
           
     <javadoc packagenames="org.openejb.*"
-             sourcepath="${build.riserver.src}"
-             destdir="${dest.riserver.javadoc.dir}"
-             doctitle="${name} RI-Server JavaDoc"
+             sourcepath="${build.webadmin.src}"
+             destdir="${dest.webadmin.javadoc.dir}"
+             doctitle="${name} Webadmin JavaDoc"
              windowtitle="${name} JavaDoc"
              bottom="${copyright}"
 		     package="true"

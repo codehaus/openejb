@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<xsl:stylesheet version="1.0" >
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
   <xsl:output method="html" indent="no"/>
 
+  <xsl:variable name="project" select="document('../project.xml')/project"/>
+
+  <xsl:include href="util.xsl"/>
   <xsl:include href="topNav.xsl"/>
   <xsl:include href="leftNav.xsl"/>
   <xsl:include href="keywords.xsl"/>
@@ -12,7 +15,6 @@
   <!-- Template for document -->
 
   <xsl:template match="/">
-  <xsl:variable name="project" select="document('../project.xml')/project"/>
   <html>
 
   <head>
@@ -142,14 +144,14 @@
 
           <!-- build the page navigation first, section by section -->
           <xsl:choose>      
-          <xsl:if test="document[@toc='none']"></xsl:if>
-          <xsl:if test="document[@toc='numeric']">
+          <xsl:when test="document[@toc='none']"></xsl:when>
+          <xsl:when test="document[@toc='numeric']">
                     
             <p/><br/>
             <xsl:for-each select="//section">
               <span class="toc">
                 <xsl:choose>
-                 <xsl:if test="@ref-id">
+                 <xsl:when test="@ref-id">
                   <xsl:variable name="level" select="count(ancestor::*)"/>
                   <xsl:choose>
                     <xsl:when test='$level=2'>
@@ -180,7 +182,7 @@
                       <xsl:value-of select="@title"/></a><br/>
                     </xsl:otherwise>
                   </xsl:choose>
-                 </xsl:if>
+                 </xsl:when>
                  <xsl:otherwise>
                   <xsl:variable name="level" select="count(ancestor::*)"/>
                   <xsl:choose>
@@ -217,13 +219,13 @@
               </span>
             </xsl:for-each>
           
-          </xsl:if>
+          </xsl:when>
           <xsl:otherwise>
             <p/><br/>
             <xsl:for-each select=".//section">
               <span class="toc">
                 <xsl:choose>
-                 <xsl:if test="@ref-id">
+                 <xsl:when test="@ref-id">
                   <xsl:variable name="level" select="count(ancestor::*)"/>
                   <xsl:choose>
                     <xsl:when test='$level=2'>
@@ -242,7 +244,7 @@
                       <a href="#{@ref-id}"><xsl:value-of select="@title"/></a><br/>
                     </xsl:otherwise>
                   </xsl:choose>
-                 </xsl:if>
+                 </xsl:when>
                  <xsl:otherwise>
                   <xsl:variable name="level" select="count(ancestor::*)"/>
                   <xsl:choose>
@@ -363,10 +365,10 @@
     <xsl:choose>
       <xsl:when test='$level=2'>
         <xsl:choose>
-          <xsl:if test="@ref-id">
+          <xsl:when test="@ref-id">
             <a name="{@ref-id}">
             <h2><xsl:value-of select="@title"/></h2></a>
-          </xsl:if>
+          </xsl:when>
           <xsl:otherwise>
             <a name="{@title}">
             <h2><xsl:value-of select="@title"/></h2></a>
@@ -375,10 +377,10 @@
       </xsl:when>
       <xsl:when test='$level=3'>
         <xsl:choose>
-          <xsl:if test="@ref-id">
+          <xsl:when test="@ref-id">
             <a name="{@ref-id}">
             <h3><xsl:value-of select="@title"/></h3></a>
-          </xsl:if>
+          </xsl:when>
           <xsl:otherwise>
             <a name="{@title}">
             <h3><xsl:value-of select="@title"/></h3></a>
@@ -387,10 +389,10 @@
       </xsl:when>
       <xsl:when test='$level=4'>
         <xsl:choose>
-          <xsl:if test="@ref-id">
+          <xsl:when test="@ref-id">
             <a name="{@ref-id}">
             <h4><xsl:value-of select="@title"/></h4></a>
-          </xsl:if>
+          </xsl:when>
           <xsl:otherwise>
             <a name="{@title}">
             <h4><xsl:value-of select="@title"/></h4></a>
@@ -399,10 +401,10 @@
       </xsl:when>
       <xsl:when test='$level=5'>
         <xsl:choose>
-          <xsl:if test="@ref-id">
+          <xsl:when test="@ref-id">
             <a name="{@ref-id}">
             <h5><xsl:value-of select="@title"/></h5></a>
-          </xsl:if>
+          </xsl:when>
           <xsl:otherwise>
             <a name="{@title}">
             <h5><xsl:value-of select="@title"/></h5></a>
@@ -411,10 +413,10 @@
       </xsl:when>
       <xsl:otherwise>
         <xsl:choose>
-          <xsl:if test="@ref-id">
+          <xsl:when test="@ref-id">
             <a name="{@ref-id}">
             <h6><xsl:value-of select="@title"/></h6></a>
-          </xsl:if>
+          </xsl:when>
           <xsl:otherwise>
             <a name="{@title}">
             <h6><xsl:value-of select="@title"/></h6></a>
@@ -488,54 +490,6 @@
     <span class="bodyGrey">
       <pre><xsl:apply-templates/></pre>
     </span>
-  </xsl:template>
-
-
-  <!-- Templates for links -->
-
-  <xsl:template match="a">
-    <a>
-      <xsl:if test="@href">
-        <xsl:variable name="href">
-          <xsl:call-template name="link-convertor">
-            <xsl:with-param name="href" select="@href"/>
-          </xsl:call-template>
-        </xsl:variable>
-        <xsl:attribute name="href">
-          <xsl:value-of select="$href"/>
-        </xsl:attribute>
-      </xsl:if>
-      <xsl:for-each select="@*[not(name(.)='href')]">
-        <xsl:copy-of select="."/>
-      </xsl:for-each>
-      <xsl:apply-templates/>
-    </a>
-  </xsl:template>
-
-  <xsl:template name="link-convertor">
-    <xsl:param name="href" select="empty"/>
-    <xsl:choose>
-      <xsl:when test="starts-with($href,'http:')">
-        <xsl:value-of select="$href"/>
-      </xsl:when>
-      <xsl:when test="not(contains($href,'.xml'))">
-        <xsl:value-of select="$href"/>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="substring-before($href, '.xml')"/>.html
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <xsl:template match="javadoc">
-    <xsl:choose>
-      <xsl:when test="@type='package'">
-        <a href="javadoc/{translate(.,'.','/')}/package-summary.html"><xsl:copy-of select="."/></a>
-      </xsl:when>
-      <xsl:otherwise>
-        <a href="javadoc/{translate(.,'.','/')}.html"><xsl:copy-of select="."/></a>
-      </xsl:otherwise>
-    </xsl:choose>
   </xsl:template>
 
   <xsl:template match="api">
@@ -761,9 +715,9 @@
                   <xsl:variable name="company-id" select="company/@id"/>
                   <xsl:variable name="company" select="../company[@id=$company-id]"/>
                   <xsl:choose>
-                    <xsl:if test="$company/url">
+                    <xsl:when test="$company/url">
                       <a href="http://{$company/url}"><xsl:value-of select="$company/name"/></a>
-                    </xsl:if>
+                    </xsl:when>
                     <xsl:otherwise>
                       <xsl:value-of select="$company/name"/>
                     </xsl:otherwise>

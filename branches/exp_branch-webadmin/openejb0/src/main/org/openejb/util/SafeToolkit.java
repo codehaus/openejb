@@ -47,10 +47,12 @@ package org.openejb.util;
 import java.util.HashMap;
 import java.util.Properties;
 import org.openejb.OpenEJBException;
+import org.openejb.util.Messages;
 
 public class SafeToolkit{
 
     private String systemLocation;
+    protected static Messages messages = new Messages( "org.openejb.util.resources" );
     protected static HashMap codebases = new HashMap();
 
     /**
@@ -74,7 +76,7 @@ public class SafeToolkit{
      * @returns the specified class.
      * @throws OpenEJBExcption if the class cannot be found.
      */
-    public Class forName(String className) throws OpenEJBException{
+    public Class forName(String className) throws OpenEJBException {
         Class clazz = null;
         try{
             clazz = Class.forName(className);
@@ -209,8 +211,7 @@ public class SafeToolkit{
             clazz = cl.loadClass(className);
         } 
 	catch (ClassNotFoundException cnfe){
-            Object[] details = { className, codebase };
-            throw new OpenEJBException("cl0007", details);
+            throw new OpenEJBException( messages.format( "cl0007", className, codebase ) );
         } 
 	return clazz;
     }
@@ -235,14 +236,13 @@ public class SafeToolkit{
 		    try {
 			java.net.URL[] urlCodebase = new java.net.URL[1];
 			urlCodebase[0] = new java.net.URL("file",null,codebase);
-			cl = new java.net.URLClassLoader(urlCodebase, ClassLoader.getSystemClassLoader() );
+              // make sure everything works if we were not loaded by the system class loader
+			cl = new java.net.URLClassLoader(urlCodebase, SafeToolkit.class.getClassLoader() );
 			codebases.put(codebase, cl);
 		    } catch (java.net.MalformedURLException mue) {
-			Object[] details = {codebase, mue.getMessage()};
-			throw new OpenEJBException("cl0001", details);
+			throw new OpenEJBException( messages.format ( "cl0001", codebase, mue.getMessage() ) );
 		    } catch (SecurityException se) {
-			Object[] details = {codebase, se.getMessage()};
-			throw new OpenEJBException("cl0002", details);
+			throw new OpenEJBException( messages.format ( "cl0002", codebase, se.getMessage() ) );
 		    }
 		}
 	    }

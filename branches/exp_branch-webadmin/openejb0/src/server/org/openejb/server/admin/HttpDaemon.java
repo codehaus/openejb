@@ -42,7 +42,6 @@
  *
  * $Id$
  */
-
 package org.openejb.server.admin;
 
 import java.util.Collection;
@@ -87,16 +86,18 @@ import org.openejb.util.JarUtils;
 import org.openejb.util.Logger;
 import org.openejb.admin.web.HttpObject;
 import org.openejb.admin.web.HttpHome;
-
+import javax.rmi.PortableRemoteObject;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  * @since 11/25/2001
  */
 public class HttpDaemon implements Runnable{
+
     private SafeToolkit toolkit = SafeToolkit.getToolkit("OpenEJB EJB Server");
 
-    Logger logger = new Logger( "OpenEJB" );
+    Logger logger = Logger.getInstance( "OpenEJB", "org.openejb.server.util.resources" );
+
     Vector           clientSockets  = new Vector();
     ServerSocket     serverSocket   = null;
 
@@ -105,7 +106,6 @@ public class HttpDaemon implements Runnable{
     String ip   = "127.0.0.1";
     Properties props;
     EjbDaemon ejbd;
-
     InitialContext jndiContext;
 
     public HttpDaemon(EjbDaemon ejbd) {
@@ -113,18 +113,20 @@ public class HttpDaemon implements Runnable{
     }
 
     public void init(Properties props) throws Exception{
+
         props.putAll(System.getProperties());
 
         Properties properties = new Properties();
         properties.put(Context.INITIAL_CONTEXT_FACTORY, "org.openejb.core.ivm.naming.InitContextFactory");
         jndiContext = new InitialContext(properties);
         
-        //SafeProperties safeProps = toolkit.getSafeProperties(props);
-        //port = safeProps.getPropertyAsInt("openejb.server.port");
-        //ip   = safeProps.getProperty("openejb.server.ip");
+        SafeProperties safeProps = new SafeProperties(System.getProperties(),"HTTP Server");
+        port = safeProps.getPropertyAsInt("openejb.server.port");
+        port += 2;
 
         try{
-            serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
+            serverSocket = new ServerSocket(port);                                    
+            //serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
         } catch (Exception e){
             System.out.println("Cannot bind to the ip: "+ip+" and port: "+port+".  Received exception: "+ e.getClass().getName()+":"+ e.getMessage());
         }
@@ -134,8 +136,11 @@ public class HttpDaemon implements Runnable{
     // jndi context of OpenEJB
     boolean stop = false;
 
+
     public void run( ) {
+
         Socket socket = null;
+
         /**
          * The ObjectInputStream used to receive incoming messages from the client.
          */
@@ -144,13 +149,14 @@ public class HttpDaemon implements Runnable{
          * The ObjectOutputStream used to send outgoing response messages to the client.
          */
         OutputStream out = null;
+
         InetAddress clientIP = null;
-        
         while ( !stop ) {
             try {
                 socket = serverSocket.accept();
                 clientIP = socket.getInetAddress();
                 Thread.currentThread().setName(clientIP.getHostAddress());
+
                 in  = socket.getInputStream();
                 out = socket.getOutputStream();
 
@@ -178,6 +184,7 @@ public class HttpDaemon implements Runnable{
     }
 
     public void processRequest(InputStream in, OutputStream out) {
+
         HttpRequestImpl req = new HttpRequestImpl();
         HttpResponseImpl res = new HttpResponseImpl();
         System.out.println("[] reading request");
@@ -206,7 +213,9 @@ public class HttpDaemon implements Runnable{
             if (querry != -1) {
                 file = file.substring(0, querry);
             }
+            
             System.out.println("[] file="+file);
+            
         } catch (Throwable t) {
             t.printStackTrace();
             res = HttpResponseImpl.createError("Could not determine the module "+file+"\n"+t.getClass().getName()+":\n"+t.getMessage());
@@ -245,6 +254,7 @@ public class HttpDaemon implements Runnable{
             } catch (Throwable t2) {
                 t2.printStackTrace();
             }
+
             return;
         }
 
@@ -270,12 +280,21 @@ public class HttpDaemon implements Runnable{
         try{
             obj = jndiContext.lookup("webadmin/"+beanName);
         } catch (javax.naming.NameNotFoundException e){
-            obj = jndiContext.lookup("webadmin/DefaultBean");
+            try {obj = jndiContext.lookup("webadmin/DefaultBean");} 
+            catch(javax.naming.NamingException ne) {throw new IOException(ne.getMessage());}
         } catch (javax.naming.NamingException e){
             throw new IOException(e.getMessage());
         }
+
         HttpHome ejbHome = (HttpHome)PortableRemoteObject.narrow(obj, HttpHome.class);
-        HttpObject httpObject = ejbHome.create();
+        HttpObject httpObject = null;
+        
+        try {
+            httpObject = ejbHome.create();
+        } catch (javax.ejb.CreateException cre) {
+            throw new IOException(cre.getMessage());
+        }
+        
         return httpObject;
     }
 }

@@ -1,3 +1,47 @@
+/**
+ * Redistribution and use of this software and associated documentation
+ * ("Software"), with or without modification, are permitted provided
+ * that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain copyright
+ *    statements and notices.  Redistributions must also contain a
+ *    copy of this document.
+ *
+ * 2. Redistributions in binary form must reproduce the
+ *    above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other
+ *    materials provided with the distribution.
+ *
+ * 3. The name "OpenEJB" must not be used to endorse or promote
+ *    products derived from this Software without prior written
+ *    permission of The OpenEJB Group.  For written permission,
+ *    please contact openejb-group@openejb.sf.net.
+ *
+ * 4. Products derived from this Software may not be called "OpenEJB"
+ *    nor may "OpenEJB" appear in their names without prior written
+ *    permission of The OpenEJB Group. OpenEJB is a registered
+ *    trademark of The OpenEJB Group.
+ *
+ * 5. Due credit should be given to the OpenEJB Project
+ *    (http://openejb.sf.net/).
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE OPENEJB GROUP AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT
+ * NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
+ * THE OPENEJB GROUP OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Copyright 2001 (C) The OpenEJB Group. All Rights Reserved.
+ *
+ * $Id$
+ */
 package org.openejb.alt.config;
 
 import java.io.*;
@@ -14,6 +58,7 @@ import org.openejb.alt.assembler.classic.*;
 import org.openejb.alt.config.ejb11.*;
 import org.openejb.alt.config.sys.*;
 import org.openejb.util.FileUtils;
+import org.openejb.util.Messages;
 
 /**
  * An implementation of the Classic Assembler's OpenEjbConfigurationFactory
@@ -28,17 +73,15 @@ import org.openejb.util.FileUtils;
 public class ConfigurationFactory implements OpenEjbConfigurationFactory, ProviderDefaults {
 
     public static final String DEFAULT_SECURITY_ROLE = "openejb.default.security.role";
+    protected static Messages messages = new Messages( "org.openejb.alt.util.resources" );
 
-    // DMB: Making these public static is just a temporary hack
-    public static Openejb openejb;
-    public static DeployedJar[] jars;
-    
+    Openejb openejb;
+    DeployedJar[] jars;
     ServicesJar openejbDefaults = null;
 
 
 
-    // DMB: Making these public static is just a temporary hack
-    public static String configLocation = "";
+    String configLocation = "";
 
     Vector deploymentIds = new Vector();
     Vector securityRoles = new Vector();
@@ -53,7 +96,6 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
     //   I n f o   O b j e c t s
     //
     //------------------------------------------------//
-    // DMB: Making these public static is just a temporary hack
     public static OpenEjbConfiguration sys;
 
     ContainerInfo[] cntrs;
@@ -569,7 +611,15 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
         }
 
         assignBeansToContainers(beans, ejbds);
-
+        
+        try{
+            //TODO:2: This is really temporary, jars should have their
+            // own classpaths.  We have code for this, but it has a couple
+            // issues in the CMP container that prevent us from relying on it.
+            org.openejb.util.ClasspathUtils.addJarToSystemPath( jar.jarURI );
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
 
@@ -1165,40 +1215,36 @@ public class ConfigurationFactory implements OpenEjbConfigurationFactory, Provid
     /*    Methods for easy exception handling               */
     /*------------------------------------------------------*/
     public static void handleException(String errorCode, Object arg0, Object arg1, Object arg2, Object arg3) throws OpenEJBException {
-        Object[] args = { arg0, arg1, arg2, arg3};
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1, arg2, arg3 ) );
     }
 
     public static void handleException(String errorCode, Object arg0, Object arg1, Object arg2) throws OpenEJBException {
-        Object[] args = { arg0, arg1, arg2};
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1, arg2 ) );
     }
 
     public static void handleException(String errorCode, Object arg0, Object arg1) throws OpenEJBException {
-        Object[] args = { arg0, arg1};
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1 ) );
     }
 
     public static void handleException(String errorCode, Object arg0) throws OpenEJBException {
-        Object[] args = { arg0};
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0 ) );
     }
 
     public static void handleException(String errorCode) throws OpenEJBException {
-        throw new OpenEJBException(errorCode);
+        throw new OpenEJBException( messages.message( errorCode ) );
     }
 }
 
-//  class DeployedJar {
-//  
-//      EjbJar ejbJar;
-//      OpenejbJar openejbJar;
-//      String jarURI;
-//  
-//  
-//      public DeployedJar(String jar, EjbJar ejbJar, OpenejbJar openejbJar) {
-//          this.ejbJar = ejbJar;
-//          this.openejbJar = openejbJar;
-//          this.jarURI = jar;
-//      }
-//  }
+class DeployedJar {
+
+    EjbJar ejbJar;
+    OpenejbJar openejbJar;
+    String jarURI;
+
+
+    public DeployedJar(String jar, EjbJar ejbJar, OpenejbJar openejbJar) {
+        this.ejbJar = ejbJar;
+        this.openejbJar = openejbJar;
+        this.jarURI = jar;
+    }
+}

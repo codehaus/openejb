@@ -74,7 +74,7 @@ public class TelnetConsole implements Console, TelnetCodes {
             safeProps = new SafeProperties(System.getProperties(),"Telnet Server");
             port = safeProps.getPropertyAsInt("openejb.server.port");
             
-            serverSocket = new ServerSocket(--port);                                    
+            serverSocket = new ServerSocket(++port);                                    
         } catch ( Throwable t ) {
             t.printStackTrace();
         }

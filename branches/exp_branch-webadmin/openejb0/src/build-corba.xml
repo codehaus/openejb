@@ -70,10 +70,17 @@
     <copy todir="${build.corba.dest}">
     
       <fileset dir="${src.java.dir}/etc" >
-        <include name="**/CHANGELOG"/>
         <include name="**/LICENSE"/>
         <include name="**/MANIFEST.MF"/>
         <include name="**/README"/>
+      </fileset>
+    
+    </copy>
+    
+    <copy todir="${build.corba.dest}">
+    
+      <fileset dir="${final.dir}/src/etc" >
+        <include name="**/CHANGELOG"/>
       </fileset>
     
     </copy>
@@ -82,6 +89,18 @@
   
   </target>
   
+    <target name="copy.i18n">
+    
+      <copy todir="${build.corba.dest}">
+      
+        <fileset dir="${src.java.dir}/facilities" >
+          <include name="**/resources/*.properties"/>
+        </fileset>
+      
+      </copy>
+    
+    </target>
+
   <!-- ================================================================== -->
   <!-- Compiles the source directory                                      -->
   <!-- ================================================================== -->
@@ -118,7 +137,7 @@
   <!-- ================================================================== -->
   
   <target name="jar"
-          depends="compile, copy.manifest"
+          depends="compile, copy.manifest, copy.i18n"
           description="--> generates all java archives (default)">
           
     <jar jarfile="dist/${project}_corba-${version}.jar"

@@ -59,8 +59,10 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.InetAddress;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.rmi.RemoteException;
 import java.util.HashMap;
+import java.util.StringTokenizer;
 import java.util.Properties;
 import java.util.Vector;
 import javax.ejb.EJBHome;
@@ -83,6 +85,8 @@ import org.openejb.util.SafeToolkit;
 import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
 import org.openejb.util.Logger;
+import org.openejb.util.Messages;
+import org.openejb.server.admin.text.*;
 
 /**
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
@@ -92,7 +96,8 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
     private SafeToolkit toolkit = SafeToolkit.getToolkit("OpenEJB EJB Server");
 
-    Logger logger = new Logger( "OpenEJB" );
+    Messages _messages = new Messages( "org.openejb.server.util.resources" );
+    Logger logger = Logger.getInstance( "OpenEJB", "org.openejb.server.util.resources" );
 
     Vector           clientSockets  = new Vector();
     ServerSocket     serverSocket   = null;
@@ -105,32 +110,33 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
     String ip   = "127.0.0.1";
     Properties props;
 
+    static InetAddress[] admins;
+    boolean stop = false;
 
-    public EjbDaemon() {
+    private EjbDaemon() {}
+    static EjbDaemon thiss;
+
+    public static EjbDaemon getEjbDaemon(){
+        if ( thiss == null ) {
+            thiss = new EjbDaemon();
+        }
+
+        return thiss;
     }
 
     public void init(Properties props) throws Exception{
 
+        this.props = props;
+        printVersion();
+
+        System.out.println( _messages.message( "ejbdaemon.startup" ) );
 
         props.putAll(System.getProperties());
-
-        SafeProperties safeProps = toolkit.getSafeProperties(props);
-
-        port = safeProps.getPropertyAsInt("openejb.server.port");
-        ip   = safeProps.getProperty("openejb.server.ip");
-
-
-        sMetaData = new ServerMetaData(ip, port);
-
-        try{
-            serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
-        } catch (Exception e){
-            System.out.println("Cannot bind to the ip: "+ip+" and port: "+port+".  Received exception: "+ e.getClass().getName()+":"+ e.getMessage());
-            System.exit(1);
-        }
-
+        props.put("openejb.nobanner", "true");
         OpenEJB.init(props, this);
-        System.out.println("\nbinding to ip: "+ip+" port: "+port+"\n");
+
+        System.out.println("[init] OpenEJB Remote Server");
+
 
         clientJndi = (javax.naming.Context)OpenEJB.getJNDIContext().lookup("openejb/ejb");
 
@@ -147,18 +153,189 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
             deploymentsMap.put( deployments[i].getDeploymentID(), new Integer(i));
         }
 
-        System.out.println("Ready!");
+        parseAdminIPs();
     }
 
-    // This class doesn't use its own namespace, it uses the
-    // jndi context of OpenEJB
 
-    boolean stop = false;
 
+    public synchronized void start(){
+        try{
+            System.out.println("  ** Starting Services **");
+            System.out.println("  NAME             IP              PORT");
+
+            SafeProperties safeProps = toolkit.getSafeProperties(props);
+
+            /* Start the EJB Server threads *************/
+            /*   ejb server       127.0.0.1       4201  */
+            port = safeProps.getPropertyAsInt("openejb.server.port");
+            ip   = safeProps.getProperty("openejb.server.ip");
+
+            sMetaData = new ServerMetaData(ip, port);
+
+            System.out.print("  ejb server       ");
+            try{
+                serverSocket = new ServerSocket(port, 20, InetAddress.getByName(ip));
+            } catch (Exception e){
+                System.out.println("Cannot bind to the ip: "+ip+" and port: "+port+".  Received exception: "+ e.getClass().getName()+":"+ e.getMessage());
+                System.exit(1);
+            }
+            int threads = Integer.parseInt( (String)props.get("openejb.server.threads") );
+            for (int i=0; i < threads; i++){
+                Thread d = new Thread(this);
+                d.setName("EJB Daemon ["+i+"]");
+                d.setDaemon(true);
+                d.start();
+            }
+
+            String serverIP = serverSocket.getInetAddress().getHostAddress();
+            serverIP += "         ";
+            serverIP = serverIP.substring(0,15);
+
+            System.out.println(serverIP +" "+port);
+
+            /* Start the Text Admin Console *************/
+            /*   admin console    127.0.0.1       4202  */
+            System.out.print("  telnet console   ");
+
+            TextConsole textConsole = new TextConsole(this);
+            textConsole.init(props);
+            textConsole.start();
+
+            System.out.println(serverIP +" "+(port+1));
+            
+            /* Start the Text Admin Console *************/
+            /*   admin console    127.0.0.1       4202  */
+            System.out.print("  web console      ");
+            
+            // Start the WebAdmin thread
+            // TODO:1: Make this configurable
+            // using vm properties
+            HttpDaemon httpd = new HttpDaemon(this);
+            httpd.init(props);
+            Thread admin = new Thread(httpd);
+            admin.start();
+
+            System.out.println(serverIP +" "+(port+2));
+
+//            System.out.println("   *   *   *   *   *   *   *   *   *   ");
+
+            serverIP = serverIP.trim();
+            System.out.println("-----------------INFO------------------");
+            System.out.println("To administer the server via telnet,   ");
+            System.out.println("start a telnet client and telnet to:"); 
+            System.out.print(" telnet ");
+            System.out.println(serverIP+" "+(port+1));
+            System.out.println("");
+            System.out.println("To administer the server via http, open");
+            System.out.println("a web browser to the following URL: "); 
+            System.out.print(" http://");
+            System.out.println(serverIP+":"+(port+2));
+            System.out.println("---------------------------------------");
+        System.out.println("Ready!");
+            /*
+             * This will cause the user thread (the thread that keeps the
+             *  vm alive) to go into a state of constant waiting.
+             *  Each time the thread is woken up, it checks to see if
+             *  it should continue waiting.
+             *
+             *  To stop the thread (and the VM), just call the stop method
+             *  which will set 'stop' to true and notify the user thread.
+             */
+            try{
+                while ( !stop ) {
+                    //System.out.println("[] waiting to stop \t["+Thread.currentThread().getName()+"]");
+                    this.wait(Long.MAX_VALUE);
+                }
+            } catch (Throwable t){
+                logger.fatal("Unable to keep the server thread alive. Received exception: "+t.getClass().getName()+" : "+t.getMessage());
+            }
+            System.out.println("[] exiting vm");
+            logger.info("Stopping Remote Server");
+        }catch (Throwable t){
+            t.printStackTrace();
+
+        }
+    }
+
+    public static void checkHostsAdminAuthorization(InetAddress client, InetAddress server) throws SecurityException {
+        // Authorization flag.  This starts out as unauthorized
+        // and will stay that way unless a matching admin ip is
+        // found.
+        boolean authorized = false;
+
+        // Check the client ip agains the server ip. Hosts are
+        // allowed to administer themselves, so if these ips
+        // match, the following for loop will be skipped.
+        authorized = client.equals( server );
+
+        for (int i=0; i < admins.length && !authorized; i++){
+            authorized = admins[i].equals( client );
+        }
+
+        if ( !authorized ) {
+            throw new SecurityException("Host "+client.getHostAddress()+" is not authorized to administer this server.");
+        }
+    }
+
+    public void stop(InetAddress client, InetAddress server) throws SecurityException {
+        checkHostsAdminAuthorization( client, server );
+        System.out.println("[] stop request from "+client.getHostAddress() );
+        stop();
+    }
+
+    public void stop( InetAddress client ) throws SecurityException {
+        System.out.println("[] stop request from "+client.getHostAddress() );
+        stop();
+    }
+    public synchronized void stop() {
+        System.out.println("[] sending stop signal");
+        stop = true;
+        try{
+            this.notifyAll();
+        } catch (Throwable t){
+            logger.error("Unable to notify the server thread to stop. Received exception: "+t.getClass().getName()+" : "+t.getMessage());
+        }
+    }
+
+    private void parseAdminIPs(){
+        try{
+
+            Vector addresses = new Vector();
+
+            InetAddress[] localIps = InetAddress.getAllByName("localhost");
+            for (int i=0; i < localIps.length; i++){
+                addresses.add( localIps[i] );
+            }
+
+            String ipString = props.getProperty("openejb.server.admin-ip");
+            if (ipString != null) {
+                StringTokenizer st = new StringTokenizer(ipString, ",");
+                while (st.hasMoreTokens()) {
+                    String address = null;
+                    InetAddress ip = null;
+                    try{
+                        address = st.nextToken();
+                        ip = InetAddress.getByName(address);
+                        addresses.add( ip );
+                    } catch (Exception e){
+                        logger.error("Unable to apply the address ["+address+"] to the list of valid admin hosts: "+e.getMessage());
+                    }
+                }
+            }
+
+            admins = new InetAddress[ addresses.size() ];
+            addresses.copyInto( admins );
+
+        } catch (Exception e){
+            logger.error("Unable to create the list of valid admin hosts: "+e.getMessage());
+        }
+    }
 
     public void run( ) {
 
         Socket socket = null;
+        InputStream in = null;
+
         /**
          * The ObjectInputStream used to receive incoming messages from the client.
          */
@@ -170,14 +347,28 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
         InetAddress clientIP = null;
         while ( !stop ) {
             try {
+                //System.out.println("[] waiting for request \t["+Thread.currentThread().getName()+"]");
                 socket = serverSocket.accept();
+                //System.out.println("[] processing request \t["+Thread.currentThread().getName()+"]");
                 clientIP = socket.getInetAddress();
-                Thread.currentThread().setName(clientIP.getHostAddress());
+                //Thread.currentThread().setName(clientIP.getHostAddress());
+                in = socket.getInputStream();
 
-                ois = new ObjectInputStream(  socket.getInputStream() );
+
+                byte requestType = (byte)in.read();
+
+                switch (requestType) {
+                    case STOP_REQUEST_Quit:
+                    case STOP_REQUEST_quit:
+                    case STOP_REQUEST_Stop:
+                    case STOP_REQUEST_stop:
+                        stop(clientIP, serverSocket.getInetAddress());
+                        continue;
+                }
+
+                ois = new ObjectInputStream( in );
                 oos = new ObjectOutputStream( socket.getOutputStream() );
 
-                byte requestType = ois.readByte();
 
                 switch (requestType) {
                     case EJB_REQUEST:  processEjbRequest(ois, oos); break;
@@ -188,6 +379,8 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
                 // Exceptions should not be thrown from these methods
                 // They should handle their own exceptions and clean
                 // things up with the client accordingly.
+            } catch ( SecurityException e ) {
+                logger.error( "Security error: "+ e.getMessage() );
             } catch ( Throwable e ) {
                 logger.error( "Unexpected error", e );
                 //System.out.println("ERROR: "+clienntIP.getHostAddress()+": " +e.getMessage());
@@ -198,6 +391,7 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 			oos.close();
 		    }
                     if ( ois != null ) ois.close();
+                    if ( in     != null ) in.close();
                     if ( socket != null ) socket.close();
                 } catch ( Throwable t ){
                     logger.error("Encountered problem while closing connection with client: "+t.getMessage());
@@ -713,6 +907,11 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
         return _getHandle(call, info);
     }
 
+    public javax.ejb.HomeHandle getHomeHandle(ProxyInfo info){
+        CallContext call = CallContext.getCallContext();
+        return _getHomeHandle(call, info);
+    }
+
     public javax.ejb.EJBObject getEJBObject(ProxyInfo info){
         CallContext call = CallContext.getCallContext();
         return _getEJBObject(call, info);
@@ -760,6 +959,24 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
         EJBObjectHandler hanlder = EJBObjectHandler.createEJBObjectHandler(eMetaData,sMetaData,cMetaData,primKey);
 
         return new EJBObjectHandle( hanlder.createEJBObjectProxy() );
+    }
+
+    private javax.ejb.HomeHandle _getHomeHandle(CallContext call, ProxyInfo info){
+        DeploymentInfo deployment = info.getDeploymentInfo();
+
+        Integer idCode = (Integer)deploymentsMap.get( deployment.getDeploymentID() );
+
+        ClientMetaData  cMetaData = new ClientMetaData(call.getEJBRequest().getClientIdentity());
+        EJBMetaDataImpl eMetaData = new EJBMetaDataImpl(deployment.getHomeInterface(),
+                                                        deployment.getRemoteInterface(),
+                                                        deployment.getPrimaryKeyClass(),
+                                                        deployment.getComponentType(),
+                                                        deployment.getDeploymentID().toString(),
+                                                        idCode.intValue());
+
+        EJBHomeHandler hanlder = EJBHomeHandler.createEJBHomeHandler(eMetaData,sMetaData,cMetaData);
+
+        return new EJBHomeHandle( hanlder.createEJBHomeProxy() );
     }
 
     private javax.ejb.EJBObject _getEJBObject(CallContext call, ProxyInfo info){
@@ -813,7 +1030,7 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
             Properties props = System.getProperties();
 
             // -- Set Defaults -- //
-            props.put("openejb.home",              System.getProperty("user.dir"));
+            //props.put("openejb.home",              System.getProperty("user.dir"));
             props.put("openejb.server.ip",         "127.0.0.1");
             props.put("openejb.server.port",       "4201");
             props.put("openejb.server.threads",    "20");
@@ -847,6 +1064,10 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
                     if (args.length > i+1 ) {
                         System.setProperty("openejb.home", args[++i]);
                     }
+                } else if (args[i].equals("--admin-ip")){
+                    if (args.length > i+1 ) {
+                        System.setProperty("openejb.server.admin-ip", args[++i]);
+                    }
                 } else if (args[i].equals("-help")){
                     printHelp();
                     return;
@@ -861,31 +1082,9 @@ public class EjbDaemon implements Runnable, org.openejb.spi.ApplicationServer, R
 
             props.setProperty("org/openejb/configuration_factory", "org.openejb.alt.config.ConfigurationFactory");
 
-
-            EjbDaemon ejbd = new EjbDaemon();
+            EjbDaemon ejbd = EjbDaemon.getEjbDaemon();
             ejbd.init(props);
-            
-            // Start the WebAdmin thread
-            // TODO:1: Make this configurable
-            // using vm properties
-            HttpDaemon httpd = new HttpDaemon(ejbd);
-            httpd.init(props);
-            Thread admin = new Thread(httpd);
-            admin.start();
-
-            int threads = Integer.parseInt( (String)props.get("openejb.server.threads") );
-            for (int i=0; i < threads; i++){
-                Thread d = new Thread(ejbd);
-                d.setName("EJB Daemon ["+i+"]");
-                d.start();
-            }
-
-            // dont allow the server to exit
-            while ( true ) {
-                try {
-                    Thread.sleep(Long.MAX_VALUE);
-                } catch ( InterruptedException e ) {}
-            }
+            ejbd.start();
 
         } catch ( Exception re ) {
             System.err.println("[EJB Server] FATAL ERROR: "+ re.getMessage());

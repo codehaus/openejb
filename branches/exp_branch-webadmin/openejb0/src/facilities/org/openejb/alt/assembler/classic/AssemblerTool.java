@@ -84,6 +84,7 @@ import org.xml.sax.ErrorHandler;
 import org.openejb.core.ivm.naming.IvmContext;
 import org.openejb.core.ivm.naming.NameNode;
 import org.openejb.core.ivm.naming.ParsedName;
+import org.openejb.util.Messages;
 import org.openejb.util.proxy.ProxyFactory;
 import org.openejb.util.proxy.ProxyManager;
 import org.openejb.core.ConnectorReference;
@@ -124,6 +125,7 @@ public class AssemblerTool {
     public static final Class CONNECTION_MANAGER = javax.resource.spi.ConnectionManager.class;        
     public static final Class CONNECTOR = javax.resource.spi.ManagedConnectionFactory.class; 
 
+    protected static Messages messages = new Messages( "org.openejb.alt.util.resources" );
     protected static SafeToolkit toolkit = SafeToolkit.getToolkit("AssemblerTool");
     protected static HashMap codebases = new HashMap();
     
@@ -219,14 +221,11 @@ public class AssemblerTool {
                
                container = (org.openejb.Container)factory.newInstance();
            }catch(OpenEJBException oee){
-               Object[] details = {containerInfo, oee.getMessage()};
-               throw new OpenEJBException("as0002", details);
+               throw new OpenEJBException( messages.format( "as0002", containerInfo, oee.getMessage() ) );
            }catch(InstantiationException ie){
-               Object[] details = {containerInfo, ie.getMessage()};
-               throw new OpenEJBException("as0003", details);
+               throw new OpenEJBException( messages.format( "as0003", containerInfo, ie.getMessage() ) );
            }catch(IllegalAccessException iae){
-               Object[] details = {containerInfo, iae.getMessage()};
-               throw new OpenEJBException("as0003", details);
+               throw new OpenEJBException( messages.format( "as0003", containerInfo, iae.getMessage() ) );
            }
         }else{
             // create a standard container
@@ -245,8 +244,7 @@ public class AssemblerTool {
         try{
             container.init(containerInfo.containerName, deployments, containerInfo.properties);                    
         } catch (OpenEJBException e){
-            Object[] details = {containerInfo.containerName, e.getMessage()};
-            throw new OpenEJBException("as0004",details);
+            throw new OpenEJBException( messages.format( "as0003", containerInfo.containerName, e.getMessage() ) );
         }
         
         return container;
@@ -311,23 +309,20 @@ public class AssemblerTool {
         try {
             ejbClass = toolkit.loadClass(beanInfo.ejbClass, beanInfo.codebase);
         } catch (OpenEJBException e){
-            Object[] details = {beanInfo.ejbClass, beanInfo.ejbDeploymentId, e.getMessage() };
-            throw new OpenEJBException("cl0005", details);
+            throw new OpenEJBException( messages.format(  "cl0005", beanInfo.ejbClass, beanInfo.ejbDeploymentId, e.getMessage() ) );
         }
         /*[2.2] Load the remote interface */
         try {
             home = toolkit.loadClass(beanInfo.home, beanInfo.codebase);
         } catch (OpenEJBException e){
-            Object[] details = {beanInfo.home, beanInfo.ejbDeploymentId, e.getMessage() };
-            throw new OpenEJBException("cl0004", details);
+            throw new OpenEJBException( messages.format(  "cl0004", beanInfo.home, beanInfo.ejbDeploymentId, e.getMessage() ) );
         }
 
         /*[2.3] Load the home interface */
         try {
             remote = toolkit.loadClass(beanInfo.remote, beanInfo.codebase);
         } catch (OpenEJBException e){
-            Object[] details = {beanInfo.remote, beanInfo.ejbDeploymentId, e.getMessage() };
-            throw new OpenEJBException("cl0003", details);
+            throw new OpenEJBException( messages.format(  "cl0003", beanInfo.remote, beanInfo.ejbDeploymentId, e.getMessage() ) );
         }
 
         /*[2.4] Load the primary-key class */
@@ -335,8 +330,7 @@ public class AssemblerTool {
             try {
                 ejbPk = toolkit.loadClass(ebi.primKeyClass, beanInfo.codebase);
             } catch (OpenEJBException e){
-                Object[] details = {ebi.primKeyClass, beanInfo.ejbDeploymentId, e.getMessage() };
-                throw new OpenEJBException("cl0006", details);
+		throw new OpenEJBException( messages.format(  "cl0006", ebi.primKeyClass, beanInfo.ejbDeploymentId, e.getMessage() ) );
             }
         }
 
@@ -362,8 +356,8 @@ public class AssemblerTool {
                 
                 /*[3.1.2.2] map the finder methods to the query statements. */
                 if(ebi.queries != null){
-                    Vector finderMethods = new Vector();
                     for(int i = 0; i < ebi.queries.length; i++){
+                    Vector finderMethods = new Vector();
                         resolveMethods(finderMethods, deployment.getHomeInterface(), ebi.queries[i].method);
                         for(int j =0; j<finderMethods.size(); j++){
                             deployment.addQuery((Method)finderMethods.elementAt(j), ebi.queries[i].queryStatement);       
@@ -579,6 +573,7 @@ public class AssemblerTool {
     * then applies these mappings to the bean through the DeploymentInfo.setMethodTransationAttribute().
     * At run time the container will get the transaction attribute associated with a client call from the
     * DeploymentInfo object by invoking its getTransactionAttribute(Method) method.
+    * See page 251 EJB 1.1 for an explanation of the method attribute.
     *
     * @param deploymentInfo the deployment to which the transaction attributes are applied
     * @param MethodTransactionInfo describes the transaction attributes for the enterprise bean(s)
@@ -598,31 +593,31 @@ public class AssemblerTool {
                MethodInfo methodInfo = mis[z];
                // IF no deployment was specified OR this deployment was specified
                if(mis[z].ejbDeploymentId==null || mis[z].ejbDeploymentId.equals(deploymentInfo.getDeploymentID())){
-                    if((deploymentInfo.getComponentType()==DeploymentInfo.STATEFUL || deploymentInfo.getComponentType()==DeploymentInfo.STATELESS)){
-                        if(!deploymentInfo.isBeanManagedTransaction()){// if its not Bean Managed transaction type
+                    if ( !deploymentInfo.isBeanManagedTransaction() ) {
+                        // if its not Bean Managed transaction type
                             Vector methodVect = new Vector();
-                            Class remote = deploymentInfo.getRemoteInterface();
-                            if(methodInfo.methodIntf==null || !methodInfo.methodIntf.equals("Home"))//If remote methods are specified
-                                resolveMethods(methodVect,remote,methodInfo);
-                                        
+    
+                        if ( methodInfo.methodIntf==null ) {
+                            // => attribute applies to both home and remote interface methods
+                            resolveMethods(methodVect,deploymentInfo.getRemoteInterface(),methodInfo);
+                            resolveMethods(methodVect,deploymentInfo.getHomeInterface(),methodInfo);
+                        } else if ( methodInfo.methodIntf.equals("Home") ) {
+                            resolveMethods(methodVect,deploymentInfo.getHomeInterface(),methodInfo);
+                        } else if ( methodInfo.methodIntf.equals("Remote") ) {
+                            resolveMethods(methodVect,deploymentInfo.getRemoteInterface(),methodInfo);
+                        } else {
+                            // wrong string constant
+                        }
+    
                             for(int x = 0; x < methodVect.size(); x++){
                                 Method method = (Method)methodVect.elementAt(x);
+    
                                 // filter out all EJBObject and EJBHome methods that are not remove() methods
-                                if(method.getDeclaringClass()==javax.ejb.EJBObject.class)
-                                    continue;// its an EJBObject method skip it
-                                       
-                                deploymentInfo.setMethodTransactionAttribute(method,transInfo.transAttribute);
+                            if ( (method.getDeclaringClass()==javax.ejb.EJBObject.class ||
+                                  method.getDeclaringClass()==javax.ejb.EJBHome.class) &&
+                                 method.getName().equals("remove")==false ) {
+                                continue;   //skip it
                             }
-                        }
-                    }else{// EntityBeans
-                        java.lang.reflect.Method [] methods = resolveMethodInfo(methodInfo,deploymentInfo);
-                        for(int x = 0; x < methods.length; x++){
-                            Method method = methods[x];
-                                    
-                            // filter out all EJBObject and EJBHome methods that are not remove() methods
-                            if((method.getDeclaringClass()==javax.ejb.EJBHome.class || method.getDeclaringClass()==javax.ejb.EJBObject.class) && !method.getName().equals("remove"))
-                                continue;// its an EJBObject or EJBHome method, and its not remove( ) skip it
-                                    
                             deploymentInfo.setMethodTransactionAttribute(method,transInfo.transAttribute);
                         }
                     }
@@ -1103,27 +1098,23 @@ public class AssemblerTool {
     /*    Methods for easy exception handling               */
     /*------------------------------------------------------*/
     public  void handleException(String errorCode, Object arg0, Object arg1, Object arg2, Object arg3 ) throws OpenEJBException{
-        Object[] args = { arg0, arg1, arg2, arg3 };
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1, arg2, arg3 ) );
     }
 
     public  void handleException(String errorCode, Object arg0, Object arg1, Object arg2 ) throws OpenEJBException{
-        Object[] args = { arg0, arg1, arg2 };
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1, arg2 ) );
     }
     
     public  void handleException(String errorCode, Object arg0, Object arg1 ) throws OpenEJBException{
-        Object[] args = { arg0, arg1 };
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1 ) );
     }
 
     public  void handleException(String errorCode, Object arg0 ) throws OpenEJBException{
-        Object[] args = { arg0 };
-        throw new OpenEJBException(errorCode, args);
+        throw new OpenEJBException( messages.format( errorCode, arg0 ) );
     }
     
     public  void handleException(String errorCode ) throws OpenEJBException{
-        throw new OpenEJBException(errorCode);
+        throw new OpenEJBException( messages.format( errorCode ) );
     }
 
 
@@ -1132,31 +1123,22 @@ public class AssemblerTool {
     /*  but not bad enough to stop the container system.    */
     /*------------------------------------------------------*/
     public  void logWarning(String errorCode, Object arg0, Object arg1, Object arg2, Object arg3 ) {
-        Object[] args = { arg0, arg1, arg2, arg3 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        System.out.println("Warning: "+ e.getMessage() );
+        System.out.println("Warning: "+ messages.format( errorCode, arg0, arg1, arg2, arg3 ) );
     }
 
     public  void logWarning(String errorCode, Object arg0, Object arg1, Object arg2 ) {
-        Object[] args = { arg0, arg1, arg2 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        System.out.println("Warning: "+ e.getMessage() );
+        System.out.println("Warning: "+ messages.format( errorCode, arg0, arg1, arg2 ) );
     }
     
     public  void logWarning(String errorCode, Object arg0, Object arg1 ) {
-        Object[] args = { arg0, arg1 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        System.out.println("Warning: "+ e.getMessage() );
+        System.out.println("Warning: "+ messages.format( errorCode, arg0, arg1 ) );
     }
 
     public  void logWarning(String errorCode, Object arg0 ) {
-        Object[] args = { arg0 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        System.out.println("Warning: "+ e.getMessage() );
+        System.out.println("Warning: "+ messages.format( errorCode, arg0 ) );
     }
 
     public  void logWarning(String errorCode ) {
-        OpenEJBException e = new OpenEJBException(errorCode);
-        System.out.println("Warning: "+ e.getMessage() );
+        System.out.println("Warning: "+ messages.format( errorCode ) );
     }
 }

@@ -1,3 +1,47 @@
+/**
+ * Redistribution and use of this software and associated documentation
+ * ("Software"), with or without modification, are permitted provided
+ * that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain copyright
+ *    statements and notices.  Redistributions must also contain a
+ *    copy of this document.
+ *
+ * 2. Redistributions in binary form must reproduce the
+ *    above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other
+ *    materials provided with the distribution.
+ *
+ * 3. The name "OpenEJB" must not be used to endorse or promote
+ *    products derived from this Software without prior written
+ *    permission of The OpenEJB Group.  For written permission,
+ *    please contact openejb-group@openejb.sf.net.
+ *
+ * 4. Products derived from this Software may not be called "OpenEJB"
+ *    nor may "OpenEJB" appear in their names without prior written
+ *    permission of The OpenEJB Group. OpenEJB is a registered
+ *    trademark of The OpenEJB Group.
+ *
+ * 5. Due credit should be given to the OpenEJB Project
+ *    (http://openejb.sf.net/).
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE OPENEJB GROUP AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT
+ * NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
+ * THE OPENEJB GROUP OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Copyright 2001 (C) The OpenEJB Group. All Rights Reserved.
+ *
+ * $Id$
+ */
 package org.openejb.core.transaction;
 
 import java.rmi.RemoteException;
@@ -45,6 +89,10 @@ public class TxRequired extends TransactionPolicy {
         policyType = Required;
     }
     
+    public String policyToString() {
+        return "TX_Required: ";
+    }
+    
     public void beforeInvoke(EnterpriseBean instance, TransactionContext context) throws org.openejb.SystemException, org.openejb.ApplicationException{
         
         try {
@@ -58,6 +106,7 @@ public class TxRequired extends TransactionPolicy {
             context.currentTx = getTxMngr().getTransaction();
 
         } catch ( javax.transaction.SystemException se ) {
+            logger.error("Exception during getTransaction()", se);
             throw new org.openejb.SystemException(se);
         }
     }
@@ -66,7 +115,7 @@ public class TxRequired extends TransactionPolicy {
 
         try {
             if ( context.clientTx != null ) return;
-
+            // we created a new transaction in beforeInvoke, which must be ended.
             if ( context.currentTx.getStatus() == Status.STATUS_ACTIVE ) {
                 commitTransaction( context.currentTx );
             } else {
@@ -74,6 +123,7 @@ public class TxRequired extends TransactionPolicy {
             }
 
         } catch ( javax.transaction.SystemException se ) {
+            logger.error("Exception during getTransaction()", se);
             throw new org.openejb.SystemException(se);
         }
     }
@@ -94,32 +144,6 @@ public class TxRequired extends TransactionPolicy {
      * </P>
      */
     public void handleApplicationException( Throwable appException, TransactionContext context) throws ApplicationException{
-        
-        boolean runningInContainerTransaction = (!context.currentTx.equals( context.clientTx ));
-        
-        if (runningInContainerTransaction) {
-            try{
-                /*
-                 * If the instance called setRollbackOnly(), then rollback the transaction, 
-                 * and re-throw AppException.
-                 * 
-                 * Otherwise, attempt to commit the transaction, and then re-throw 
-                 * AppException.
-                 */
-                if ( context.currentTx.getStatus() == Status.STATUS_ACTIVE ) {
-                    commitTransaction( context.currentTx );
-                } else {
-                    rollbackTransaction( context.currentTx );
-                }
-            } catch (javax.transaction.SystemException e){
-                // TODO:3: Localize the message; add to Messages.java
-                logger.error("The transaction manager encountered an unexpected system error attempting to rollback or commit the transaction while handling an application exception: "+e.getMessage());
-            } catch (org.openejb.SystemException e){
-                // TODO:3: Localize the message; add to Messages.java
-                logger.error("Unexpected error attempting to rollback or commit the transaction while handling an application exception: "+e.getRootCause().getClass().getName()+" "+e.getRootCause().getMessage());
-            }
-        }
-
         // Re-throw AppException
         throw new ApplicationException( appException );
     }
@@ -161,32 +185,27 @@ public class TxRequired extends TransactionPolicy {
      */
     public void handleSystemException( Throwable sysException, EnterpriseBean instance, TransactionContext context) throws org.openejb.ApplicationException, org.openejb.SystemException{
         
-        boolean runningInContainerTransaction = (!context.currentTx.equals( context.clientTx ));
-
-        if (runningInContainerTransaction) {
             /* [1] Log the system exception or error **********/
             logSystemException( sysException );
 
-            /* [2] Rollback the container-started transaction */
-            rollbackTransaction( context.currentTx );
+        boolean runningInContainerTransaction = (!context.currentTx.equals( context.clientTx ));
+        if (runningInContainerTransaction) {
+            /* [2] Mark the transaction for rollback. afterInvoke() will roll it back */
+            markTxRollbackOnly( context.currentTx );
 
             /* [3] Discard instance. **************************/
             discardBeanInstance( instance, context.callContext);
 
             /* [4] Throw RemoteException to client ************/
             throwExceptionToServer( sysException );
-        
         } else {
-            /* [1] Log the system exception or error **********/
-            logSystemException( sysException );
-            
             /* [2] Mark the transaction for rollback. *********/
             markTxRollbackOnly( context.clientTx );
             
             /* [3] Discard instance. **************************/
             discardBeanInstance( instance, context.callContext);
             
-            /* [4] TransactionRolledbackException to client ***/
+            /* [4] Throw TransactionRolledbackException to client ************/
             throwTxExceptionToServer( sysException );
         }
     }

@@ -56,14 +56,13 @@ import java.util.Map.Entry;
 import java.util.Iterator;
 import org.openejb.util.JarUtils;
 import javax.naming.*;
+import org.openejb.admin.web.HttpResponse;
 
 /**
  * 
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
- * @since 11/25/2001
  */
-
-public class HttpResponseImpl implements org.openejb.admin.web.HttpResponse {
+public class HttpResponseImpl implements HttpResponse {
     /** Response string */
     private String responseString = "OK";
 
@@ -129,11 +128,11 @@ public class HttpResponseImpl implements org.openejb.admin.web.HttpResponse {
     /*------------------------------------------------------------*/
     /*  Methods for writing out a response                        */
     /*------------------------------------------------------------*/
-    protected HttpResponse(){
+    protected HttpResponseImpl(){
         this(200, "OK", "text/html");
     }
 
-    protected HttpResponse(int code, String responseString, String contentType){
+    protected HttpResponseImpl(int code, String responseString, String contentType){
         this.code = code;
         this.responseString = responseString;
         headers = new HashMap();
@@ -219,7 +218,7 @@ public class HttpResponseImpl implements org.openejb.admin.web.HttpResponse {
         out.write(body);
     }
 
-    private static String getServerName(){
+    public String getServerName(){
         if (server == null) {
             String version = "???";
             String os = "(unknown os)";
@@ -238,6 +237,7 @@ public class HttpResponseImpl implements org.openejb.admin.web.HttpResponse {
         return server;
     }
     
+    
     /**
      * This could be improved at some day in the future 
      * to also include a stack trace of the exceptions
@@ -245,11 +245,12 @@ public class HttpResponseImpl implements org.openejb.admin.web.HttpResponse {
      * @param message
      * @return 
      */
-    protected static HttpResponse createError(String message){
+
+    protected static HttpResponseImpl createError(String message){
         return createError(message, null);
     }
 
-    protected static HttpResponse createError(String message, Throwable t){
+    protected static HttpResponseImpl createError(String message, Throwable t){
         HttpResponseImpl res = new HttpResponseImpl(500, "Internal Server Error", "text/html");
         java.io.PrintWriter body = res.getPrintWriter();
 

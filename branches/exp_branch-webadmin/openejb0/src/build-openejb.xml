@@ -52,6 +52,7 @@
     <mkdir dir="${build.openejb.src}"/>
     <mkdir dir="${build.openejb.dest}"/>
     <mkdir dir="${build.openejb.dest}/openejb"/>
+    <mkdir dir="${build.openejb.dest}/openejb/dtds"/>
     <mkdir dir="${dest.openejb.javadoc.dir}"/>
     
     <copy todir="${build.openejb.src}">
@@ -59,11 +60,11 @@
                excludes="**/CVS/**,**/*.class"
       />
     </copy>
+    
     <copy todir="${build.openejb.src}" >
       <fileset dir="${src.java.dir}/facilities" 
                includes="**/alt/**,**/resource/**,**/tyrex/**,**/sp/**" 
-               excludes="**/CVS/**,**/modern/**,**/minerva/**,**/*.class"
-      />
+               excludes="**/CVS/**,**/modern/**,**/admin/**,**/minerva/**,**/*.class" />
     </copy>
     
     <copy todir="${build.openejb.dest}">
@@ -73,6 +74,10 @@
     
     <copy todir="${build.openejb.dest}/openejb">
       <fileset dir="bin" includes="*.txt" />
+    </copy>
+    
+    <copy todir="${build.openejb.dest}/openejb/dtds">
+      <fileset dir="src/schema" includes="*.dtd" />
     </copy>
     
     <echo file="${build.openejb.dest}/openejb-version.properties">copyright=Copyright ${year} (C) ${copyright}, All Rights Reserved.
@@ -88,7 +93,6 @@ time=${TSTAMP}</echo>
     <copy todir="${build.openejb.dest}">
     
       <fileset dir="${src.java.dir}/etc" >
-        <include name="**/CHANGELOG"/>
         <include name="**/LICENSE"/>
         <include name="**/MANIFEST.MF"/>
         <include name="**/README"/>
@@ -96,7 +100,27 @@ time=${TSTAMP}</echo>
     
     </copy>
     
+	<copy todir="${build.openejb.dest}">
+
+	  <fileset dir="${final.dir}/src/etc" >
+		<include name="**/CHANGELOG"/>
+	  </fileset>
+
+	</copy>
+
     <replace file="${build.openejb.dest}/MANIFEST.MF" token="$$VERSION$$" value="${version}"/>
+  
+  </target>
+  
+  <target name="copy.i18n">
+  
+    <copy todir="${build.openejb.dest}">
+    
+      <fileset dir="${src.java.dir}/main" >
+        <include name="**/resources/*.properties"/>
+      </fileset>
+    
+    </copy>
   
   </target>
   
@@ -145,7 +169,7 @@ time=${TSTAMP}</echo>
   <!-- ================================================================== -->
   
   <target name="jar"
-          depends="compile, copy.manifest"
+          depends="compile, copy.manifest, copy.i18n"
           description="--> generates all java archives (default)">
           
     <jar jarfile="dist/${project}-${version}.jar"

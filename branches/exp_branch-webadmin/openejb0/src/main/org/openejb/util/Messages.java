@@ -12,24 +12,24 @@
  *    following disclaimer in the documentation and/or other
  *    materials provided with the distribution.
  *
- * 3. The name "Exolab" must not be used to endorse or promote
+ * 3. The name "OpenEJB" must not be used to endorse or promote
  *    products derived from this Software without prior written
- *    permission of Exoffice Technologies.  For written permission,
- *    please contact info@exolab.org.
+ *    permission of The OpenEJB Group.  For written permission,
+ *    please contact openejb-group@openejb.sf.net.
  *
- * 4. Products derived from this Software may not be called "Exolab"
- *    nor may "Exolab" appear in their names without prior written
- *    permission of Exoffice Technologies. Exolab is a registered
- *    trademark of Exoffice Technologies.
+ * 4. Products derived from this Software may not be called "OpenEJB"
+ *    nor may "OpenEJB" appear in their names without prior written
+ *    permission of The OpenEJB Group. OpenEJB is a registered
+ *    trademark of The OpenEJB Group.
  *
- * 5. Due credit should be given to the Exolab Project
- *    (http://www.exolab.org/).
+ * 5. Due credit should be given to the OpenEJB Project
+ *    (http://openejb.sf.net/).
  *
- * THIS SOFTWARE IS PROVIDED BY EXOFFICE TECHNOLOGIES AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY THE OPENEJB GROUP AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT
  * NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
  * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
- * EXOFFICE TECHNOLOGIES OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * THE OPENEJB GROUP OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
  * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -38,18 +38,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Copyright 1999 (C) Exoffice Technologies Inc. All Rights Reserved.
+ * Copyright 2001 (C) The OpenEJB Group. All Rights Reserved.
  *
  * $Id$
  */
-
-
 package org.openejb.util;
 
 
 import java.text.*;
 import java.util.*;
-
 
 /**
  *
@@ -59,40 +56,90 @@ import java.util.*;
  */
 public class Messages
 {
+    static private Hashtable _rbBundles = new Hashtable();
+    static private Hashtable _rbFormats = new Hashtable();
+    static private Locale    _globalLocale;
+
+    private ResourceBundle   _messages;
+    private Hashtable        _formats;
+    private Locale           _locale;
+    private String           _resourceName;
 
 
-    public static final String ResourceName = "org.openejb.util.resources.Messages";
+    public Messages( String resourceName ) {
+	synchronized (Messages.class) {
+	    _locale = _globalLocale;
+	    _resourceName = resourceName + ".Messages";
 
+	    ResourceBundle rb = (ResourceBundle)_rbBundles.get( _resourceName );
+	    if ( rb == null ) {
+		init();
+	    } else {
+		_messages = rb;
+		_formats = (Hashtable)_rbFormats.get( _resourceName );
+	    }
+	}
 
-    private static ResourceBundle   _messages;
+    }
 
+    protected void init() {
+	try {
+	    if ( _locale == null )
+		_messages = ResourceBundle.getBundle( _resourceName );
+	    else
+		_messages = ResourceBundle.getBundle( _resourceName, _locale );
+	} catch ( Exception except ) {
+	    _messages = new EmptyResourceBundle();
+	}
 
-    private static Hashtable        _formats;
+	_formats = new Hashtable();
 
-    private static Logger           _logger = new Logger( "OpenEJB" );
+	_rbBundles.put( _resourceName, _messages );
+	_rbFormats.put( _resourceName, _formats );
+    }
 
-
-
-    public static String format( String message, Object arg1 )
+    public String format( String message, Object arg1 )
     {
         return format( message, new Object[] { arg1 } );
     }
 
 
-    public static String format( String message, Object arg1, Object arg2 )
+    public String format( String message, Object arg1, Object arg2 )
     {
         return format( message, new Object[] { arg1, arg2 } );
     }
 
 
-    public static String format( String message, Object arg1, Object arg2, Object arg3 )
+    public String format( String message, Object arg1, Object arg2, Object arg3 )
     {
         return format( message, new Object[] { arg1, arg2, arg3 } );
     }
 
 
-    public static String format( String message, Object[] args )
+    public String format( String message, Object arg1, Object arg2, Object arg3, Object arg4 )
     {
+        return format( message, new Object[] { arg1, arg2, arg3, arg4 } );
+    }
+
+
+    public String format( String message, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5 )
+    {
+        return format( message, new Object[] { arg1, arg2, arg3, arg4, arg5 } );
+    }
+
+    public String format( String message ) {
+	return message( message );
+    }
+
+
+    public String format( String message, Object[] args )
+    {
+	if ( _locale != _globalLocale ) {
+	    synchronized (Messages.class) {
+		init();
+	    }
+	}
+
         MessageFormat   mf;
         String          msg;
 
@@ -114,9 +161,15 @@ public class Messages
     }
 
 
-    public static String message( String message )
+    public String message( String message )
     {
-        try {
+	if ( _locale != _globalLocale ) {
+	    synchronized (Messages.class) {
+		init();
+	    }
+	}
+
+	try {
             return _messages.getString( message );
         } catch ( MissingResourceException except ) {
             return message;
@@ -124,18 +177,13 @@ public class Messages
     }
 
 
-    public static void setLocale( Locale locale )
+    static public void setLocale( Locale locale )
     {
-        _formats = new Hashtable();
-        try {
-            if ( locale == null )
-                _messages = ResourceBundle.getBundle( ResourceName );
-            else
-                _messages = ResourceBundle.getBundle( ResourceName, locale );
-        } catch ( Exception except ) {
-            _messages = new EmptyResourceBundle();
-            _logger.error( "Failed to locate messages resource " + ResourceName );
-        }
+	synchronized (Messages.class) {
+	    _globalLocale = locale;
+	    _rbBundles    = new Hashtable();
+	    _rbFormats    = new Hashtable();
+	}
     }
 
 
@@ -172,5 +220,5 @@ public class Messages
 
     }
 
-
 }
+

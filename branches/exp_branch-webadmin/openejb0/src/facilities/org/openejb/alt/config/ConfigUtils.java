@@ -1,3 +1,47 @@
+/**
+ * Redistribution and use of this software and associated documentation
+ * ("Software"), with or without modification, are permitted provided
+ * that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain copyright
+ *    statements and notices.  Redistributions must also contain a
+ *    copy of this document.
+ *
+ * 2. Redistributions in binary form must reproduce the
+ *    above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other
+ *    materials provided with the distribution.
+ *
+ * 3. The name "OpenEJB" must not be used to endorse or promote
+ *    products derived from this Software without prior written
+ *    permission of The OpenEJB Group.  For written permission,
+ *    please contact openejb-group@openejb.sf.net.
+ *
+ * 4. Products derived from this Software may not be called "OpenEJB"
+ *    nor may "OpenEJB" appear in their names without prior written
+ *    permission of The OpenEJB Group. OpenEJB is a registered
+ *    trademark of The OpenEJB Group.
+ *
+ * 5. Due credit should be given to the OpenEJB Project
+ *    (http://openejb.sf.net/).
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE OPENEJB GROUP AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT
+ * NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
+ * THE OPENEJB GROUP OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Copyright 2001 (C) The OpenEJB Group. All Rights Reserved.
+ *
+ * $Id$
+ */
 package org.openejb.alt.config;
 
 import java.io.*;
@@ -9,13 +53,15 @@ import java.util.Vector;
 import java.util.jar.*;
 import org.exolab.castor.xml.MarshalException;
 import org.exolab.castor.xml.ValidationException;
+import org.exolab.castor.xml.Unmarshaller;
 import org.openejb.OpenEJBException;
 import org.openejb.alt.assembler.classic.*;
 import org.openejb.alt.config.ejb11.*;
 import org.openejb.alt.config.sys.*;
+import org.openejb.util.Logger;
 import org.openejb.util.FileUtils;
 import org.openejb.util.JarUtils;
-import org.openejb.util.Logger;
+import org.openejb.util.Messages;
 
 /*------------------------------------------------------*/
 /* Utility method for reading and writing config files  */
@@ -29,7 +75,8 @@ public class ConfigUtils  {
 
     private static Map loadedServiceJars = new HashMap();
 
-    private static Logger logger = new Logger( "OpenEJB" );
+    private static Messages messages = new Messages( "org.openejb.alt.util.resources" );
+    private static Logger _logger = Logger.getInstance( "OpenEJB", "org.openejb.alt.util.resources" );
 
     public static File getDefaultServiceJar() throws OpenEJBException{
 
@@ -382,8 +429,9 @@ public class ConfigUtils  {
         /*[1.4]  Get the OpenejbJar from the openejb-jar.xml ***************/
         EjbJar obj = null;
         try {
-            obj = EjbJar.unmarshal(reader);
+            obj = unmarshalEjbJar(reader);
         } catch ( MarshalException e ) {
+            e.printStackTrace();
             if (e.getException() instanceof UnknownHostException){
                 handleException("conf.3121", jarFile, e.getLocalizedMessage());
             } else if (e.getException() instanceof IOException){
@@ -407,6 +455,16 @@ public class ConfigUtils  {
         return obj;
     }
     
+    private static DTDResolver resolver = new DTDResolver();
+    
+    private static EjbJar unmarshalEjbJar(java.io.Reader reader) 
+    throws MarshalException, ValidationException {
+        Unmarshaller unmarshaller = new Unmarshaller(org.openejb.alt.config.ejb11.EjbJar.class);
+        unmarshaller.setEntityResolver(resolver);
+
+        return (org.openejb.alt.config.ejb11.EjbJar)unmarshaller.unmarshal(reader);
+    } 
+
     public static void writeEjbJar(String xmlFile, EjbJar ejbJarObject) throws OpenEJBException{
         /* TODO:  Just to be picky, the xml file created by
         Castor is really hard to read -- it is all on one line.
@@ -678,62 +736,48 @@ public class ConfigUtils  {
     /*------------------------------------------------------*/
     /*    Methods for easy exception handling               */
     /*------------------------------------------------------*/
-    public static void handleException(String errorCode, Object arg0, Object arg1, Object arg2, Object arg3 ) throws OpenEJBException{
-        Object[] args = { arg0, arg1, arg2, arg3 };
-        throw new OpenEJBException(errorCode, args);
+    public static void handleException(String errorCode, Object arg0, Object arg1, Object arg2, Object arg3) throws OpenEJBException {
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1, arg2, arg3 ) );
     }
 
-    public static void handleException(String errorCode, Object arg0, Object arg1, Object arg2 ) throws OpenEJBException{
-        Object[] args = { arg0, arg1, arg2 };
-        throw new OpenEJBException(errorCode, args);
-    }
-    
-    public static void handleException(String errorCode, Object arg0, Object arg1 ) throws OpenEJBException{
-        Object[] args = { arg0, arg1 };
-        throw new OpenEJBException(errorCode, args);
+    public static void handleException(String errorCode, Object arg0, Object arg1, Object arg2) throws OpenEJBException {
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1, arg2 ) );
     }
 
-    public static void handleException(String errorCode, Object arg0 ) throws OpenEJBException{
-        Object[] args = { arg0 };
-        throw new OpenEJBException(errorCode, args);
-    }
-    
-    public static void handleException(String errorCode ) throws OpenEJBException{
-        throw new OpenEJBException(errorCode);
+    public static void handleException(String errorCode, Object arg0, Object arg1) throws OpenEJBException {
+        throw new OpenEJBException( messages.format( errorCode, arg0, arg1 ) );
     }
 
+    public static void handleException(String errorCode, Object arg0) throws OpenEJBException {
+        throw new OpenEJBException( messages.format( errorCode, arg0 ) );
+    }
+
+    public static void handleException(String errorCode) throws OpenEJBException {
+        throw new OpenEJBException( messages.message( errorCode ) );
+    }
 
     /*------------------------------------------------------*/
     /*  Methods for logging exceptions that are noteworthy  */
     /*  but not bad enough to stop the container system.    */
     /*------------------------------------------------------*/
     public static void logWarning(String errorCode, Object arg0, Object arg1, Object arg2, Object arg3 ) {
-        Object[] args = { arg0, arg1, arg2, arg3 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        logger.warning( e.getMessage() );
+        _logger.i18n.warning( errorCode, arg0, arg1, arg2, arg3 );
     }
 
     public static void logWarning(String errorCode, Object arg0, Object arg1, Object arg2 ) {
-        Object[] args = { arg0, arg1, arg2 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        logger.warning( e.getMessage() );
+        _logger.i18n.warning( errorCode, arg0, arg1, arg2 );
     }
     
     public static void logWarning(String errorCode, Object arg0, Object arg1 ) {
-        Object[] args = { arg0, arg1 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        logger.warning( e.getMessage() );
+        _logger.i18n.warning( errorCode, arg0, arg1 );
     }
 
     public static void logWarning(String errorCode, Object arg0 ) {
-        Object[] args = { arg0 };
-        OpenEJBException e = new OpenEJBException(errorCode, args);
-        logger.warning( e.getMessage() );
+        _logger.i18n.warning( errorCode, arg0 );
     }
 
     public static void logWarning(String errorCode ) {
-        OpenEJBException e = new OpenEJBException(errorCode);
-        logger.warning( e.getMessage() );
+        _logger.i18n.warning( errorCode );
     }
 
 

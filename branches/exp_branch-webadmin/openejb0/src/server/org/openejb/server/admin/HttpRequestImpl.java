@@ -48,16 +48,19 @@ package org.openejb.server.admin;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.DataInputStream;
 import java.net.URL;
 import java.util.HashMap;
 import javax.naming.*;
+import java.util.StringTokenizer;
+import java.io.DataInput;
+import org.openejb.admin.web.HttpRequest;
 
 /**
  * 
  * @author <a href="mailto:david.blevins@visi.com">David Blevins</a>
  */
-public class HttpRequestImpl implements org.openejb.admin.web.HttpRequest {
-    
+public class HttpRequestImpl implements  HttpRequest {
     /** 5.1   Request-Line */
     private String line;
     
@@ -215,8 +218,8 @@ public class HttpRequestImpl implements org.openejb.admin.web.HttpRequest {
     private void readRequestBody(DataInput in) throws IOException{
         // Content-length: 384
         String len  = getHeader("Content-length");
-        int length = -1;
 
+        int length = -1;
         if (len != null) {
             try{
                 length = Integer.parseInt(len);
@@ -229,6 +232,7 @@ public class HttpRequestImpl implements org.openejb.admin.web.HttpRequest {
             this.body = new byte[0];
         } else if (length > 0) {
             this.body = new byte[length];
+
             try {
                 in.readFully( body );
             } catch (Exception e){
@@ -243,6 +247,7 @@ public class HttpRequestImpl implements org.openejb.admin.web.HttpRequest {
 
         while (parameters.hasMoreTokens()) {
             StringTokenizer param = new StringTokenizer(parameters.nextToken(), "=");    
+            
             /* [1] Parse the Name */
             String name = parameters.nextToken();
             if (name == null) break;

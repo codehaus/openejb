@@ -56,8 +56,6 @@ import org.openejb.EJBInvocation;
 import org.tranql.cache.CacheFlushStrategyFactory;
 import org.tranql.cache.InTxCache;
 import org.tranql.cache.CacheFlushStrategy;
-import org.tranql.cache.cache.FrontEndCache;
-import org.tranql.cache.cache.InTxCacheTracker;
 
 /**
  * This interceptor defines, if required, the InTxCache of the
@@ -70,21 +68,17 @@ import org.tranql.cache.cache.InTxCacheTracker;
 public final class InTxCacheInterceptor implements Interceptor {
     private final Interceptor next;
     private final CacheFlushStrategyFactory strategyFactory;
-    private final FrontEndCache cache;
 
-    public InTxCacheInterceptor(Interceptor next, CacheFlushStrategyFactory strategyFactory, FrontEndCache cache) {
+    public InTxCacheInterceptor(Interceptor next, CacheFlushStrategyFactory strategyFactory) {
         this.next = next;
         this.strategyFactory = strategyFactory;
-        this.cache = cache;
     }
 
     public InvocationResult invoke(final Invocation invocation) throws Throwable {
         EJBInvocation ejbInvocation = (EJBInvocation) invocation;
         TransactionContext transactionContext = ejbInvocation.getTransactionContext();
         if ( null == transactionContext.getInTxCache() ) {
-            CacheFlushStrategy strategy = strategyFactory.createCacheFlushStrategy();
-            strategy = new InTxCacheTracker(cache, strategy);
-            transactionContext.setInTxCache(new GeronimoInTxCache(strategy));
+            transactionContext.setInTxCache(new GeronimoInTxCache(strategyFactory.createCacheFlushStrategy()));
         }
 
         return next.invoke(invocation);
@@ -96,6 +90,5 @@ public final class InTxCacheInterceptor implements Interceptor {
             super(flushStrategy);
         }
 
-        
     }
 }

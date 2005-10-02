@@ -62,8 +62,6 @@ import org.openejb.security.EJBSecurityInterceptor;
 import org.openejb.security.PolicyContextHandlerEJBInterceptor;
 import org.openejb.transaction.TransactionContextInterceptor;
 import org.tranql.cache.CacheFlushStrategyFactory;
-import org.tranql.cache.cache.Cache;
-import org.tranql.cache.cache.FrontEndCache;
 
 /**
  *
@@ -72,7 +70,6 @@ import org.tranql.cache.cache.FrontEndCache;
  */
 public class CMPEntityInterceptorBuilder extends AbstractInterceptorBuilder {
     private CacheFlushStrategyFactory strategyFactory;
-    private FrontEndCache cache;
     private boolean reentrant;
 
     public CacheFlushStrategyFactory getCacheFlushStrategyFactory() {
@@ -81,14 +78,6 @@ public class CMPEntityInterceptorBuilder extends AbstractInterceptorBuilder {
 
     public void setCacheFlushStrategyFactory(CacheFlushStrategyFactory strategyFactory) {
         this.strategyFactory = strategyFactory;
-    }
-
-    public FrontEndCache getFrontEndCache() {
-        return cache;
-    }
-
-    public void setFrontEndCache(FrontEndCache cache) {
-        this.cache = cache;
     }
 
     public boolean isReentrant() {
@@ -134,7 +123,7 @@ public class CMPEntityInterceptorBuilder extends AbstractInterceptorBuilder {
             firstInterceptor = new ConnectionTrackingInterceptor(firstInterceptor, trackedConnectionAssociator);
         }
         firstInterceptor = new EntityInstanceInterceptor(firstInterceptor, containerId, instancePool, reentrant);
-        firstInterceptor = new InTxCacheInterceptor(firstInterceptor, strategyFactory, cache);
+        firstInterceptor = new InTxCacheInterceptor(firstInterceptor, strategyFactory);
         firstInterceptor = new TransactionContextInterceptor(firstInterceptor, transactionContextManager, transactionPolicyManager);
         firstInterceptor = new SystemExceptionInterceptor(firstInterceptor, ejbName);
         return new TwoChains(firstInterceptor, systemChain);

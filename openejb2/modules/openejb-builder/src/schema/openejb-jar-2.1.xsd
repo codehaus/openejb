@@ -50,7 +50,7 @@
     xmlns:openejb="http://www.openejb.org/xml/ns/openejb-jar-2.1"
     targetNamespace="http://www.openejb.org/xml/ns/openejb-jar-2.1"
     xmlns:naming="http://geronimo.apache.org/xml/ns/naming-1.1"
-    xmlns:security="http://geronimo.apache.org/xml/ns/security-1.1"
+    xmlns:app="http://geronimo.apache.org/xml/ns/j2ee/application-1.1"
     xmlns:sys="http://geronimo.apache.org/xml/ns/deployment-1.1"
     xmlns:pkgen="http://www.openejb.org/xml/ns/pkgen-2.0"
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -59,7 +59,8 @@
     version="1.0">
 
     <xs:import namespace="http://geronimo.apache.org/xml/ns/naming-1.1" schemaLocation="geronimo-naming-1.1.xsd"/>
-    <xs:import namespace="http://geronimo.apache.org/xml/ns/security-1.1" schemaLocation="geronimo-security-1.1.xsd"/>
+    <!--<xs:import namespace="http://geronimo.apache.org/xml/ns/security-1.1" schemaLocation="geronimo-security-1.1.xsd"/>-->
+    <xs:import namespace="http://geronimo.apache.org/xml/ns/j2ee/application-1.1" schemaLocation="geronimo-application-1.1.xsd"/>
     <xs:import namespace="http://geronimo.apache.org/xml/ns/deployment-1.1" schemaLocation="geronimo-module-1.1.xsd"/>
     <xs:import namespace="http://www.openejb.org/xml/ns/pkgen-2.0" schemaLocation="openejb-pkgen-2.0.xsd"/>
 
@@ -96,8 +97,9 @@
 
             <xs:element ref="naming:message-destination" minOccurs="0" maxOccurs="unbounded"/>
 
-            <xs:element ref="security:security" minOccurs="0"/>
-            <xs:element ref="sys:gbean" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element ref="app:security" minOccurs="0"/>
+            <xs:element ref="sys:service" minOccurs="0" maxOccurs="unbounded"/>
+            <!--<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>-->
         </xs:sequence>
     </xs:complexType>
 

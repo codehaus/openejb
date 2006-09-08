@@ -23,16 +23,6 @@
             <cmp-field>
                 <field-name>field2</field-name>
             </cmp-field>
-            <query>
-                <!-- CompondPK one-to-many shares the local home interface so we need to declare this useless finder -->
-                <query-method>
-                    <method-name>findByPrimaryKey</method-name>
-                    <method-params>
-                        <method-param>java.lang.Integer</method-param>
-                    </method-params>
-                </query-method>
-                <ejb-ql>SELECT OBJECT(A) FROM onetomanyA A</ejb-ql>
-            </query>
         </entity>
         <entity>
             <ejb-name>B</ejb-name>
@@ -56,16 +46,6 @@
             <cmp-field>
                 <field-name>field4</field-name>
             </cmp-field>
-            <query>
-                <!-- CompondPK one-to-many shares the local home interface so we need to declare this useless finder -->
-                <query-method>
-                    <method-name>findByPrimaryKey</method-name>
-                    <method-params>
-                        <method-param>java.lang.Integer</method-param>
-                    </method-params>
-                </query-method>
-                <ejb-ql>SELECT OBJECT(B) FROM onetomanyB B</ejb-ql>
-            </query>
         </entity>
     </enterprise-beans>
     <relationships>
@@ -109,4 +89,5 @@
             <trans-attribute>Required</trans-attribute>
         </container-transaction>
     </assembly-descriptor>
+
 </ejb-jar>

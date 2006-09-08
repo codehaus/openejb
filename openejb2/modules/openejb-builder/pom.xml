@@ -1,31 +1,30 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<!-- $Revision$ $Date$ -->
-
 <project>
-    <modelVersion>4.0.0</modelVersion>
-    
     <parent>
-        <groupId>org.openejb</groupId>
-        <artifactId>modules</artifactId>
-        <version>2.2-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <groupId>openejb</groupId>
+        <artifactId>openejb</artifactId>
+        <version>2.1-SNAPSHOT</version>
     </parent>
 
+    <modelVersion>4.0.0</modelVersion>
     <name>OpenEJB :: Builder</name>
     <artifactId>openejb-builder</artifactId>
     <description>OpenEJB Builder</description>
 
+    <properties>
+        <maven.test.skip>true</maven.test.skip>
+    </properties>
+
     <dependencies>
-        <!--<dependency>-->
-        <!--<groupId>org.apache.geronimo.modules</groupId>-->
-        <!--<artifactId>geronimo-deploy-config</artifactId>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.apache.geronimo.modules</groupId>
+            <artifactId>geronimo-deploy-config</artifactId>
+        </dependency>
 
         <dependency>
-            <groupId>org.openejb</groupId>
+            <groupId>openejb</groupId>
             <artifactId>openejb-pkgen-builder</artifactId>
-            <version>${pom.version}</version>
         </dependency>
 
         <dependency>
@@ -48,22 +47,22 @@
             <artifactId>geronimo-naming-builder</artifactId>
         </dependency>
 
-        <!--<dependency>-->
-        <!--<groupId>org.apache.geronimo.specs</groupId>-->
-        <!--<artifactId>geronimo-j2ee-deployment_1.1_spec</artifactId>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-j2ee-deployment_1.1_spec</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
             <artifactId>geronimo-jms_1.1_spec</artifactId>
-            <!--<scope>test</scope> this is unavailabe process-resources phase ! -->
+            <!--       <scope>test</scope> this is unavailabe process-resources phase ! -->
         </dependency>
 
-        <!--<dependency>-->
-        <!--<groupId>org.apache.geronimo.modules</groupId>-->
-        <!--<artifactId>geronimo-j2ee-schema</artifactId>-->
-        <!--</dependency>-->
-        <!---->
+        <dependency>
+            <groupId>org.apache.geronimo.modules</groupId>
+            <artifactId>geronimo-j2ee-schema</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>ant</groupId>
             <artifactId>ant</artifactId>
@@ -81,24 +80,14 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!--<dependency>-->
-        <!--<groupId>org.apache.xmlbeans</groupId>-->
-        <!--<artifactId>xbean</artifactId>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>xmlbeans</groupId>
             <artifactId>xbean</artifactId>
         </dependency>
+
         <dependency>
             <groupId>stax</groupId>
             <artifactId>stax-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>antlr</groupId>
-            <artifactId>antlr</artifactId>
-            <version>2.7.6</version>
-            <scope>test</scope>
         </dependency>
 
     </dependencies>
@@ -150,7 +139,7 @@
                         <configuration>
                             <schemaDirectory>${basedir}/src/schema</schemaDirectory>
                             <sourceSchemas>
-                                corba-css-config-2.0.xsd,corba-tss-config-2.0.xsd,openejb-jar-2.2.xsd</sourceSchemas>
+                                corba-css-config-2.0.xsd,corba-tss-config-2.0.xsd,openejb-jar-2.1.xsd</sourceSchemas>
                             <xmlConfigs>
                                 <xmlConfig implementation="java.io.File">${basedir}/src/schema/xmlconfig.xml</xmlConfig>
                             </xmlConfigs>
@@ -165,16 +154,15 @@
             <resource>
                 <directory>src/resources2</directory>
             </resource>
-            <!-- these should not be needed, xmlbeans packs them for us -->
-            <!--<resource>-->
-            <!--<targetPath>META-INF/schema</targetPath>-->
-            <!--<directory>src/schema</directory>-->
-            <!--<includes>-->
-            <!--<include>corba-css-config-2.0.xsd</include>-->
-            <!--<include>corba-tss-config-2.0.xsd</include>-->
-            <!--<include>openejb-jar-2.1.xsd</include>-->
-            <!--</includes>-->
-            <!--</resource>-->
+            <resource>
+                <targetPath>META-INF/schema</targetPath>
+                <directory>src/schema</directory>
+                <includes>
+                    <include>corba-css-config-2.0.xsd</include>
+                    <include>corba-tss-config-2.0.xsd</include>
+                    <include>openejb-jar-2.0.xsd</include>
+                </includes>
+            </resource>
         </resources>
 
     </build>

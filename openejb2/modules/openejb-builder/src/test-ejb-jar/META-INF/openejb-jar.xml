@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 
-<openejb-jar xmlns="http://www.openejb.org/xml/ns/openejb-jar-2.1">
+<openejb-jar
+        xmlns="http://www.openejb.org/xml/ns/openejb-jar-2.1">
 
     <environment>
         <moduleId>
@@ -163,9 +164,9 @@
         </message-driven>
 
     </enterprise-beans>
-    <gbean name="CMPPKGenerator" class="org.openejb.entity.cmp.pkgenerator.SequenceTablePrimaryKeyGeneratorWrapperGBean">
-        <reference name="TransactionManager">
-            <name>TransactionManager</name>
+    <gbean name="CMPPKGenerator" class="org.openejb.entity.cmp.pkgenerator.SequenceTablePrimaryKeyGeneratorWrapper">
+        <reference name="TransactionContextManager">
+            <name>TransactionContextManager</name>
         </reference>
         <reference name="ManagedConnectionFactoryWrapper">
             <name>DefaultDatasource</name>
@@ -174,11 +175,15 @@
         <attribute name="sequenceName">PKGENCMP</attribute>
         <attribute name="batchSize">1</attribute>
     </gbean>
-    <gbean name="CMPPKGenerator2" class="org.openejb.entity.cmp.pkgenerator.SequenceTablePrimaryKeyGeneratorWrapperGBean">
-        <reference name="TransactionManager">
-            <name>TransactionManager</name>
+    <gbean name="CMPPKGenerator2" class="org.openejb.entity.cmp.pkgenerator.SequenceTablePrimaryKeyGeneratorWrapper">
+        <reference name="TransactionContextManager">
+            <name>TransactionContextManager</name>
         </reference>
         <reference name="ManagedConnectionFactoryWrapper">
+            <!--<application>null</application>-->
+            <!--<moduleType>JCAResource</moduleType>-->
+            <!--<module>org/apache/geronimo/DefaultDatabase</module>-->
+            <!--<type>JCAManagedConnectionFactory</type>-->
             <name>DefaultDatasource</name>
         </reference>
         <attribute name="tableName">PKGENCMP_SEQ</attribute>

@@ -23,12 +23,6 @@
     <!-- ============ -->
 
     <dependencies>
-        <dependency>
-            <groupId>backport-util-concurrent</groupId>
-            <artifactId>backport-util-concurrent</artifactId>
-            <version>${backport_util_concurrent_version}</version>
-            <type>test</type>
-        </dependency>
 
         <dependency>
             <groupId>xmlbeans</groupId>
@@ -79,12 +73,6 @@
 
         <dependency>
             <groupId>geronimo</groupId>
-            <artifactId>geronimo-interceptor</artifactId>
-            <version>${geronimo_version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>geronimo</groupId>
             <artifactId>geronimo-client</artifactId>
             <version>${geronimo_version}</version>
         </dependency>
@@ -123,9 +111,6 @@
             <groupId>geronimo</groupId>
             <artifactId>geronimo-j2ee-builder</artifactId>
             <version>${geronimo_version}</version>
-            <properties>
-                <xmlbeans>true</xmlbeans>
-            </properties>
         </dependency>
 
         <dependency>
@@ -200,14 +185,6 @@
         <dependency>
             <groupId>geronimo</groupId>
             <artifactId>geronimo-naming-builder</artifactId>
-            <version>${geronimo_version}</version>
-            <properties>
-                <xmlbeans>true</xmlbeans>
-            </properties>
-        </dependency>
-        <dependency>
-            <groupId>geronimo</groupId>
-            <artifactId>geronimo-j2ee-builder</artifactId>
             <version>${geronimo_version}</version>
             <properties>
                 <xmlbeans>true</xmlbeans>
@@ -310,9 +287,14 @@
             <groupId>geronimo</groupId>
             <artifactId>geronimo-j2ee-schema</artifactId>
             <version>${geronimo_version}</version>
-            <properties>
-                <xmlbeans>true</xmlbeans>
-            </properties>
+            <!--<properties>-->
+                <!--<xmlbeans>true</xmlbeans>-->
+            <!--</properties>-->
+        </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.schema</groupId>
+            <artifactId>geronimo-schema-j2ee_1.4</artifactId>
+            <version>${geronimo_schema_j2ee_1_4_version}</version>
         </dependency>
 
         <dependency>
@@ -464,8 +446,8 @@
     <!-- =================== -->
 
     <build>
-        <sourceDirectory>src/main/java</sourceDirectory>
-        <unitTestSourceDirectory>src/test/java</unitTestSourceDirectory>
+        <sourceDirectory>src/java</sourceDirectory>
+        <unitTestSourceDirectory>src/test</unitTestSourceDirectory>
         <resources>
             <resource>
                 <directory>${basedir}/src/java</directory>
